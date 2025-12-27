@@ -4,8 +4,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Chofer - Navegación Otimac</title>
+    
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <link rel="stylesheet" href="https://unpkg.com/leaflet-routing-machine/dist/leaflet-routing-machine.css" />
+    
     <style>
         body { font-family: 'Segoe UI', sans-serif; text-align: center; background: #1a1a1a; color: white; margin: 0; padding: 10px; }
         #map { height: 500px; width: 100%; border-radius: 15px; margin-top: 10px; border: 2px solid #333; }
@@ -13,8 +15,16 @@
         .pedido-item { background: #3d3d3d; padding: 12px; margin: 8px 0; border-radius: 8px; display: flex; justify-content: space-between; align-items: center; border-left: 5px solid #ffc107; }
         .btn-aceptar { background: #ffc107; color: #000; border: none; padding: 10px 18px; font-weight: bold; border-radius: 6px; cursor: pointer; }
         .btn-cancelar { background: #ff4444; color: white; border: none; padding: 10px; border-radius: 6px; font-weight: bold; width: 100%; margin-top: 10px; cursor: pointer; }
-        #status-gps { color: #00ff00; font-weight: bold; margin: 10px 0; }
-        .leaflet-routing-container { background: rgba(0,0,0,0.8) !important; color: white !important; font-size: 11px; max-height: 120px; overflow: auto; }
+        #status-gps { color: #00ff00; font-weight: bold; margin: 10px 0; font-size: 14px; }
+        
+        /* Ajuste para que las instrucciones no estorben */
+        .leaflet-routing-container { 
+            background: rgba(0,0,0,0.85) !important; 
+            color: white !important; 
+            font-size: 11px; 
+            max-height: 150px; 
+            overflow: auto; 
+        }
     </style>
 </head>
 <body>
@@ -23,10 +33,10 @@
     <div id="interfaz">
         <div class="panel-pedidos" id="panelPedidos">
             <h3>Pedidos Pendientes</h3>
-            <div id="lista-pedidos">Buscando...</div>
+            <div id="lista-pedidos">Buscando solicitudes...</div>
         </div>
     </div>
-    <div id="status-gps">Listo</div>
+    <div id="status-gps">Listo para trabajar</div>
     <div id="map"></div>
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
@@ -46,45 +56,87 @@
         };
         firebase.initializeApp(firebaseConfig);
         var database = firebase.database();
+
         var map = L.map('map').setView([23.6345, -102.5528], 5);
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
+        
         var markerChofer, markerCliente, controlRuta;
+        var ultimaPosicionRuta = null;
 
+        // Escuchar pedidos
         database.ref('viajes').orderByChild('estado').equalTo('esperando').on('value', (snapshot) => {
             var pedidos = snapshot.val();
             var contenedor = document.getElementById('lista-pedidos');
             contenedor.innerHTML = "";
-            for (var id in pedidos) {
-                contenedor.innerHTML += `<div class="pedido-item"><span>#${id}</span> <button class="btn-aceptar" onclick="aceptarViaje('${id}')">ACEPTAR</button></div>`;
+            if (pedidos) {
+                for (var id in pedidos) {
+                    contenedor.innerHTML += `
+                        <div class="pedido-item">
+                            <span>VIAJE: <b>#${id}</b></span>
+                            <button class="btn-aceptar" onclick="aceptarViaje('${id}')">ACEPTAR</button>
+                        </div>`;
+                }
+            } else {
+                contenedor.innerHTML = "No hay solicitudes pendientes.";
             }
         });
 
         function aceptarViaje(idViaje) {
-            document.getElementById('interfaz').innerHTML = `<div class="panel-pedidos"><h3>VIAJE #${idViaje}</h3><button class="btn-cancelar" onclick="finalizarViaje('${idViaje}')">FINALIZAR/CANCELAR</button></div>`;
+            document.getElementById('interfaz').innerHTML = `
+                <div class="panel-pedidos">
+                    <h3 style="color:#ffc107">VIAJE EN CURSO #${idViaje}</h3>
+                    <button class="btn-cancelar" onclick="finalizarViaje('${idViaje}')">FINALIZAR / CANCELAR</button>
+                </div>`;
+            
             database.ref('viajes/' + idViaje + '/cliente').once('value', (snap) => {
                 var posC = snap.val();
-                markerCliente = L.marker([posC.lat, posC.lon]).addTo(map);
-                navigator.geolocation.watchPosition((pos) => {
-                    var lat = pos.coords.latitude, lon = pos.coords.longitude;
-                    if(markerChofer) markerChofer.setLatLng([lat, lon]);
-                    else markerChofer = L.circleMarker([lat, lon], {color: '#ffc107', radius: 8, fillOpacity: 1}).addTo(map);
-                    
-                    if(controlRuta) map.removeControl(controlRuta);
-                    controlRuta = L.Routing.control({
-                        waypoints: [L.latLng(lat, lon), L.latLng(posC.lat, posC.lon)],
-                        lineOptions: { styles: [{ color: '#2478ff', weight: 8, opacity: 0.9 }] },
-                        createMarker: function() { return null; },
-                        addWaypoints: false
-                    }).addTo(map);
-
-                    database.ref('viajes/' + idViaje).update({ estado: "en_camino" });
-                    database.ref('viajes/' + idViaje + '/chofer').set({ lat: lat, lon: lon });
-                }, null, {enableHighAccuracy: true});
+                if (posC) {
+                    markerCliente = L.marker([posC.lat, posC.lon]).addTo(map).bindPopup("CLIENTE").openPopup();
+                    iniciarNavegacion(idViaje, posC);
+                }
             });
         }
 
+        function iniciarNavegacion(idViaje, posCliente) {
+            navigator.geolocation.watchPosition((pos) => {
+                var lat = pos.coords.latitude;
+                var lon = pos.coords.longitude;
+                var miPos = L.latLng(lat, lon);
+
+                // Actualizar marcador chofer
+                if(markerChofer) markerChofer.setLatLng(miPos);
+                else markerChofer = L.circleMarker(miPos, {color: '#ffc107', radius: 10, fillOpacity: 1}).addTo(map);
+
+                // DIBUJAR RUTA SOLO SI SE MOVIÓ 10 METROS (Evita que la línea desaparezca)
+                if (!ultimaPosicionRuta || miPos.distanceTo(ultimaPosicionRuta) > 10) {
+                    if(controlRuta) map.removeControl(controlRuta);
+
+                    controlRuta = L.Routing.control({
+                        waypoints: [miPos, L.latLng(posCliente.lat, posCliente.lon)],
+                        lineOptions: {
+                            styles: [
+                                { color: '#000', opacity: 0.3, weight: 12 }, // Sombra
+                                { color: '#2478ff', opacity: 1, weight: 8 }   // Línea Azul
+                            ]
+                        },
+                        createMarker: function() { return null; },
+                        addWaypoints: false,
+                        draggableWaypoints: false,
+                        fitSelectedRoutes: false
+                    }).addTo(map);
+                    
+                    ultimaPosicionRuta = miPos;
+                }
+
+                document.getElementById('status-gps').innerText = "NAVEGANDO HACIA EL CLIENTE...";
+                database.ref('viajes/' + idViaje).update({ estado: "en_camino" });
+                database.ref('viajes/' + idViaje + '/chofer').set({ lat: lat, lon: lon });
+
+            }, null, { enableHighAccuracy: true });
+        }
+
         function finalizarViaje(idViaje) {
-            if(confirm("¿Terminar viaje?")) {
+            if(confirm("¿Deseas finalizar este viaje?")) {
                 database.ref('viajes/' + idViaje).update({ estado: "cancelado" }).then(() => {
                     location.reload();
                 });
