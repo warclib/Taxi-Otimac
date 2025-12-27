@@ -11,7 +11,7 @@
         #map { height: 500px; width: 100%; border-radius: 15px; margin-top: 10px; border: 2px solid #333; }
         .panel-pedidos { background: #2c2c2c; padding: 15px; border-radius: 12px; border: 1px solid #ffc107; }
         .btn-cancelar { background: #ff4444; color: white; border: none; padding: 12px; border-radius: 6px; font-weight: bold; width: 100%; margin-top: 10px; }
-        .leaflet-routing-container { background: rgba(0,0,0,0.85) !important; color: white !important; font-size: 11px; max-height: 120px; overflow: auto; }
+        .leaflet-routing-container { background: rgba(0,0,0,0.85) !important; color: white !important; font-size: 11px; max-height: 100px; overflow: auto; }
     </style>
 </head>
 <body>
@@ -31,23 +31,12 @@
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
 
     <script>
-        var firebaseConfig = {
-            apiKey: "AIzaSyATLT5_woN8KO8-_E4_Nl7bEMlJGFI4uUQ",
-            authDomain: "taxiotimac.firebaseapp.com",
-            databaseURL: "https://taxiotimac-default-rtdb.firebaseio.com",
-            projectId: "taxiotimac",
-            storageBucket: "taxiotimac.firebasestorage.app",
-            messagingSenderId: "533983007458",
-            appId: "1:533983007458:web:254cef6b46c01a1718c4bb"
-        };
+        var firebaseConfig = { apiKey: "AIzaSyATLT5_woN8KO8-_E4_Nl7bEMlJGFI4uUQ", authDomain: "taxiotimac.firebaseapp.com", databaseURL: "https://taxiotimac-default-rtdb.firebaseio.com", projectId: "taxiotimac", storageBucket: "taxiotimac.firebasestorage.app", messagingSenderId: "533983007458", appId: "1:533983007458:web:254cef6b46c01a1718c4bb" };
         firebase.initializeApp(firebaseConfig);
         var database = firebase.database();
-
         var map = L.map('map').setView([23.6345, -102.5528], 5);
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
-        
-        var markerChofer, markerCliente, controlRuta;
-        var ultimaPos = null;
+        var markerChofer, markerCliente, controlRuta, ultimaPos;
 
         database.ref('viajes').orderByChild('estado').equalTo('esperando').on('value', (snapshot) => {
             var pedidos = snapshot.val();
@@ -59,8 +48,17 @@
         });
 
         function aceptarViaje(idViaje) {
-            document.getElementById('interfaz').innerHTML = `<div class="panel-pedidos"><h3>VIAJE #${idViaje}</h3><button class="btn-cancelar" onclick="finalizarViaje('${idViaje}')">FINALIZAR</button></div>`;
+            document.getElementById('interfaz').innerHTML = `<div class="panel-pedidos"><h3>VIAJE #${idViaje}</h3><button class="btn-cancelar" onclick="finalizarViaje('${idViaje}')">FINALIZAR VIAJE</button></div>`;
             
+            // ESCUCHAR SI EL CLIENTE CANCELA
+            database.ref('viajes/' + idViaje).on('value', (snap) => {
+                var v = snap.val();
+                if (!v || v.estado === "cancelado") {
+                    alert("¡EL CLIENTE CANCELÓ EL VIAJE!");
+                    location.reload();
+                }
+            });
+
             database.ref('viajes/' + idViaje + '/cliente').once('value', (snap) => {
                 var posC = snap.val();
                 markerCliente = L.marker([posC.lat, posC.lon]).addTo(map);
@@ -72,28 +70,27 @@
                     if(markerChofer) markerChofer.setLatLng(actual);
                     else markerChofer = L.circleMarker(actual, {color: '#ffc107', radius: 10, fillOpacity: 1}).addTo(map);
 
-                    // REGLA DE ORO: Solo actualiza la línea azul si te mueves más de 30 metros
-                    if(!ultimaPos || actual.distanceTo(ultimaPos) > 30) {
+                    // ZOOM CERRADO PARA NAVEGAR MEJOR (Nivel 17 es muy detallado)
+                    map.setView(actual, 17);
+
+                    if(!ultimaPos || actual.distanceTo(ultimaPos) > 20) {
                         if(controlRuta) map.removeControl(controlRuta);
                         controlRuta = L.Routing.control({
                             waypoints: [actual, L.latLng(posC.lat, posC.lon)],
                             lineOptions: { styles: [{ color: '#2478ff', weight: 8, opacity: 0.9 }] },
                             createMarker: function() { return null; },
                             addWaypoints: false,
-                            fitSelectedRoutes: false // Evita que el mapa salte
+                            fitSelectedRoutes: false 
                         }).addTo(map);
                         ultimaPos = actual;
                     }
-
                     database.ref('viajes/' + idViaje + '/chofer').set({ lat: lat, lon: lon });
                 }, null, {enableHighAccuracy: true});
             });
         }
 
         function finalizarViaje(idViaje) {
-            if(confirm("¿Finalizar?")) {
-                database.ref('viajes/' + idViaje).update({ estado: "cancelado" }).then(() => { location.reload(); });
-            }
+            database.ref('viajes/' + idViaje).update({ estado: "cancelado" }).then(() => { location.reload(); });
         }
     </script>
 </body>
