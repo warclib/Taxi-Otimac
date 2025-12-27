@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pasajero - TaxiOtimac</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <style>
+        body { font-family: 'Segoe UI', sans-serif; text-align: center; background: #f4f4f4; margin: 0; padding: 15px; }
+        #map { height: 400px; width: 100%; border-radius: 15px; box-shadow: 0 4px 10px rgba(0,0,0,0.2); margin-top: 15px; }
+        .status-box { background: white; padding: 20px; border-radius: 12px; margin-bottom: 10px; border: 2px solid #ffc107; min-height: 80px; }
+        #viaje-id { font-size: 32px; color: #333; font-weight: bold; display: block; margin: 10px 0; letter-spacing: 5px; }
+        .btn-pedir { background: #000; color: #fff; border: none; padding: 18px; font-size: 18px; font-weight: bold; cursor: pointer; border-radius: 10px; width: 100%; }
+    </style>
+</head>
+<body>
+
+    <div class="status-box">
+        <div id="status">Presiona el botón para pedir tu taxi</div>
+        <div id="info-viaje" style="display:none;">
+            TU CÓDIGO DE VIAJE:
+            <span id="viaje-id"></span>
+        </div>
+    </div>
+
+    <button class="btn-pedir" id="btnPedir" onclick="pedirTaxi()">🚖 PEDIR TAXI AHORA</button>
+    <div id="map"></div>
+
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+
+    <script>
+        // Configuración de tu Firebase
+        var firebaseConfig = {
+            apiKey: "AIzaSyATLT5_woN8KO8-_E4_Nl7bEMlJGFI4uUQ",
+            authDomain: "taxiotimac.firebaseapp.com",
+            databaseURL: "https://taxiotimac-default-rtdb.firebaseio.com",
+            projectId: "taxiotimac",
+            storageBucket: "taxiotimac.firebasestorage.app",
+            messagingSenderId: "533983007458",
+            appId: "1:533983007458:web:254cef6b46c01a1718c4bb"
+        };
+        firebase.initializeApp(firebaseConfig);
+        var database = firebase.database();
+
+        // Configuración Inicial del Mapa
+        var map = L.map('map').setView([23.6345, -102.5528], 5);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
+        
+        var markerCliente, markerChofer;
+        var idDelViaje = Math.floor(Math.random() * 90000) + 10000;
+
+        // Icono de Taxi
+        var iconTaxi = L.icon({
+            iconUrl: 'https://cdn-icons-png.flaticon.com/512/3448/3448636.png',
+            iconSize: [45, 45],
+            iconAnchor: [22, 22]
+        });
+
+        function pedirTaxi() {
+            document.getElementById('info-viaje').style.display = 'block';
+            document.getElementById('viaje-id').innerText = idDelViaje;
+            document.getElementById('btnPedir').style.display = 'none';
+            document.getElementById('status').innerText = "Localizando tu posición...";
+
+            navigator.geolocation.getCurrentPosition((pos) => {
+                var lat = pos.coords.latitude;
+                var lon = pos.coords.longitude;
+
+                map.setView([lat, lon], 16);
+                markerCliente = L.marker([lat, lon]).addTo(map).bindPopup("Estás aquí").openPopup();
+
+                // Guardar pedido en Firebase
+                database.ref('viajes/' + idDelViaje).set({
+                    cliente: { lat: lat, lon: lon },
+                    estado: "esperando"
+                });
+
+                document.getElementById('status').innerText = "Esperando que un chofer acepte...";
+                escucharAlChofer();
+            }, (err) => alert("Error: Activa el GPS"), {enableHighAccuracy: true});
+        }
+
+        function escucharAlChofer() {
+            database.ref('viajes/' + idDelViaje + '/chofer').on('value', (snapshot) => {
+                var posChofer = snapshot.val();
+                if (posChofer && markerCliente) {
+                    // --- AQUÍ ESTÁ EL CÓDIGO QUE PREGUNTASTE ---
+                    var latLngChofer = L.latLng(posChofer.lat, posChofer.lon);
+                    var latLngCliente = markerCliente.getLatLng();
+
+                    var distanciaMetros = latLngChofer.distanceTo(latLngCliente);
+                    var distanciaKm = (distanciaMetros / 1000).toFixed(1);
+                    var tiempoEstimado = Math.round(distanciaKm * 3); // 3 min por km
+
+                    document.getElementById('status').innerHTML = `
+                        <b style="color: #d4a017;">¡Taxi en camino!</b><br>
+                        Distancia: ${distanciaKm} km | Llega en: ${tiempoEstimado} min
+                    `;
+                    
+                    if (markerChofer) {
+                        markerChofer.setLatLng([posChofer.lat, posChofer.lon]);
+                    } else {
+                        markerChofer = L.marker([posChofer.lat, posChofer.lon], {icon: iconTaxi}).addTo(map);
+                    }
+                    // -------------------------------------------
+                }
+            });
+        }
+    </script>
+</body>
+</html>

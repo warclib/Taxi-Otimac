@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chofer - Navegación Otimac</title>
+    
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet-routing-machine/dist/leaflet-routing-machine.css" />
+    
+    <style>
+        body { font-family: 'Segoe UI', sans-serif; text-align: center; background: #1a1a1a; color: white; margin: 0; padding: 10px; }
+        #map { height: 450px; width: 100%; border-radius: 15px; margin-top: 10px; border: 2px solid #333; }
+        .panel-pedidos { background: #2c2c2c; padding: 15px; border-radius: 12px; margin-bottom: 15px; border: 1px solid #ffc107; }
+        .pedido-item { background: #3d3d3d; padding: 12px; margin: 8px 0; border-radius: 8px; display: flex; justify-content: space-between; align-items: center; border-left: 5px solid #ffc107; }
+        .btn-aceptar { background: #ffc107; color: #000; border: none; padding: 10px 18px; font-weight: bold; border-radius: 6px; cursor: pointer; }
+        #status-gps { color: #00ff00; font-size: 14px; margin: 10px 0; font-weight: bold; }
+        /* Estilo para el cuadro de instrucciones de ruta */
+        .leaflet-routing-container { background: rgba(0,0,0,0.8) !important; color: white !important; font-size: 12px; text-align: left; }
+    </style>
+</head>
+<body>
+
+    <h2>CENTRAL OTIMAC 🚖</h2>
+    
+    <div id="panel-interfaz">
+        <div class="panel-pedidos" id="panelPedidos">
+            <h3>Pedidos Pendientes</h3>
+            <div id="lista-pedidos">Buscando solicitudes en tu zona...</div>
+        </div>
+    </div>
+
+    <div id="status-gps">Listo para recibir viajes</div>
+    <div id="map"></div>
+
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="https://unpkg.com/leaflet-routing-machine/dist/leaflet-routing-machine.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+
+    <script>
+        var firebaseConfig = {
+            apiKey: "AIzaSyATLT5_woN8KO8-_E4_Nl7bEMlJGFI4uUQ",
+            authDomain: "taxiotimac.firebaseapp.com",
+            databaseURL: "https://taxiotimac-default-rtdb.firebaseio.com",
+            projectId: "taxiotimac",
+            storageBucket: "taxiotimac.firebasestorage.app",
+            messagingSenderId: "533983007458",
+            appId: "1:533983007458:web:254cef6b46c01a1718c4bb"
+        };
+        firebase.initializeApp(firebaseConfig);
+        var database = firebase.database();
+
+        var map = L.map('map').setView([23.6345, -102.5528], 5);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
+        
+        var markerChofer, markerCliente, controlRuta;
+
+        // 1. ESCUCHAR NUEVOS PEDIDOS
+        database.ref('viajes').orderByChild('estado').equalTo('esperando').on('value', (snapshot) => {
+            var pedidos = snapshot.val();
+            var contenedor = document.getElementById('lista-pedidos');
+            contenedor.innerHTML = "";
+            if (pedidos) {
+                for (var id in pedidos) {
+                    contenedor.innerHTML += `
+                        <div class="pedido-item">
+                            <span>VIAJE: <b>#${id}</b></span>
+                            <button class="btn-aceptar" onclick="aceptarViaje('${id}')">ACEPTAR</button>
+                        </div>`;
+                }
+            } else {
+                contenedor.innerHTML = "No hay solicitudes pendientes.";
+            }
+        });
+
+        // 2. FUNCIÓN PARA ACEPTAR Y TRAZAR RUTA
+        function aceptarViaje(idViaje) {
+            document.getElementById('panel-interfaz').innerHTML = `
+                <div class="panel-pedidos">
+                    <h3 style="color:#ffc107">VIAJE EN CURSO #${idViaje}</h3>
+                    <button onclick="location.reload()" style="background:#ff4444; color:white; border:none; padding:8px; border-radius:5px;">CANCELAR/FINALIZAR</button>
+                </div>`;
+            
+            document.getElementById('status-gps').innerText = "Calculando mejor ruta...";
+
+            // Obtener ubicación del cliente para la ruta
+            database.ref('viajes/' + idViaje + '/cliente').once('value', (snapshot) => {
+                var posCliente = snapshot.val();
+                if (posCliente) {
+                    markerCliente = L.marker([posCliente.lat, posCliente.lon]).addTo(map)
+                        .bindPopup("PASAJERO ESPERANDO AQUÍ").openPopup();
+
+                    iniciarSeguimientoGPS(idViaje, posCliente);
+                }
+            });
+        }
+
+        // 3. SEGUIMIENTO GPS Y ENRUTAMIENTO VIVO
+        function iniciarSeguimientoGPS(idViaje, posCliente) {
+            navigator.geolocation.watchPosition((pos) => {
+                var latChofer = pos.coords.latitude;
+                var lonChofer = pos.coords.longitude;
+
+                // Actualizar marcador del chofer
+                if(markerChofer) {
+                    markerChofer.setLatLng([latChofer, lonChofer]);
+                } else {
+                    markerChofer = L.circleMarker([latChofer, lonChofer], {color: '#ffc107', fillOpacity: 1, radius: 8}).addTo(map)
+                        .bindPopup("TU UBICACIÓN").openPopup();
+                }
+
+                // TRAZAR O ACTUALIZAR LA RUTA (Waze Style)
+                if (controlRuta) {
+                    map.removeControl(controlRuta);
+                }
+
+                controlRuta = L.Routing.control({
+                    waypoints: [
+                        L.latLng(latChofer, lonChofer),
+                        L.latLng(posCliente.lat, posCliente.lon)
+                    ],
+                    lineOptions: { styles: [{ color: '#2478ff', weight: 6 }] },
+                    addWaypoints: false,
+                    draggableWaypoints: false,
+                    language: 'es',
+                    createMarker: function() { return null; } // Evita duplicar marcadores
+                }).addTo(map);
+
+                document.getElementById('status-gps').innerText = "SIGUE LA LÍNEA AZUL PARA LLEGAR";
+
+                // Informar al cliente
+                database.ref('viajes/' + idViaje).update({ estado: "en_camino" });
+                database.ref('viajes/' + idViaje + '/chofer').set({ lat: latChofer, lon: lonChofer });
+
+            }, (err) => alert("Error GPS: " + err.message), { enableHighAccuracy: true });
+        }
+    </script>
+</body>
+</html>
