@@ -8,8 +8,9 @@
     <style>
         body { font-family: 'Segoe UI', sans-serif; text-align: center; background: #f4f4f4; margin: 0; padding: 15px; }
         #map { height: 400px; width: 100%; border-radius: 15px; box-shadow: 0 4px 10px rgba(0,0,0,0.2); margin-top: 15px; }
-        .status-box { background: white; padding: 20px; border-radius: 12px; margin-bottom: 10px; border: 2px solid #ffc107; min-height: 80px; }
+        .status-box { background: white; padding: 20px; border-radius: 12px; margin-bottom: 10px; border: 2px solid #ffc107; }
         #viaje-id { font-size: 32px; color: #333; font-weight: bold; display: block; margin: 10px 0; letter-spacing: 5px; }
+        .tiempo-info { color: #2478ff; font-weight: bold; font-size: 18px; margin-top: 5px; }
         .btn-pedir { background: #000; color: #fff; border: none; padding: 18px; font-size: 18px; font-weight: bold; cursor: pointer; border-radius: 10px; width: 100%; }
     </style>
 </head>
@@ -20,6 +21,7 @@
         <div id="info-viaje" style="display:none;">
             TU CÓDIGO DE VIAJE:
             <span id="viaje-id"></span>
+            <div id="estimacion" class="tiempo-info"></div>
         </div>
     </div>
 
@@ -31,6 +33,7 @@
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
 
     <script>
+        // Configuración Firebase (La tuya se mantiene igual)
         var firebaseConfig = {
             apiKey: "AIzaSyATLT5_woN8KO8-_E4_Nl7bEMlJGFI4uUQ",
             authDomain: "taxiotimac.firebaseapp.com",
@@ -75,16 +78,24 @@
                 if (!viaje) return;
 
                 if (viaje.estado === "cancelado") {
-                    alert("El viaje ha finalizado o fue cancelado.");
+                    alert("Viaje finalizado.");
                     location.reload();
                 }
 
                 if (viaje.chofer) {
                     var latLngChofer = L.latLng(viaje.chofer.lat, viaje.chofer.lon);
                     var latLngCliente = markerCliente.getLatLng();
-                    var dist = (latLngChofer.distanceTo(latLngCliente) / 1000).toFixed(1);
+                    var distanciaMetros = latLngChofer.distanceTo(latLngCliente);
+                    var distKm = (distanciaMetros / 1000).toFixed(1);
                     
-                    document.getElementById('status').innerHTML = `<b>¡Taxi en camino!</b><br>Distancia: ${dist} km`;
+                    // Cálculo de tiempo (promedio 40km/h en ciudad)
+                    var tiempoMinutos = Math.round((distanciaMetros / 666)); 
+                    var horas = Math.floor(tiempoMinutos / 60);
+                    var mins = tiempoMinutos % 60;
+                    var tiempoTexto = horas > 0 ? horas + " h " + mins + " min" : mins + " min";
+
+                    document.getElementById('status').innerHTML = `<b>¡Taxi en camino!</b>`;
+                    document.getElementById('estimacion').innerHTML = `📍 Distancia: ${distKm} km<br>⏱️ Llega en: ${tiempoTexto}`;
                     
                     if (markerChofer) markerChofer.setLatLng(latLngChofer);
                     else markerChofer = L.marker(latLngChofer, {icon: iconTaxi}).addTo(map);
