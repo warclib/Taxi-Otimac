@@ -7,25 +7,25 @@
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
         body { font-family: 'Segoe UI', sans-serif; text-align: center; background: #f4f4f4; margin: 0; padding: 15px; }
-        #map { height: 400px; width: 100%; border-radius: 15px; box-shadow: 0 4px 10px rgba(0,0,0,0.2); margin-top: 15px; }
+        #map { height: 400px; width: 100%; border-radius: 15px; margin-top: 15px; }
         .status-box { background: white; padding: 20px; border-radius: 12px; margin-bottom: 10px; border: 2px solid #ffc107; }
-        #viaje-id { font-size: 32px; color: #333; font-weight: bold; display: block; margin: 10px 0; letter-spacing: 5px; }
-        .tiempo-info { color: #2478ff; font-weight: bold; font-size: 18px; margin-top: 5px; }
-        .btn-pedir { background: #000; color: #fff; border: none; padding: 18px; font-size: 18px; font-weight: bold; cursor: pointer; border-radius: 10px; width: 100%; }
+        #viaje-id { font-size: 32px; font-weight: bold; display: block; margin: 10px 0; }
+        .btn-pedir { background: #000; color: #fff; border: none; padding: 18px; font-size: 18px; font-weight: bold; border-radius: 10px; width: 100%; }
+        .btn-cancelar-cliente { background: #ff4444; color: white; border: none; padding: 10px; border-radius: 5px; margin-top: 10px; width: 100%; cursor: pointer; }
     </style>
 </head>
 <body>
 
     <div class="status-box">
-        <div id="status">Presiona el botón para pedir tu taxi</div>
+        <div id="status">Pide tu taxi ahora</div>
         <div id="info-viaje" style="display:none;">
-            TU CÓDIGO DE VIAJE:
-            <span id="viaje-id"></span>
-            <div id="estimacion" class="tiempo-info"></div>
+            CÓDIGO: <span id="viaje-id"></span>
+            <div id="estimacion" style="color: #2478ff; font-weight: bold;"></div>
+            <button class="btn-cancelar-cliente" onclick="cancelarMiViaje()">CANCELAR VIAJE</button>
         </div>
     </div>
 
-    <button class="btn-pedir" id="btnPedir" onclick="pedirTaxi()">🚖 PEDIR TAXI AHORA</button>
+    <button class="btn-pedir" id="btnPedir" onclick="pedirTaxi()">🚖 PEDIR TAXI</button>
     <div id="map"></div>
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
@@ -33,24 +33,13 @@
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
 
     <script>
-        // Configuración Firebase (La tuya se mantiene igual)
-        var firebaseConfig = {
-            apiKey: "AIzaSyATLT5_woN8KO8-_E4_Nl7bEMlJGFI4uUQ",
-            authDomain: "taxiotimac.firebaseapp.com",
-            databaseURL: "https://taxiotimac-default-rtdb.firebaseio.com",
-            projectId: "taxiotimac",
-            storageBucket: "taxiotimac.firebasestorage.app",
-            messagingSenderId: "533983007458",
-            appId: "1:533983007458:web:254cef6b46c01a1718c4bb"
-        };
+        var firebaseConfig = { apiKey: "AIzaSyATLT5_woN8KO8-_E4_Nl7bEMlJGFI4uUQ", authDomain: "taxiotimac.firebaseapp.com", databaseURL: "https://taxiotimac-default-rtdb.firebaseio.com", projectId: "taxiotimac", storageBucket: "taxiotimac.firebasestorage.app", messagingSenderId: "533983007458", appId: "1:533983007458:web:254cef6b46c01a1718c4bb" };
         firebase.initializeApp(firebaseConfig);
         var database = firebase.database();
 
         var map = L.map('map').setView([23.6345, -102.5528], 5);
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
-        
         var markerCliente, markerChofer, idDelViaje;
-        var iconTaxi = L.icon({ iconUrl: 'https://cdn-icons-png.flaticon.com/512/3448/3448636.png', iconSize: [45, 45] });
 
         function pedirTaxi() {
             idDelViaje = Math.floor(Math.random() * 90000) + 10000;
@@ -59,48 +48,37 @@
             document.getElementById('btnPedir').style.display = 'none';
 
             navigator.geolocation.getCurrentPosition((pos) => {
-                var lat = pos.coords.latitude;
-                var lon = pos.coords.longitude;
+                var lat = pos.coords.latitude, lon = pos.coords.longitude;
                 map.setView([lat, lon], 16);
                 markerCliente = L.marker([lat, lon]).addTo(map);
-
-                database.ref('viajes/' + idDelViaje).set({
-                    cliente: { lat: lat, lon: lon },
-                    estado: "esperando"
-                });
-                escucharEstadoViaje();
-            }, (err) => alert("Activa el GPS"));
+                database.ref('viajes/' + idDelViaje).set({ cliente: { lat: lat, lon: lon }, estado: "esperando" });
+                escucharEstado();
+            });
         }
 
-        function escucharEstadoViaje() {
+        function escucharEstado() {
             database.ref('viajes/' + idDelViaje).on('value', (snapshot) => {
                 var viaje = snapshot.val();
-                if (!viaje) return;
-
-                if (viaje.estado === "cancelado") {
-                    alert("Viaje finalizado.");
+                if (!viaje || viaje.estado === "cancelado") {
+                    alert("Viaje cancelado o finalizado.");
                     location.reload();
+                    return;
                 }
-
                 if (viaje.chofer) {
                     var latLngChofer = L.latLng(viaje.chofer.lat, viaje.chofer.lon);
-                    var latLngCliente = markerCliente.getLatLng();
-                    var distanciaMetros = latLngChofer.distanceTo(latLngCliente);
-                    var distKm = (distanciaMetros / 1000).toFixed(1);
-                    
-                    // Cálculo de tiempo (promedio 40km/h en ciudad)
-                    var tiempoMinutos = Math.round((distanciaMetros / 666)); 
-                    var horas = Math.floor(tiempoMinutos / 60);
-                    var mins = tiempoMinutos % 60;
-                    var tiempoTexto = horas > 0 ? horas + " h " + mins + " min" : mins + " min";
-
-                    document.getElementById('status').innerHTML = `<b>¡Taxi en camino!</b>`;
-                    document.getElementById('estimacion').innerHTML = `📍 Distancia: ${distKm} km<br>⏱️ Llega en: ${tiempoTexto}`;
-                    
+                    var dist = (latLngChofer.distanceTo(markerCliente.getLatLng()) / 1000).toFixed(1);
+                    document.getElementById('status').innerText = "¡Taxi en camino!";
+                    document.getElementById('estimacion').innerText = "Distancia: " + dist + " km";
                     if (markerChofer) markerChofer.setLatLng(latLngChofer);
-                    else markerChofer = L.marker(latLngChofer, {icon: iconTaxi}).addTo(map);
+                    else markerChofer = L.marker(latLngChofer).addTo(map);
                 }
             });
+        }
+
+        function cancelarMiViaje() {
+            if(confirm("¿Seguro que quieres cancelar tu taxi?")) {
+                database.ref('viajes/' + idDelViaje).update({ estado: "cancelado" }).then(() => { location.reload(); });
+            }
         }
     </script>
 </body>
