@@ -12,10 +12,12 @@
         #viaje-id { font-size: 32px; font-weight: bold; display: block; margin: 10px 0; }
         .btn-pedir { background: #000; color: #fff; border: none; padding: 18px; font-size: 18px; font-weight: bold; border-radius: 10px; width: 100%; }
         .btn-cancelar-cliente { background: #ff4444; color: white; border: none; padding: 10px; border-radius: 5px; margin-top: 10px; width: 100%; cursor: pointer; }
+        #status-conexion { font-size: 12px; font-weight: bold; margin-bottom: 5px; }
     </style>
 </head>
 <body>
 
+    <div id="status-conexion" style="color: green;">● Conectado</div>
     <div class="status-box">
         <div id="status">Pide tu taxi ahora</div>
         <div id="info-viaje" style="display:none;">
@@ -38,7 +40,13 @@
         var database = firebase.database();
 
         var map = L.map('map').setView([23.6345, -102.5528], 5);
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
+        
+        // MEMORIA CACHÉ MEJORADA PARA MAPAS
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            keepBuffer: 2,
+            updateWhenIdle: true
+        }).addTo(map);
+
         var markerCliente, markerChofer, idDelViaje;
 
         function pedirTaxi() {
@@ -60,15 +68,23 @@
             database.ref('viajes/' + idDelViaje).on('value', (snapshot) => {
                 var viaje = snapshot.val();
                 if (!viaje || viaje.estado === "cancelado") {
-                    alert("Viaje cancelado o finalizado.");
+                    alert("Viaje finalizado.");
                     location.reload();
                     return;
                 }
                 if (viaje.chofer) {
                     var latLngChofer = L.latLng(viaje.chofer.lat, viaje.chofer.lon);
-                    var dist = (latLngChofer.distanceTo(markerCliente.getLatLng()) / 1000).toFixed(1);
+                    var distanciaMetros = latLngChofer.distanceTo(markerCliente.getLatLng());
+                    var distKm = (distanciaMetros / 1000).toFixed(1);
+                    
+                    var tiempoMinutos = Math.round((distanciaMetros / 666)); 
+                    var horas = Math.floor(tiempoMinutos / 60);
+                    var mins = tiempoMinutos % 60;
+                    var tiempoTexto = horas > 0 ? horas + " h " + mins + " min" : mins + " min";
+
                     document.getElementById('status').innerText = "¡Taxi en camino!";
-                    document.getElementById('estimacion').innerText = "Distancia: " + dist + " km";
+                    document.getElementById('estimacion').innerHTML = `📍 Distancia: ${distKm} km<br>⏱️ Llega en: ${tiempoTexto}`;
+                    
                     if (markerChofer) markerChofer.setLatLng(latLngChofer);
                     else markerChofer = L.marker(latLngChofer).addTo(map);
                 }
@@ -80,6 +96,10 @@
                 database.ref('viajes/' + idDelViaje).update({ estado: "cancelado" }).then(() => { location.reload(); });
             }
         }
+
+        // DETECCIÓN DE INTERNET
+        window.addEventListener('offline', () => { document.getElementById('status-conexion').innerHTML = "⚠️ SIN INTERNET"; document.getElementById('status-conexion').style.color = "red"; });
+        window.addEventListener('online', () => { document.getElementById('status-conexion').innerHTML = "● Conectado"; document.getElementById('status-conexion').style.color = "green"; });
     </script>
 </body>
 </html>
