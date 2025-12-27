@@ -51,14 +51,13 @@
             document.getElementById('viaje-id').innerText = idDelViaje;
             document.getElementById('btnPedir').style.display = 'none';
 
-            // AJUSTE PARA IPHONE
             navigator.geolocation.getCurrentPosition((pos) => {
                 var lat = pos.coords.latitude, lon = pos.coords.longitude;
                 map.setView([lat, lon], 16);
                 markerCliente = L.marker([lat, lon]).addTo(map);
                 database.ref('viajes/' + idDelViaje).set({ cliente: { lat: lat, lon: lon }, estado: "esperando" });
                 escucharEstado();
-            }, (err) => alert("Error GPS: Activa la ubicación en Ajustes de tu celular."), { enableHighAccuracy: true });
+            }, (err) => alert("Error GPS: Activa la ubicación."), { enableHighAccuracy: true });
         }
 
         function escucharEstado() {
