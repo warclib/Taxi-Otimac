@@ -20,7 +20,7 @@
     <h2>CENTRAL OTIMAC 🚖</h2>
     <div id="interfaz">
         <div class="panel-pedidos" id="panelPedidos">
-            <h3>Pedidos Pendientes</h3>
+            <h3 id="titulo-panel">Pedidos Pendientes</h3>
             <div id="lista-pedidos">Buscando...</div>
         </div>
     </div>
@@ -42,15 +42,50 @@
 
         var markerChofer, markerCliente, controlRuta, ultimaPos;
         var viajeFinalizado = false;
+        var pedidosAnteriores = 0;
+
+        // Configuración de Sonido
+        var sonidoNuevoViaje = new Audio('https://assets.mixkit.co/active_storage/sfx/2358/2358-preview.mp3');
+
+        // Pedir permiso de notificaciones al cargar
+        if (Notification.permission !== "granted") {
+            Notification.requestPermission();
+        }
 
         database.ref('viajes').orderByChild('estado').equalTo('esperando').on('value', (snapshot) => {
             var pedidos = snapshot.val();
             var contenedor = document.getElementById('lista-pedidos');
             contenedor.innerHTML = "";
-            for (var id in pedidos) {
-                contenedor.innerHTML += `<div style="padding:10px; background:#333; margin:5px; border-radius:5px;">#${id} <button onclick="aceptarViaje('${id}')" style="background:#ffc107; border:none; padding:5px 10px; border-radius:3px; font-weight:bold;">ACEPTAR</button></div>`;
+            
+            var count = 0;
+            if (pedidos) {
+                for (var id in pedidos) {
+                    count++;
+                    contenedor.innerHTML += `<div style="padding:10px; background:#333; margin:5px; border-radius:5px;">#${id} <button onclick="aceptarViaje('${id}')" style="background:#ffc107; border:none; padding:5px 10px; border-radius:3px; font-weight:bold;">ACEPTAR</button></div>`;
+                }
+
+                // Si hay más pedidos que antes, sonar y notificar
+                if (count > pedidosAnteriores) {
+                    reproducirAlerta();
+                }
+            } else {
+                contenedor.innerHTML = "Esperando nuevos viajes...";
             }
+            pedidosAnteriores = count;
         });
+
+        function reproducirAlerta() {
+            // Sonido
+            sonidoNuevoViaje.play().catch(e => console.log("Esperando clic del usuario para sonar"));
+            
+            // Notificación visual
+            if (Notification.permission === "granted") {
+                new Notification("¡Nuevo Viaje en Otimac!", {
+                    body: "Tienes un pedido de taxi pendiente",
+                    icon: "https://cdn-icons-png.flaticon.com/512/3448/3448636.png"
+                });
+            }
+        }
 
         function aceptarViaje(idViaje) {
             document.getElementById('interfaz').innerHTML = `<div class="panel-pedidos"><h3>VIAJE #${idViaje}</h3><button class="btn-cancelar" onclick="finalizarViaje('${idViaje}')">FINALIZAR VIAJE</button></div>`;
@@ -68,7 +103,6 @@
                 var posC = snap.val();
                 markerCliente = L.marker([posC.lat, posC.lon]).addTo(map);
 
-                // AJUSTE PARA IPHONE
                 navigator.geolocation.watchPosition((pos) => {
                     if(viajeFinalizado) return;
                     var lat = pos.coords.latitude, lon = pos.coords.longitude;
@@ -101,7 +135,7 @@
             }
         }
 
-        window.addEventListener('offline', () => { document.getElementById('status-gps').innerText = "⚠️ SIN SEÑAL - CACHÉ ACTIVO"; document.getElementById('status-gps').style.color = "orange"; });
+        window.addEventListener('offline', () => { document.getElementById('status-gps').innerText = "⚠️ SIN SEÑAL"; document.getElementById('status-gps').style.color = "orange"; });
         window.addEventListener('online', () => { document.getElementById('status-gps').innerText = "✅ SEÑAL RECUPERADA"; document.getElementById('status-gps').style.color = "#00ff00"; });
     </script>
 </body>
