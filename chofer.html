@@ -38,14 +38,10 @@
         var database = firebase.database();
 
         var map = L.map('map').setView([23.6345, -102.5528], 5);
-        
-        // MEMORIA CACHÉ MEJORADA PARA CHOFER
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-            keepBuffer: 3,
-            updateWhenIdle: true
-        }).addTo(map);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { keepBuffer: 3, updateWhenIdle: true }).addTo(map);
 
         var markerChofer, markerCliente, controlRuta, ultimaPos;
+        var viajeFinalizado = false;
 
         database.ref('viajes').orderByChild('estado').equalTo('esperando').on('value', (snapshot) => {
             var pedidos = snapshot.val();
@@ -61,21 +57,26 @@
             
             database.ref('viajes/' + idViaje).on('value', (snap) => {
                 var v = snap.val();
-                if (!v || v.estado === "cancelado") { alert("¡VIAJE CANCELADO!"); location.reload(); }
+                if ((!v || v.estado === "cancelado") && !viajeFinalizado) {
+                    viajeFinalizado = true;
+                    alert("¡EL VIAJE HA SIDO CANCELADO!");
+                    location.reload();
+                }
             });
 
             database.ref('viajes/' + idViaje + '/cliente').once('value', (snap) => {
                 var posC = snap.val();
                 markerCliente = L.marker([posC.lat, posC.lon]).addTo(map);
 
+                // AJUSTE PARA IPHONE
                 navigator.geolocation.watchPosition((pos) => {
+                    if(viajeFinalizado) return;
                     var lat = pos.coords.latitude, lon = pos.coords.longitude;
                     var actual = L.latLng(lat, lon);
-
                     if(markerChofer) markerChofer.setLatLng(actual);
                     else markerChofer = L.circleMarker(actual, {color: '#ffc107', radius: 10, fillOpacity: 1}).addTo(map);
-
-                    map.setView(actual, 17); // Zoom de navegación
+                    
+                    map.setView(actual, 17);
 
                     if(!ultimaPos || actual.distanceTo(ultimaPos) > 30) {
                         if(controlRuta) map.removeControl(controlRuta);
@@ -94,11 +95,13 @@
         }
 
         function finalizarViaje(idViaje) {
-            database.ref('viajes/' + idViaje).update({ estado: "cancelado" }).then(() => { location.reload(); });
+            if(!viajeFinalizado) {
+                viajeFinalizado = true;
+                database.ref('viajes/' + idViaje).update({ estado: "cancelado" }).then(() => { location.reload(); });
+            }
         }
 
-        // AVISOS DE COBERTURA
-        window.addEventListener('offline', () => { document.getElementById('status-gps').innerText = "⚠️ SIN SEÑAL - MAPA EN CACHÉ"; document.getElementById('status-gps').style.color = "orange"; });
+        window.addEventListener('offline', () => { document.getElementById('status-gps').innerText = "⚠️ SIN SEÑAL - CACHÉ ACTIVO"; document.getElementById('status-gps').style.color = "orange"; });
         window.addEventListener('online', () => { document.getElementById('status-gps').innerText = "✅ SEÑAL RECUPERADA"; document.getElementById('status-gps').style.color = "#00ff00"; });
     </script>
 </body>
