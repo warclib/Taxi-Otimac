@@ -1,0 +1,15 @@
+{
+  "name": "TaxiOtimac",
+  "short_name": "Otimac",
+  "start_url": "chofer.html",
+  "display": "standalone",
+  "background_color": "#1a1a1a",
+  "theme_color": "#ffc107",
+  "icons": [
+    {
+      "src": "https://cdn-icons-png.flaticon.com/512/3448/3448636.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
