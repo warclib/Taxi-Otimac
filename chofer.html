@@ -4,28 +4,48 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Chofer - Central Otimac</title>
+    
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black">
+    <meta name="apple-mobile-web-app-title" content="Otimac Chofer">
+    <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/3448/3448636.png">
+
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <link rel="stylesheet" href="https://unpkg.com/leaflet-routing-machine/dist/leaflet-routing-machine.css" />
+    
     <style>
         body { font-family: 'Segoe UI', sans-serif; text-align: center; background: #1a1a1a; color: white; margin: 0; padding: 10px; }
         #map { height: 450px; width: 100%; border-radius: 15px; margin-top: 10px; border: 2px solid #333; }
         .panel-pedidos { background: #2c2c2c; padding: 15px; border-radius: 12px; border: 1px solid #ffc107; margin-bottom: 10px; }
-        .btn-activar { background: #ffc107; color: black; border: none; padding: 20px; font-weight: bold; border-radius: 10px; width: 100%; cursor: pointer; margin-bottom: 10px; font-size: 18px; animation: pulse 2s infinite; }
-        @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.05); } 100% { transform: scale(1); } }
+        
+        .btn-activar { 
+            background: #ffc107; color: black; border: none; padding: 20px; 
+            font-weight: bold; border-radius: 10px; width: 100%; cursor: pointer; 
+            margin-bottom: 10px; font-size: 18px; animation: pulse 2s infinite; 
+        }
+        @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.02); } 100% { transform: scale(1); } }
+        
         .btn-cancelar { background: #ff4444; color: white; border: none; padding: 12px; border-radius: 6px; font-weight: bold; width: 100%; margin-top: 10px; }
         #status-gps { color: #00ff00; font-weight: bold; margin: 10px 0; font-size: 14px; }
         
-        /* ALERTA VISUAL GIGANTE POR SI FALLA LA NOTIFICACIÓN */
-        #alerta-emergencia { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(255, 193, 7, 0.95); color: black; z-index: 9999; flex-direction: column; justify-content: center; align-items: center; }
-        #alerta-emergencia h1 { font-size: 40px; margin: 0; }
+        /* ALERTA VISUAL DE EMERGENCIA */
+        #alerta-emergencia { 
+            display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
+            background: rgba(255, 193, 7, 0.98); color: black; z-index: 9999; 
+            flex-direction: column; justify-content: center; align-items: center; 
+        }
+        #alerta-emergencia h1 { font-size: 45px; margin: 0; animation: blink 0.5s infinite; }
+        @keyframes blink { 0% { opacity: 1; } 50% { opacity: 0.5; } 100% { opacity: 1; } }
+        
+        .leaflet-routing-container { background: rgba(0,0,0,0.85) !important; color: white !important; font-size: 11px; max-height: 100px; overflow: auto; }
     </style>
 </head>
 <body>
 
     <div id="alerta-emergencia">
         <h1>🚨 NUEVO VIAJE 🚨</h1>
-        <p>Toca para ver el pedido</p>
-        <button onclick="cerrarEmergencia()" style="padding: 20px; font-size: 20px; font-weight: bold; background: black; color: white; border: none; border-radius: 10px;">VER PEDIDO</button>
+        <p style="font-size: 20px; font-weight: bold;">¡Alguien solicita taxi!</p>
+        <button onclick="cerrarEmergencia()" style="padding: 20px; font-size: 22px; font-weight: bold; background: black; color: white; border: none; border-radius: 15px; width: 80%;">VER MAPA</button>
     </div>
 
     <h2>CENTRAL OTIMAC 🚖</h2>
@@ -37,11 +57,11 @@
     <div id="interfaz">
         <div class="panel-pedidos">
             <h3>Pedidos Pendientes</h3>
-            <div id="lista-pedidos">Esperando activación...</div>
+            <div id="lista-pedidos">Primero activa el sistema...</div>
         </div>
     </div>
     
-    <div id="status-gps">GPS: Desconectado</div>
+    <div id="status-gps">GPS: En espera</div>
     <div id="map"></div>
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
@@ -55,32 +75,35 @@
         var database = firebase.database();
 
         var map = L.map('map').setView([23.6345, -102.5528], 5);
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { keepBuffer: 3 }).addTo(map);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { keepBuffer: 5 }).addTo(map);
 
         var markerChofer, markerCliente, controlRuta, ultimaPos;
         var viajeFinalizado = false;
         var pedidosAnteriores = 0;
         var sistemaListo = false;
 
+        // Sonido fuerte y claro
         var sonidoNuevoViaje = new Audio('https://assets.mixkit.co/active_storage/sfx/2358/2358-preview.mp3');
 
         function configurarSistema() {
-            // Desbloqueo forzado de audio
+            // Desbloquear Audio (Vital para iPhone)
             sonidoNuevoViaje.play().then(() => {
                 sonidoNuevoViaje.pause();
                 sonidoNuevoViaje.currentTime = 0;
-            }).catch(e => console.log("Error audio:", e));
+            });
 
-            // Intentar pedir permiso de notificación
+            // Pedir Permisos
             if ("Notification" in window) {
                 Notification.requestPermission().then(perm => {
-                    console.log("Permiso:", perm);
+                    if(perm === "granted") {
+                        new Notification("OTIMAC", { body: "Sistema de alertas encendido" });
+                    }
                 });
             }
 
             sistemaListo = true;
             document.getElementById('btnActivar').style.display = 'none';
-            document.getElementById('status-gps').innerText = "✅ ALERTAS CONFIGURADAS";
+            document.getElementById('status-gps').innerText = "✅ GPS Y ALERTAS ACTIVOS";
             document.getElementById('lista-pedidos').innerText = "Buscando clientes...";
         }
 
@@ -94,9 +117,9 @@
                 for (var id in pedidos) {
                     count++;
                     contenedor.innerHTML += `
-                        <div style="padding:15px; background:#444; margin:10px; border-radius:10px; border-left: 5px solid #ffc107;">
-                            <b>PEDIDO #${id}</b><br><br>
-                            <button onclick="aceptarViaje('${id}')" style="background:#ffc107; border:none; padding:12px; border-radius:5px; font-weight:bold; width:100%;">ACEPTAR</button>
+                        <div style="padding:15px; background:#444; margin:10px; border-radius:10px; border-left: 8px solid #ffc107;">
+                            <b>NUEVO PEDIDO #${id}</b><br><br>
+                            <button onclick="aceptarViaje('${id}')" style="background:#ffc107; border:none; padding:12px; border-radius:8px; font-weight:bold; width:100%; font-size:16px;">ACEPTAR</button>
                         </div>`;
                 }
 
@@ -104,22 +127,27 @@
                     reproducirAlerta();
                 }
             } else {
-                contenedor.innerHTML = "Sin pedidos por ahora.";
+                contenedor.innerHTML = "Buscando clientes...";
                 pedidosAnteriores = 0;
             }
             pedidosAnteriores = count;
         });
 
         function reproducirAlerta() {
-            // 1. Sonido
-            sonidoNuevoViaje.play().catch(e => console.log(e));
+            // Sonar
+            sonidoNuevoViaje.play();
             
-            // 2. Pantalla de emergencia (No falla aunque no haya permisos)
+            // Pantalla amarilla gigante
             document.getElementById('alerta-emergencia').style.display = 'flex';
 
-            // 3. Notificación de sistema (Si el navegador lo permite)
+            // Notificación para pantalla de bloqueo
             if (Notification.permission === "granted") {
-                new Notification("🚖 NUEVO VIAJE", { body: "Alguien pide taxi" });
+                const n = new Notification("🚖 NUEVO VIAJE OTIMAC", {
+                    body: "Tienes una solicitud de taxi. Toca para ver.",
+                    icon: "https://cdn-icons-png.flaticon.com/512/3448/3448636.png",
+                    silent: false
+                });
+                n.onclick = () => { window.focus(); cerrarEmergencia(); };
             }
         }
 
@@ -131,8 +159,8 @@
             cerrarEmergencia();
             document.getElementById('interfaz').innerHTML = `
                 <div class="panel-pedidos">
-                    <h3>ID: #${idViaje}</h3>
-                    <button class="btn-cancelar" onclick="finalizarViaje('${idViaje}')">FINALIZAR</button>
+                    <h3>ID VIAJE: #${idViaje}</h3>
+                    <button class="btn-cancelar" onclick="finalizarViaje('${idViaje}')">TERMINAR / CANCELAR</button>
                 </div>`;
             
             database.ref('viajes/' + idViaje).on('value', (snap) => {
@@ -152,7 +180,6 @@
                     if(viajeFinalizado) return;
                     var lat = pos.coords.latitude, lon = pos.coords.longitude;
                     var actual = L.latLng(lat, lon);
-
                     if(markerChofer) markerChofer.setLatLng(actual);
                     else markerChofer = L.circleMarker(actual, {color: '#ffc107', radius: 10, fillOpacity: 1}).addTo(map);
                     
