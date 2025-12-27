@@ -40,14 +40,10 @@
         var database = firebase.database();
 
         var map = L.map('map').setView([23.6345, -102.5528], 5);
-        
-        // MEMORIA CACHÉ MEJORADA PARA MAPAS
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-            keepBuffer: 2,
-            updateWhenIdle: true
-        }).addTo(map);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { keepBuffer: 2, updateWhenIdle: true }).addTo(map);
 
         var markerCliente, markerChofer, idDelViaje;
+        var viajeFinalizado = false;
 
         function pedirTaxi() {
             idDelViaje = Math.floor(Math.random() * 90000) + 10000;
@@ -55,36 +51,35 @@
             document.getElementById('viaje-id').innerText = idDelViaje;
             document.getElementById('btnPedir').style.display = 'none';
 
+            // AJUSTE PARA IPHONE
             navigator.geolocation.getCurrentPosition((pos) => {
                 var lat = pos.coords.latitude, lon = pos.coords.longitude;
                 map.setView([lat, lon], 16);
                 markerCliente = L.marker([lat, lon]).addTo(map);
                 database.ref('viajes/' + idDelViaje).set({ cliente: { lat: lat, lon: lon }, estado: "esperando" });
                 escucharEstado();
-            });
+            }, (err) => alert("Error GPS: Activa la ubicación en Ajustes de tu celular."), { enableHighAccuracy: true });
         }
 
         function escucharEstado() {
             database.ref('viajes/' + idDelViaje).on('value', (snapshot) => {
                 var viaje = snapshot.val();
-                if (!viaje || viaje.estado === "cancelado") {
-                    alert("Viaje finalizado.");
+                if ((!viaje || viaje.estado === "cancelado") && !viajeFinalizado) {
+                    viajeFinalizado = true;
+                    alert("El viaje ha finalizado o fue cancelado.");
                     location.reload();
                     return;
                 }
-                if (viaje.chofer) {
+                if (viaje && viaje.chofer) {
                     var latLngChofer = L.latLng(viaje.chofer.lat, viaje.chofer.lon);
                     var distanciaMetros = latLngChofer.distanceTo(markerCliente.getLatLng());
                     var distKm = (distanciaMetros / 1000).toFixed(1);
-                    
                     var tiempoMinutos = Math.round((distanciaMetros / 666)); 
                     var horas = Math.floor(tiempoMinutos / 60);
                     var mins = tiempoMinutos % 60;
                     var tiempoTexto = horas > 0 ? horas + " h " + mins + " min" : mins + " min";
-
                     document.getElementById('status').innerText = "¡Taxi en camino!";
                     document.getElementById('estimacion').innerHTML = `📍 Distancia: ${distKm} km<br>⏱️ Llega en: ${tiempoTexto}`;
-                    
                     if (markerChofer) markerChofer.setLatLng(latLngChofer);
                     else markerChofer = L.marker(latLngChofer).addTo(map);
                 }
@@ -92,12 +87,12 @@
         }
 
         function cancelarMiViaje() {
-            if(confirm("¿Seguro que quieres cancelar tu taxi?")) {
+            if(confirm("¿Seguro que quieres cancelar tu taxi?") && !viajeFinalizado) {
+                viajeFinalizado = true;
                 database.ref('viajes/' + idDelViaje).update({ estado: "cancelado" }).then(() => { location.reload(); });
             }
         }
 
-        // DETECCIÓN DE INTERNET
         window.addEventListener('offline', () => { document.getElementById('status-conexion').innerHTML = "⚠️ SIN INTERNET"; document.getElementById('status-conexion').style.color = "red"; });
         window.addEventListener('online', () => { document.getElementById('status-conexion').innerHTML = "● Conectado"; document.getElementById('status-conexion').style.color = "green"; });
     </script>
