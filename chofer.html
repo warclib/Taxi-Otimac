@@ -5,10 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Chofer - Otimac 🚖</title>
     
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black">
-    <meta name="apple-mobile-web-app-title" content="Otimac">
-    
     <link rel="apple-touch-icon" href="logo.png">
     <link rel="icon" type="image/png" href="logo.png">
 
@@ -17,34 +13,23 @@
     
     <style>
         body { font-family: 'Segoe UI', sans-serif; text-align: center; background: #1a1a1a; color: white; margin: 0; padding: 10px; }
-        #map { height: 420px; width: 100%; border-radius: 15px; margin-top: 10px; border: 2px solid #333; }
+        #map { height: 450px; width: 100%; border-radius: 15px; margin-top: 10px; border: 2px solid #333; }
         .panel-pedidos { background: #2c2c2c; padding: 15px; border-radius: 12px; border: 1px solid #ffc107; margin-bottom: 10px; }
         .btn-activar-sonido { background: #ffc107; color: black; border: none; padding: 15px; font-weight: bold; border-radius: 10px; width: 100%; cursor: pointer; margin-bottom: 10px; font-size: 16px; }
         .btn-cancelar { background: #ff4444; color: white; border: none; padding: 15px; border-radius: 8px; font-weight: bold; width: 100%; margin-top: 10px; font-size: 16px; }
         #status-gps { color: #00ff00; font-weight: bold; margin: 10px 0; font-size: 14px; background: rgba(0,0,0,0.5); padding: 5px; border-radius: 5px; }
         .leaflet-routing-container { display: none !important; }
-        
-        #alerta-emergencia { 
-            display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
-            background: rgba(255, 193, 7, 0.98); color: black; z-index: 9999; 
-            flex-direction: column; justify-content: center; align-items: center; 
-        }
     </style>
 </head>
 <body onload="iniciarGPSAutomatico()">
 
-    <div id="alerta-emergencia">
-        <h1>🚨 NUEVO VIAJE 🚨</h1>
-        <button onclick="cerrarEmergencia()" style="padding: 20px; font-size: 22px; font-weight: bold; background: black; color: white; border: none; border-radius: 15px;">VER MAPA</button>
-    </div>
-
     <h2>CENTRAL OTIMAC 🚖</h2>
 
     <button class="btn-activar-sonido" id="btnSonido" onclick="activarSonido()">
-        🔔 ACTIVAR SONIDO DE ALERTAS
+        🔔 ACTIVAR ALERTAS SONORAS
     </button>
 
-    <div id="status-gps">📡 Buscando señal GPS...</div>
+    <div id="status-gps">📡 Buscando señal...</div>
 
     <div id="interfaz">
         <div class="panel-pedidos">
@@ -68,20 +53,38 @@
         var map = L.map('map').setView([23.6345, -102.5528], 5);
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
 
+        // CONFIGURACIÓN DE ICONOS PERSONALIZADOS
+        var iconoTaxi = L.icon({
+            iconUrl: 'https://cdn-icons-png.flaticon.com/512/3448/3448636.png', // Icono de Taxi
+            iconSize: [40, 40],
+            iconAnchor: [20, 20]
+        });
+
+        var iconoPasajero = L.icon({
+            iconUrl: 'https://cdn-icons-png.flaticon.com/512/3063/3063822.png', // Icono de Persona/Pasajero
+            iconSize: [40, 40],
+            iconAnchor: [20, 40]
+        });
+
         var markerChofer, markerCliente, controlRuta, ultimaRutaLatLon;
         var sistemaSonidoListo = false;
-        var pedidosAnteriores = 0;
-        var sonidoNuevoViaje = new Audio('https://assets.mixkit.co/active_storage/sfx/2358/2358-preview.mp3');
 
         function iniciarGPSAutomatico() {
             if ("geolocation" in navigator) {
                 navigator.geolocation.watchPosition((pos) => {
                     var lat = pos.coords.latitude, lon = pos.coords.longitude;
                     var actual = L.latLng(lat, lon);
-                    document.getElementById('status-gps').innerText = "✅ GPS ACTIVO";
-                    if(markerChofer) markerChofer.setLatLng(actual);
-                    else markerChofer = L.circleMarker(actual, {color: '#ffc107', radius: 10, fillOpacity: 1}).addTo(map);
-                    map.setView(actual, 16);
+                    
+                    document.getElementById('status-gps').innerText = "✅ GPS ACTIVO (Taxi listo)";
+                    
+                    if(markerChofer) {
+                        markerChofer.setLatLng(actual);
+                    } else {
+                        // CREAR ICONO DE TAXI POR PRIMERA VEZ
+                        markerChofer = L.marker(actual, {icon: iconoTaxi}).addTo(map);
+                        map.setView(actual, 16);
+                    }
+
                     if (ultimaRutaLatLon) { trazarRutaAzul(actual, ultimaRutaLatLon); }
                 }, null, {enableHighAccuracy: true});
             }
@@ -100,9 +103,9 @@
         }
 
         function activarSonido() {
-            sonidoNuevoViaje.play().then(() => {
-                sonidoNuevoViaje.pause();
-                sonidoNuevoViaje.currentTime = 0;
+            var audio = new Audio('https://assets.mixkit.co/active_storage/sfx/2358/2358-preview.mp3');
+            audio.play().then(() => {
+                audio.pause();
                 sistemaSonidoListo = true;
                 document.getElementById('btnSonido').style.display = 'none';
             });
@@ -111,36 +114,25 @@
         database.ref('viajes').orderByChild('estado').equalTo('esperando').on('value', (snapshot) => {
             var pedidos = snapshot.val();
             var contenedor = document.getElementById('lista-pedidos');
-            var count = 0;
             if (pedidos) {
                 contenedor.innerHTML = "";
                 for (var id in pedidos) {
-                    count++;
                     contenedor.innerHTML += `<div style="padding:15px; background:#444; margin:10px; border-radius:10px; border-left: 8px solid #ffc107;"><b>PEDIDO #${id}</b><br><button onclick="aceptarViaje('${id}')" style="background:#ffc107; border:none; padding:12px; border-radius:8px; font-weight:bold; width:100%; margin-top:10px;">ACEPTAR</button></div>`;
                 }
-                if (count > pedidosAnteriores && sistemaSonidoListo) {
-                    sonidoNuevoViaje.play();
-                    document.getElementById('alerta-emergencia').style.display = 'flex';
-                }
             } else { contenedor.innerHTML = "Buscando clientes..."; }
-            pedidosAnteriores = count;
         });
 
-        function cerrarEmergencia() { document.getElementById('alerta-emergencia').style.display = 'none'; }
-
         function aceptarViaje(idViaje) {
-            cerrarEmergencia();
-            // Cambiamos la interfaz y el botón de finalizar ahora llama a una función real
-            document.getElementById('interfaz').innerHTML = `
-                <div class="panel-pedidos">
-                    <h3>VIAJE EN CURSO: #${idViaje}</h3>
-                    <button class="btn-cancelar" onclick="terminarViajeDefinitivo('${idViaje}')">FINALIZAR SERVICIO</button>
-                </div>`;
+            document.getElementById('interfaz').innerHTML = `<div class="panel-pedidos"><h3>VIAJE: #${idViaje}</h3><button class="btn-cancelar" onclick="terminarViaje('${idViaje}')">FINALIZAR</button></div>`;
             
             database.ref('viajes/' + idViaje + '/cliente').once('value', (snap) => {
                 var posC = snap.val();
                 ultimaRutaLatLon = L.latLng(posC.lat, posC.lon);
-                markerCliente = L.marker(ultimaRutaLatLon).addTo(map);
+                
+                // CREAR ICONO DE PASAJERO
+                if(markerCliente) map.removeLayer(markerCliente);
+                markerCliente = L.marker(ultimaRutaLatLon, {icon: iconoPasajero}).addTo(map);
+                
                 if (markerChofer) { trazarRutaAzul(markerChofer.getLatLng(), ultimaRutaLatLon); }
 
                 navigator.geolocation.watchPosition((pos) => {
@@ -149,16 +141,9 @@
             });
         }
 
-        // ESTA ES LA FUNCIÓN NUEVA QUE BORRA AL CLIENTE
-        function terminarViajeDefinitivo(idViaje) {
-            if(confirm("¿Estás seguro de finalizar el viaje? Esto quitará al cliente de la lista.")) {
-                // Borramos el viaje de Firebase para que nadie más lo vea
-                database.ref('viajes/' + idViaje).remove().then(() => {
-                    alert("Viaje finalizado con éxito.");
-                    location.reload(); // Recargamos para quedar listos para el siguiente
-                }).catch((error) => {
-                    alert("Error al finalizar: " + error.message);
-                });
+        function terminarViaje(idViaje) {
+            if(confirm("¿Finalizar servicio?")) {
+                database.ref('viajes/' + idViaje).remove().then(() => { location.reload(); });
             }
         }
     </script>
