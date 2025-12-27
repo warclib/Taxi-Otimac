@@ -11,6 +11,7 @@
         #map { height: 500px; width: 100%; border-radius: 15px; margin-top: 10px; border: 2px solid #333; }
         .panel-pedidos { background: #2c2c2c; padding: 15px; border-radius: 12px; border: 1px solid #ffc107; }
         .btn-cancelar { background: #ff4444; color: white; border: none; padding: 12px; border-radius: 6px; font-weight: bold; width: 100%; margin-top: 10px; }
+        #status-gps { color: #00ff00; font-weight: bold; margin: 10px 0; }
         .leaflet-routing-container { background: rgba(0,0,0,0.85) !important; color: white !important; font-size: 11px; max-height: 100px; overflow: auto; }
     </style>
 </head>
@@ -23,6 +24,7 @@
             <div id="lista-pedidos">Buscando...</div>
         </div>
     </div>
+    <div id="status-gps">Listo para trabajar</div>
     <div id="map"></div>
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
@@ -34,8 +36,15 @@
         var firebaseConfig = { apiKey: "AIzaSyATLT5_woN8KO8-_E4_Nl7bEMlJGFI4uUQ", authDomain: "taxiotimac.firebaseapp.com", databaseURL: "https://taxiotimac-default-rtdb.firebaseio.com", projectId: "taxiotimac", storageBucket: "taxiotimac.firebasestorage.app", messagingSenderId: "533983007458", appId: "1:533983007458:web:254cef6b46c01a1718c4bb" };
         firebase.initializeApp(firebaseConfig);
         var database = firebase.database();
+
         var map = L.map('map').setView([23.6345, -102.5528], 5);
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
+        
+        // MEMORIA CACHÉ MEJORADA PARA CHOFER
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            keepBuffer: 3,
+            updateWhenIdle: true
+        }).addTo(map);
+
         var markerChofer, markerCliente, controlRuta, ultimaPos;
 
         database.ref('viajes').orderByChild('estado').equalTo('esperando').on('value', (snapshot) => {
@@ -50,13 +59,9 @@
         function aceptarViaje(idViaje) {
             document.getElementById('interfaz').innerHTML = `<div class="panel-pedidos"><h3>VIAJE #${idViaje}</h3><button class="btn-cancelar" onclick="finalizarViaje('${idViaje}')">FINALIZAR VIAJE</button></div>`;
             
-            // ESCUCHAR SI EL CLIENTE CANCELA
             database.ref('viajes/' + idViaje).on('value', (snap) => {
                 var v = snap.val();
-                if (!v || v.estado === "cancelado") {
-                    alert("¡EL CLIENTE CANCELÓ EL VIAJE!");
-                    location.reload();
-                }
+                if (!v || v.estado === "cancelado") { alert("¡VIAJE CANCELADO!"); location.reload(); }
             });
 
             database.ref('viajes/' + idViaje + '/cliente').once('value', (snap) => {
@@ -70,10 +75,9 @@
                     if(markerChofer) markerChofer.setLatLng(actual);
                     else markerChofer = L.circleMarker(actual, {color: '#ffc107', radius: 10, fillOpacity: 1}).addTo(map);
 
-                    // ZOOM CERRADO PARA NAVEGAR MEJOR (Nivel 17 es muy detallado)
-                    map.setView(actual, 17);
+                    map.setView(actual, 17); // Zoom de navegación
 
-                    if(!ultimaPos || actual.distanceTo(ultimaPos) > 20) {
+                    if(!ultimaPos || actual.distanceTo(ultimaPos) > 30) {
                         if(controlRuta) map.removeControl(controlRuta);
                         controlRuta = L.Routing.control({
                             waypoints: [actual, L.latLng(posC.lat, posC.lon)],
@@ -92,6 +96,10 @@
         function finalizarViaje(idViaje) {
             database.ref('viajes/' + idViaje).update({ estado: "cancelado" }).then(() => { location.reload(); });
         }
+
+        // AVISOS DE COBERTURA
+        window.addEventListener('offline', () => { document.getElementById('status-gps').innerText = "⚠️ SIN SEÑAL - MAPA EN CACHÉ"; document.getElementById('status-gps').style.color = "orange"; });
+        window.addEventListener('online', () => { document.getElementById('status-gps').innerText = "✅ SEÑAL RECUPERADA"; document.getElementById('status-gps').style.color = "#00ff00"; });
     </script>
 </body>
 </html>
