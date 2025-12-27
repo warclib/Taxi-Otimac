@@ -8,7 +8,9 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black">
     <meta name="apple-mobile-web-app-title" content="Otimac">
-    <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/3448/3448636.png">
+    
+    <link rel="apple-touch-icon" href="https://img.icons8.com/color/512/taxi.png">
+    <link rel="icon" href="https://img.icons8.com/color/512/taxi.png">
 
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <link rel="stylesheet" href="https://unpkg.com/leaflet-routing-machine/dist/leaflet-routing-machine.css" />
@@ -21,21 +23,18 @@
         .btn-activar { 
             background: #ffc107; color: black; border: none; padding: 20px; 
             font-weight: bold; border-radius: 10px; width: 100%; cursor: pointer; 
-            margin-bottom: 10px; font-size: 18px; animation: pulse 2s infinite; 
+            margin-bottom: 10px; font-size: 18px; 
         }
-        @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.02); } 100% { transform: scale(1); } }
         
         .btn-cancelar { background: #ff4444; color: white; border: none; padding: 12px; border-radius: 6px; font-weight: bold; width: 100%; margin-top: 10px; }
         #status-gps { color: #00ff00; font-weight: bold; margin: 10px 0; font-size: 14px; }
         
-        /* PANTALLA DE ALERTA GIGANTE */
         #alerta-emergencia { 
             display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
             background: rgba(255, 193, 7, 0.98); color: black; z-index: 9999; 
             flex-direction: column; justify-content: center; align-items: center; 
         }
-        #alerta-emergencia h1 { font-size: 45px; margin: 0; animation: blink 0.5s infinite; }
-        @keyframes blink { 0% { opacity: 1; } 50% { opacity: 0.5; } 100% { opacity: 1; } }
+        #alerta-emergencia h1 { font-size: 40px; margin: 0; }
         
         .leaflet-routing-container { background: rgba(0,0,0,0.85) !important; color: white !important; font-size: 11px; max-height: 100px; overflow: auto; }
     </style>
@@ -44,24 +43,24 @@
 
     <div id="alerta-emergencia">
         <h1>🚨 NUEVO VIAJE 🚨</h1>
-        <p style="font-size: 20px; font-weight: bold;">Revisa la central de pedidos</p>
+        <p style="font-size: 20px; font-weight: bold;">¡Hay un pasajero esperando!</p>
         <button onclick="cerrarEmergencia()" style="padding: 20px; font-size: 22px; font-weight: bold; background: black; color: white; border: none; border-radius: 15px; width: 80%;">VER MAPA</button>
     </div>
 
     <h2>CENTRAL OTIMAC 🚖</h2>
 
     <button class="btn-activar" id="btnActivar" onclick="configurarSistema()">
-        🔊 ACTIVAR ALERTAS Y GPS
+        🔊 ACTIVAR SONIDO Y GPS
     </button>
 
     <div id="interfaz">
         <div class="panel-pedidos">
-            <h3>Pedidos Disponibles</h3>
-            <div id="lista-pedidos">Pulsa el botón de arriba</div>
+            <h3>Pedidos Pendientes</h3>
+            <div id="lista-pedidos">Pulsa el botón amarillo</div>
         </div>
     </div>
     
-    <div id="status-gps">GPS: Apagado</div>
+    <div id="status-gps">GPS: Desconectado</div>
     <div id="map"></div>
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
@@ -86,21 +85,15 @@
 
         function configurarSistema() {
             sonidoNuevoViaje.play().then(() => { sonidoNuevoViaje.pause(); sonidoNuevoViaje.currentTime = 0; });
-
-            if ("Notification" in window) {
-                Notification.requestPermission();
-            }
-
+            if ("Notification" in window) { Notification.requestPermission(); }
             sistemaListo = true;
             document.getElementById('btnActivar').style.display = 'none';
-            document.getElementById('status-gps').innerText = "✅ GPS CONECTADO";
-            document.getElementById('lista-pedidos').innerText = "Buscando pasajeros...";
+            document.getElementById('status-gps').innerText = "✅ SISTEMA ACTIVO";
         }
 
         database.ref('viajes').orderByChild('estado').equalTo('esperando').on('value', (snapshot) => {
             var pedidos = snapshot.val();
             var contenedor = document.getElementById('lista-pedidos');
-            
             var count = 0;
             if (pedidos) {
                 contenedor.innerHTML = "";
@@ -108,56 +101,37 @@
                     count++;
                     contenedor.innerHTML += `
                         <div style="padding:15px; background:#444; margin:10px; border-radius:10px; border-left: 8px solid #ffc107;">
-                            <b>PASAJERO #${id}</b><br><br>
+                            <b>PEDIDO #${id}</b><br><br>
                             <button onclick="aceptarViaje('${id}')" style="background:#ffc107; border:none; padding:12px; border-radius:8px; font-weight:bold; width:100%;">ACEPTAR</button>
                         </div>`;
                 }
                 if (count > pedidosAnteriores && sistemaListo) {
-                    reproducirAlerta();
+                    sonidoNuevoViaje.play();
+                    document.getElementById('alerta-emergencia').style.display = 'flex';
+                    if (Notification.permission === "granted") {
+                        new Notification("OTIMAC", { body: "¡Nuevo cliente pidiendo taxi!" });
+                    }
                 }
             } else {
                 contenedor.innerHTML = "Buscando clientes...";
-                pedidosAnteriores = 0;
             }
             pedidosAnteriores = count;
         });
-
-        function reproducirAlerta() {
-            sonidoNuevoViaje.play();
-            document.getElementById('alerta-emergencia').style.display = 'flex';
-            if (Notification.permission === "granted") {
-                new Notification("OTIMAC: ¡NUEVO VIAJE!", { body: "Un cliente solicita taxi ahora mismo." });
-            }
-        }
 
         function cerrarEmergencia() { document.getElementById('alerta-emergencia').style.display = 'none'; }
 
         function aceptarViaje(idViaje) {
             cerrarEmergencia();
-            document.getElementById('interfaz').innerHTML = `<div class="panel-pedidos"><h3>VIAJE #${idViaje}</h3><button class="btn-cancelar" onclick="finalizarViaje('${idViaje}')">TERMINAR VIAJE</button></div>`;
-            
-            database.ref('viajes/' + idViaje).on('value', (snap) => {
-                var v = snap.val();
-                if ((!v || v.estado === "cancelado") && !viajeFinalizado) {
-                    viajeFinalizado = true;
-                    alert("VIAJE TERMINADO");
-                    location.reload();
-                }
-            });
-
+            document.getElementById('interfaz').innerHTML = `<div class="panel-pedidos"><h3>VIAJE #${idViaje}</h3><button class="btn-cancelar" onclick="finalizarViaje('${idViaje}')">TERMINAR</button></div>`;
             database.ref('viajes/' + idViaje + '/cliente').once('value', (snap) => {
                 var posC = snap.val();
                 markerCliente = L.marker([posC.lat, posC.lon]).addTo(map);
-
                 navigator.geolocation.watchPosition((pos) => {
-                    if(viajeFinalizado) return;
                     var lat = pos.coords.latitude, lon = pos.coords.longitude;
                     var actual = L.latLng(lat, lon);
                     if(markerChofer) markerChofer.setLatLng(actual);
                     else markerChofer = L.circleMarker(actual, {color: '#ffc107', radius: 10}).addTo(map);
-                    
                     map.setView(actual, 17);
-
                     if(!ultimaPos || actual.distanceTo(ultimaPos) > 30) {
                         if(controlRuta) map.removeControl(controlRuta);
                         controlRuta = L.Routing.control({
@@ -175,10 +149,7 @@
         }
 
         function finalizarViaje(idViaje) {
-            if(!viajeFinalizado) {
-                viajeFinalizado = true;
-                database.ref('viajes/' + idViaje).update({ estado: "cancelado" }).then(() => { location.reload(); });
-            }
+            database.ref('viajes/' + idViaje).update({ estado: "cancelado" }).then(() => { location.reload(); });
         }
     </script>
 </body>
