@@ -10,13 +10,20 @@
     
     <style>
         body { font-family: 'Segoe UI', sans-serif; text-align: center; background: #1a1a1a; color: white; margin: 0; padding: 10px; }
-        #map { height: 450px; width: 100%; border-radius: 15px; margin-top: 10px; border: 2px solid #333; }
+        #map { height: 500px; width: 100%; border-radius: 15px; margin-top: 10px; border: 2px solid #333; z-index: 1; }
         .panel-pedidos { background: #2c2c2c; padding: 15px; border-radius: 12px; margin-bottom: 15px; border: 1px solid #ffc107; }
         .pedido-item { background: #3d3d3d; padding: 12px; margin: 8px 0; border-radius: 8px; display: flex; justify-content: space-between; align-items: center; border-left: 5px solid #ffc107; }
         .btn-aceptar { background: #ffc107; color: #000; border: none; padding: 10px 18px; font-weight: bold; border-radius: 6px; cursor: pointer; }
         #status-gps { color: #00ff00; font-size: 14px; margin: 10px 0; font-weight: bold; }
-        /* Estilo para el cuadro de instrucciones de ruta */
-        .leaflet-routing-container { background: rgba(0,0,0,0.8) !important; color: white !important; font-size: 12px; text-align: left; }
+        
+        /* Estilo para que el panel de instrucciones no tape todo el mapa en el cel */
+        .leaflet-routing-container { 
+            background: rgba(0,0,0,0.85) !important; 
+            color: white !important; 
+            max-height: 150px; 
+            overflow-y: auto; 
+            font-size: 11px;
+        }
     </style>
 </head>
 <body>
@@ -26,7 +33,7 @@
     <div id="panel-interfaz">
         <div class="panel-pedidos" id="panelPedidos">
             <h3>Pedidos Pendientes</h3>
-            <div id="lista-pedidos">Buscando solicitudes en tu zona...</div>
+            <div id="lista-pedidos">Buscando solicitudes...</div>
         </div>
     </div>
 
@@ -56,7 +63,6 @@
         
         var markerChofer, markerCliente, controlRuta;
 
-        // 1. ESCUCHAR NUEVOS PEDIDOS
         database.ref('viajes').orderByChild('estado').equalTo('esperando').on('value', (snapshot) => {
             var pedidos = snapshot.val();
             var contenedor = document.getElementById('lista-pedidos');
@@ -74,7 +80,6 @@
             }
         });
 
-        // 2. FUNCIÓN PARA ACEPTAR Y TRAZAR RUTA
         function aceptarViaje(idViaje) {
             document.getElementById('panel-interfaz').innerHTML = `
                 <div class="panel-pedidos">
@@ -82,58 +87,51 @@
                     <button onclick="location.reload()" style="background:#ff4444; color:white; border:none; padding:8px; border-radius:5px;">CANCELAR/FINALIZAR</button>
                 </div>`;
             
-            document.getElementById('status-gps').innerText = "Calculando mejor ruta...";
-
-            // Obtener ubicación del cliente para la ruta
             database.ref('viajes/' + idViaje + '/cliente').once('value', (snapshot) => {
                 var posCliente = snapshot.val();
                 if (posCliente) {
                     markerCliente = L.marker([posCliente.lat, posCliente.lon]).addTo(map)
-                        .bindPopup("PASAJERO ESPERANDO AQUÍ").openPopup();
-
+                        .bindPopup("PASAJERO AQUÍ").openPopup();
                     iniciarSeguimientoGPS(idViaje, posCliente);
                 }
             });
         }
 
-        // 3. SEGUIMIENTO GPS Y ENRUTAMIENTO VIVO
         function iniciarSeguimientoGPS(idViaje, posCliente) {
             navigator.geolocation.watchPosition((pos) => {
                 var latChofer = pos.coords.latitude;
                 var lonChofer = pos.coords.longitude;
 
-                // Actualizar marcador del chofer
                 if(markerChofer) {
                     markerChofer.setLatLng([latChofer, lonChofer]);
                 } else {
-                    markerChofer = L.circleMarker([latChofer, lonChofer], {color: '#ffc107', fillOpacity: 1, radius: 8}).addTo(map)
-                        .bindPopup("TU UBICACIÓN").openPopup();
+                    markerChofer = L.circleMarker([latChofer, lonChofer], {color: '#ffc107', radius: 10, fillOpacity: 1}).addTo(map);
                 }
 
-                // TRAZAR O ACTUALIZAR LA RUTA (Waze Style)
-                if (controlRuta) {
-                    map.removeControl(controlRuta);
-                }
+                if (controlRuta) { map.removeControl(controlRuta); }
 
+                // CONFIGURACIÓN DE LÍNEA AZUL VISIBLE
                 controlRuta = L.Routing.control({
                     waypoints: [
                         L.latLng(latChofer, lonChofer),
                         L.latLng(posCliente.lat, posCliente.lon)
                     ],
-                    lineOptions: { styles: [{ color: '#2478ff', weight: 6 }] },
-                    addWaypoints: false,
-                    draggableWaypoints: false,
-                    language: 'es',
-                    createMarker: function() { return null; } // Evita duplicar marcadores
+                    lineOptions: {
+                        styles: [
+                            { color: '#000000', opacity: 0.2, weight: 11 }, // Sombra para profundidad
+                            { color: '#2478ff', opacity: 1, weight: 7 }     // LÍNEA AZUL FUERTE
+                        ],
+                        addWaypoints: false
+                    },
+                    createMarker: function() { return null; },
+                    language: 'es'
                 }).addTo(map);
 
-                document.getElementById('status-gps').innerText = "SIGUE LA LÍNEA AZUL PARA LLEGAR";
-
-                // Informar al cliente
+                document.getElementById('status-gps').innerText = "SIGUE LA RUTA AZUL";
                 database.ref('viajes/' + idViaje).update({ estado: "en_camino" });
                 database.ref('viajes/' + idViaje + '/chofer').set({ lat: latChofer, lon: lonChofer });
 
-            }, (err) => alert("Error GPS: " + err.message), { enableHighAccuracy: true });
+            }, (err) => console.log(err), { enableHighAccuracy: true });
         }
     </script>
 </body>
