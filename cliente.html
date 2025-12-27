@@ -31,7 +31,6 @@
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
 
     <script>
-        // Configuración de tu Firebase
         var firebaseConfig = {
             apiKey: "AIzaSyATLT5_woN8KO8-_E4_Nl7bEMlJGFI4uUQ",
             authDomain: "taxiotimac.firebaseapp.com",
@@ -44,67 +43,51 @@
         firebase.initializeApp(firebaseConfig);
         var database = firebase.database();
 
-        // Configuración Inicial del Mapa
         var map = L.map('map').setView([23.6345, -102.5528], 5);
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
         
-        var markerCliente, markerChofer;
-        var idDelViaje = Math.floor(Math.random() * 90000) + 10000;
-
-        // Icono de Taxi
-        var iconTaxi = L.icon({
-            iconUrl: 'https://cdn-icons-png.flaticon.com/512/3448/3448636.png',
-            iconSize: [45, 45],
-            iconAnchor: [22, 22]
-        });
+        var markerCliente, markerChofer, idDelViaje;
+        var iconTaxi = L.icon({ iconUrl: 'https://cdn-icons-png.flaticon.com/512/3448/3448636.png', iconSize: [45, 45] });
 
         function pedirTaxi() {
+            idDelViaje = Math.floor(Math.random() * 90000) + 10000;
             document.getElementById('info-viaje').style.display = 'block';
             document.getElementById('viaje-id').innerText = idDelViaje;
             document.getElementById('btnPedir').style.display = 'none';
-            document.getElementById('status').innerText = "Localizando tu posición...";
 
             navigator.geolocation.getCurrentPosition((pos) => {
                 var lat = pos.coords.latitude;
                 var lon = pos.coords.longitude;
-
                 map.setView([lat, lon], 16);
-                markerCliente = L.marker([lat, lon]).addTo(map).bindPopup("Estás aquí").openPopup();
+                markerCliente = L.marker([lat, lon]).addTo(map);
 
-                // Guardar pedido en Firebase
                 database.ref('viajes/' + idDelViaje).set({
                     cliente: { lat: lat, lon: lon },
                     estado: "esperando"
                 });
-
-                document.getElementById('status').innerText = "Esperando que un chofer acepte...";
-                escucharAlChofer();
-            }, (err) => alert("Error: Activa el GPS"), {enableHighAccuracy: true});
+                escucharEstadoViaje();
+            }, (err) => alert("Activa el GPS"));
         }
 
-        function escucharAlChofer() {
-            database.ref('viajes/' + idDelViaje + '/chofer').on('value', (snapshot) => {
-                var posChofer = snapshot.val();
-                if (posChofer && markerCliente) {
-                    // --- AQUÍ ESTÁ EL CÓDIGO QUE PREGUNTASTE ---
-                    var latLngChofer = L.latLng(posChofer.lat, posChofer.lon);
+        function escucharEstadoViaje() {
+            database.ref('viajes/' + idDelViaje).on('value', (snapshot) => {
+                var viaje = snapshot.val();
+                if (!viaje) return;
+
+                if (viaje.estado === "cancelado") {
+                    alert("El viaje ha finalizado o fue cancelado.");
+                    location.reload();
+                }
+
+                if (viaje.chofer) {
+                    var latLngChofer = L.latLng(viaje.chofer.lat, viaje.chofer.lon);
                     var latLngCliente = markerCliente.getLatLng();
-
-                    var distanciaMetros = latLngChofer.distanceTo(latLngCliente);
-                    var distanciaKm = (distanciaMetros / 1000).toFixed(1);
-                    var tiempoEstimado = Math.round(distanciaKm * 3); // 3 min por km
-
-                    document.getElementById('status').innerHTML = `
-                        <b style="color: #d4a017;">¡Taxi en camino!</b><br>
-                        Distancia: ${distanciaKm} km | Llega en: ${tiempoEstimado} min
-                    `;
+                    var dist = (latLngChofer.distanceTo(latLngCliente) / 1000).toFixed(1);
                     
-                    if (markerChofer) {
-                        markerChofer.setLatLng([posChofer.lat, posChofer.lon]);
-                    } else {
-                        markerChofer = L.marker([posChofer.lat, posChofer.lon], {icon: iconTaxi}).addTo(map);
-                    }
-                    // -------------------------------------------
+                    document.getElementById('status').innerHTML = `<b>¡Taxi en camino!</b><br>Distancia: ${dist} km`;
+                    
+                    if (markerChofer) markerChofer.setLatLng(latLngChofer);
+                    else markerChofer = L.marker(latLngChofer, {icon: iconTaxi}).addTo(map);
                 }
             });
         }
