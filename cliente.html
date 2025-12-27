@@ -3,32 +3,26 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Pasajero - TaxiOtimac</title>
+    <title>Cliente - Otimac 🚖</title>
+    
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <link rel="apple-touch-icon" href="logo.png">
+    
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
-        body { font-family: 'Segoe UI', sans-serif; text-align: center; background: #f4f4f4; margin: 0; padding: 15px; }
-        #map { height: 400px; width: 100%; border-radius: 15px; margin-top: 15px; }
-        .status-box { background: white; padding: 20px; border-radius: 12px; margin-bottom: 10px; border: 2px solid #ffc107; }
-        #viaje-id { font-size: 32px; font-weight: bold; display: block; margin: 10px 0; }
-        .btn-pedir { background: #000; color: #fff; border: none; padding: 18px; font-size: 18px; font-weight: bold; border-radius: 10px; width: 100%; }
-        .btn-cancelar-cliente { background: #ff4444; color: white; border: none; padding: 10px; border-radius: 5px; margin-top: 10px; width: 100%; cursor: pointer; }
-        #status-conexion { font-size: 12px; font-weight: bold; margin-bottom: 5px; }
+        body { font-family: 'Segoe UI', sans-serif; text-align: center; background: #1a1a1a; color: white; margin: 0; padding: 10px; }
+        #map { height: 450px; width: 100%; border-radius: 15px; border: 2px solid #ffc107; }
+        .btn-pedido { background: #ffc107; color: black; border: none; padding: 20px; font-weight: bold; border-radius: 10px; width: 100%; font-size: 18px; margin-top: 10px; }
+        #status { margin: 10px; font-weight: bold; color: #ffc107; }
     </style>
 </head>
 <body>
 
-    <div id="status-conexion" style="color: green;">● Conectado</div>
-    <div class="status-box">
-        <div id="status">Pide tu taxi ahora</div>
-        <div id="info-viaje" style="display:none;">
-            CÓDIGO: <span id="viaje-id"></span>
-            <div id="estimacion" style="color: #2478ff; font-weight: bold;"></div>
-            <button class="btn-cancelar-cliente" onclick="cancelarMiViaje()">CANCELAR VIAJE</button>
-        </div>
-    </div>
-
-    <button class="btn-pedir" id="btnPedir" onclick="pedirTaxi()">🚖 PEDIR TAXI</button>
-    <div id="map"></div>
+    <h2>SOLICITAR OTIMAC 🚖</h2>
+    <div id="status">Presiona el botón para pedir un taxi</div>
+    <button class="btn-pedido" id="btnPedir" onclick="pedirTaxi()">🚖 PEDIR TAXI AHORA</button>
+    
+    <div id="map" style="margin-top:10px;"></div>
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
@@ -40,60 +34,64 @@
         var database = firebase.database();
 
         var map = L.map('map').setView([23.6345, -102.5528], 5);
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { keepBuffer: 2, updateWhenIdle: true }).addTo(map);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
 
-        var markerCliente, markerChofer, idDelViaje;
-        var viajeFinalizado = false;
+        // MISMOS ICONOS QUE EN EL CHOFER
+        var iconoTaxi = L.icon({
+            iconUrl: 'https://cdn-icons-png.flaticon.com/512/3448/3448636.png',
+            iconSize: [40, 40],
+            iconAnchor: [20, 20]
+        });
+
+        var iconoPasajero = L.icon({
+            iconUrl: 'https://cdn-icons-png.flaticon.com/512/3063/3063822.png',
+            iconSize: [40, 40],
+            iconAnchor: [20, 40]
+        });
+
+        var markerCliente, markerChofer, idViaje;
 
         function pedirTaxi() {
-            idDelViaje = Math.floor(Math.random() * 90000) + 10000;
-            document.getElementById('info-viaje').style.display = 'block';
-            document.getElementById('viaje-id').innerText = idDelViaje;
-            document.getElementById('btnPedir').style.display = 'none';
-
             navigator.geolocation.getCurrentPosition((pos) => {
-                var lat = pos.coords.latitude, lon = pos.coords.longitude;
-                map.setView([lat, lon], 16);
-                markerCliente = L.marker([lat, lon]).addTo(map);
-                database.ref('viajes/' + idDelViaje).set({ cliente: { lat: lat, lon: lon }, estado: "esperando" });
-                escucharEstado();
-            }, (err) => alert("Error GPS: Activa la ubicación."), { enableHighAccuracy: true });
-        }
+                var lat = pos.coords.latitude;
+                var lon = pos.coords.longitude;
+                idViaje = Date.now(); // ID único del viaje
 
-        function escucharEstado() {
-            database.ref('viajes/' + idDelViaje).on('value', (snapshot) => {
-                var viaje = snapshot.val();
-                if ((!viaje || viaje.estado === "cancelado") && !viajeFinalizado) {
-                    viajeFinalizado = true;
-                    alert("El viaje ha finalizado o fue cancelado.");
-                    location.reload();
-                    return;
-                }
-                if (viaje && viaje.chofer) {
-                    var latLngChofer = L.latLng(viaje.chofer.lat, viaje.chofer.lon);
-                    var distanciaMetros = latLngChofer.distanceTo(markerCliente.getLatLng());
-                    var distKm = (distanciaMetros / 1000).toFixed(1);
-                    var tiempoMinutos = Math.round((distanciaMetros / 666)); 
-                    var horas = Math.floor(tiempoMinutos / 60);
-                    var mins = tiempoMinutos % 60;
-                    var tiempoTexto = horas > 0 ? horas + " h " + mins + " min" : mins + " min";
-                    document.getElementById('status').innerText = "¡Taxi en camino!";
-                    document.getElementById('estimacion').innerHTML = `📍 Distancia: ${distKm} km<br>⏱️ Llega en: ${tiempoTexto}`;
-                    if (markerChofer) markerChofer.setLatLng(latLngChofer);
-                    else markerChofer = L.marker(latLngChofer).addTo(map);
-                }
+                // Colocar al cliente en el mapa
+                markerCliente = L.marker([lat, lon], {icon: iconoPasajero}).addTo(map);
+                map.setView([lat, lon], 16);
+
+                // Guardar en Firebase
+                database.ref('viajes/' + idViaje).set({
+                    cliente: { lat: lat, lon: lon },
+                    estado: "esperando"
+                });
+
+                document.getElementById('btnPedir').style.display = 'none';
+                document.getElementById('status').innerText = "⏳ Buscando taxi cercano...";
+
+                // ESCUCHAR CUANDO EL CHOFER SE MUEVA
+                database.ref('viajes/' + idViaje + '/chofer').on('value', (snap) => {
+                    var posT = snap.val();
+                    if (posT) {
+                        document.getElementById('status').innerText = "✅ ¡Tu taxi va en camino!";
+                        if (markerChofer) {
+                            markerChofer.setLatLng([posT.lat, posT.lon]);
+                        } else {
+                            markerChofer = L.marker([posT.lat, posT.lon], {icon: iconoTaxi}).addTo(map);
+                        }
+                    }
+                });
+                
+                // Si el chofer borra el viaje (finaliza), se reinicia el cliente
+                database.ref('viajes/' + idViaje).on('value', (snap) => {
+                    if (!snap.exists()) {
+                        alert("El viaje ha terminado. ¡Gracias por usar Otimac!");
+                        location.reload();
+                    }
+                });
             });
         }
-
-        function cancelarMiViaje() {
-            if(confirm("¿Seguro que quieres cancelar tu taxi?") && !viajeFinalizado) {
-                viajeFinalizado = true;
-                database.ref('viajes/' + idDelViaje).update({ estado: "cancelado" }).then(() => { location.reload(); });
-            }
-        }
-
-        window.addEventListener('offline', () => { document.getElementById('status-conexion').innerHTML = "⚠️ SIN INTERNET"; document.getElementById('status-conexion').style.color = "red"; });
-        window.addEventListener('online', () => { document.getElementById('status-conexion').innerHTML = "● Conectado"; document.getElementById('status-conexion').style.color = "green"; });
     </script>
 </body>
 </html>
