@@ -10,21 +10,18 @@
     <link rel="stylesheet" href="https://unpkg.com/leaflet-routing-machine/dist/leaflet-routing-machine.css" />
     <style>
         body { font-family: 'Segoe UI', sans-serif; text-align: center; background: #1a1a1a; color: white; margin: 0; padding: 10px; }
-        #map { height: 400px; width: 100%; border-radius: 15px; margin-top: 10px; border: 2px solid #333; }
+        #map { height: 450px; width: 100%; border-radius: 15px; margin-top: 10px; border: 2px solid #333; }
         .panel-pedidos { background: #2c2c2c; padding: 15px; border-radius: 12px; border: 1px solid #ffc107; margin-bottom: 10px; }
         .btn-cancelar { background: #ff4444; color: white; border: none; padding: 15px; border-radius: 8px; font-weight: bold; width: 100%; margin-top: 10px; font-size: 16px; }
         #status-gps { color: #00ff00; font-weight: bold; margin: 10px 0; font-size: 14px; }
-        .info-header { font-size: 14px; color: #aaa; margin-bottom: 10px; cursor: pointer; }
+        /* ESTO QUITA LA PESTAÑA BLANCA QUE ESTORBA */
+        .leaflet-routing-container { display: none !important; }
     </style>
 </head>
 <body onload="verificarEstadoChofer()">
     <h2>CENTRAL OTIMAC 🚖</h2>
     
-    <div class="info-header" onclick="registrarChofer()">
-        👤 <span id="displayNombre">Cargando...</span> | 🚕 <span id="displayEco">...</span>
-    </div>
-
-    <div id="status-gps">📡 Buscando señal...</div>
+    <div id="status-gps">📡 Buscando señal GPS...</div>
     <div id="interfaz">
         <div class="panel-pedidos">
             <h3>Viajes Disponibles</h3>
@@ -52,31 +49,9 @@
         var markerChofer, markerCliente, controlRuta, idViajeActivo;
 
         function verificarEstadoChofer() {
-            // Cargar datos del chofer
-            var n = localStorage.getItem("choferNombre");
-            var e = localStorage.getItem("choferEco");
-            if(!n) registrarChofer();
-            else {
-                document.getElementById('displayNombre').innerText = n;
-                document.getElementById('displayEco').innerText = e;
-            }
-
-            // RECONECTAR VIAJE SI EXISTÍA UNO
             var viajeGuardado = localStorage.getItem("idViajeChoferActivo");
-            if(viajeGuardado) {
-                reconectarViajeChofer(viajeGuardado);
-            }
+            if(viajeGuardado) reconectarViajeChofer(viajeGuardado);
             iniciarGPSAutomatico();
-        }
-
-        function registrarChofer() {
-            var n = prompt("Tu nombre:", localStorage.getItem("choferNombre") || "");
-            var e = prompt("Número económico:", localStorage.getItem("choferEco") || "");
-            if(n && e) {
-                localStorage.setItem("choferNombre", n);
-                localStorage.setItem("choferEco", e);
-                location.reload();
-            }
         }
 
         function iniciarGPSAutomatico() {
@@ -84,7 +59,10 @@
                 var lat = pos.coords.latitude, lon = pos.coords.longitude;
                 document.getElementById('status-gps').innerText = "✅ GPS ACTIVO";
                 if(markerChofer) markerChofer.setLatLng([lat, lon]);
-                else { markerChofer = L.marker([lat, lon], {icon: iconoTaxi}).addTo(map); map.setView([lat, lon], 16); }
+                else { 
+                    markerChofer = L.marker([lat, lon], {icon: iconoTaxi}).addTo(map); 
+                    map.setView([lat, lon], 17); 
+                }
                 
                 if (idViajeActivo) {
                     database.ref('viajes/' + idViajeActivo + '/chofer').update({ lat: lat, lon: lon });
@@ -92,35 +70,26 @@
             }, null, {enableHighAccuracy: true});
         }
 
-        // Solo mostrar lista si no hay viaje activo
         database.ref('viajes').orderByChild('estado').equalTo('esperando').on('value', (snapshot) => {
-            if (idViajeActivo) return; // Si ya estoy en un viaje, no mostrar lista
+            if (idViajeActivo) return;
             var pedidos = snapshot.val();
             var contenedor = document.getElementById('lista-pedidos');
             if (pedidos) {
                 contenedor.innerHTML = "";
                 for (var id in pedidos) {
                     var nPasajero = pedidos[id].nombre_cliente || "Cliente";
-                    contenedor.innerHTML += `<div style="padding:15px; background:#444; margin:10px; border-radius:10px; border-left: 8px solid #ffc107;">
+                    contenedor.innerHTML += `<div style="padding:15px; background:#444; margin:10px; border-radius:10px;">
                         <b>PASAJERO: ${nPasajero}</b><br>
-                        <button onclick="aceptarViaje('${id}', '${nPasajero}')" style="background:#ffc107; border:none; padding:12px; border-radius:8px; font-weight:bold; width:100%; margin-top:10px;">ACEPTAR</button>
+                        <button onclick="aceptarViaje('${id}')" style="background:#ffc107; border:none; padding:12px; border-radius:8px; font-weight:bold; width:100%; margin-top:10px;">ACEPTAR</button>
                     </div>`;
                 }
             } else { contenedor.innerHTML = "Esperando solicitudes..."; }
         });
 
-        function aceptarViaje(id, nPasajero) {
+        function aceptarViaje(id) {
             localStorage.setItem("idViajeChoferActivo", id);
-            reconectarViajeChofer(id);
-            
-            // Publicar datos en Firebase para el cliente
-            database.ref('viajes/' + id + '/chofer').set({
-                nombre: localStorage.getItem("choferNombre"),
-                economico: localStorage.getItem("choferEco"),
-                lat: markerChofer.getLatLng().lat,
-                lon: markerChofer.getLatLng().lng
-            });
             database.ref('viajes/' + id).update({ estado: 'en_curso' });
+            reconectarViajeChofer(id);
         }
 
         function reconectarViajeChofer(id) {
@@ -129,25 +98,24 @@
             
             database.ref('viajes/' + id + '/cliente').once('value', (snap) => {
                 var posC = snap.val();
-                if(!posC) return; // Por si el cliente canceló justo antes
+                if(!posC) return;
                 if(markerCliente) map.removeLayer(markerCliente);
                 markerCliente = L.marker([posC.lat, posC.lon], {icon: iconoPasajero}).addTo(map);
-                
+
+                // CREA LA RUTA PERO OCULTA LAS INSTRUCCIONES
                 if(controlRuta) map.removeControl(controlRuta);
                 controlRuta = L.Routing.control({
                     waypoints: [markerChofer.getLatLng(), L.latLng(posC.lat, posC.lon)],
-                    lineOptions: { styles: [{ color: '#2478ff', weight: 8, opacity: 0.8 }] },
-                    createMarker: function() { return null; }
+                    show: false, // Oculta instrucciones
+                    addWaypoints: false,
+                    routeWhileDragging: false,
+                    createMarker: function() { return null; },
+                    lineOptions: { styles: [{ color: '#2478ff', weight: 6 }] }
                 }).addTo(map);
-            });
-
-            // Si el cliente cancela el viaje mientras yo estoy en él
-            database.ref('viajes/' + id).on('value', (snap) => {
-                if(!snap.exists()) {
-                    localStorage.removeItem("idViajeChoferActivo");
-                    alert("El cliente canceló el viaje.");
-                    location.reload();
-                }
+                
+                // AJUSTA EL MAPA PARA QUE SE VEAN AMBOS SIN ALEJARSE DEMASIADO
+                var group = new L.featureGroup([markerChofer, markerCliente]);
+                map.fitBounds(group.getBounds().pad(0.3));
             });
         }
 
