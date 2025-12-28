@@ -125,7 +125,7 @@
                 document.getElementById('txtModo').style.color = "#ff4444";
                 detenerGPS();
                 if(wakeLock) wakeLock.release();
-                database.ref('viajes').off(); // Importante: apagar escucha al desconectar
+                database.ref('viajes').off(); 
             }
         }
 
@@ -143,6 +143,11 @@
                 if (idViajeActivo) {
                     database.ref('viajes/' + idViajeActivo + '/chofer').update({ lat: lat, lon: lon });
                     if (markerCliente) {
+                        // RE-DIBUJAR RUTA DINÁMICA
+                        if(controlRuta) {
+                            controlRuta.setWaypoints([miPos, markerCliente.getLatLng()]);
+                        }
+                        
                         var dist = miPos.distanceTo(markerCliente.getLatLng());
                         if (dist < 100 && !avisoLlegadaEnviado) {
                             avisoLlegadaEnviado = true;
@@ -162,7 +167,6 @@
         }
 
         function escucharPedidos() {
-            // Cambio clave: "on" se queda escuchando siempre, incluso los que ya estaban
             database.ref('viajes').orderByChild('estado').equalTo('esperando').on('value', (snapshot) => {
                 if (idViajeActivo || !document.getElementById('checkTrabajo').checked) return;
                 var pedidos = snapshot.val();
