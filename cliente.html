@@ -9,19 +9,22 @@
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
         body { font-family: 'Segoe UI', sans-serif; text-align: center; background: #1a1a1a; color: white; margin: 0; padding: 10px; }
-        #map { height: 400px; width: 100%; border-radius: 15px; border: 2px solid #ffc107; }
+        #map { height: 380px; width: 100%; border-radius: 15px; border: 2px solid #ffc107; }
         .btn-pedido { background: #ffc107; color: black; border: none; padding: 20px; font-weight: bold; border-radius: 10px; width: 100%; font-size: 18px; margin-top: 10px; }
-        .btn-pedido:disabled { background: #555; color: #888; cursor: not-allowed; }
+        .btn-cancelar { background: #ff4444; color: white; border: none; padding: 12px; border-radius: 8px; font-weight: bold; width: 100%; margin-top: 10px; font-size: 14px; }
+        .btn-pedido:disabled { background: #555; color: #888; }
         .card-chofer { background: #333; padding: 15px; border-radius: 12px; border: 2px solid #00ff00; margin-bottom: 10px; display: none; }
-        input { padding: 15px; width: 80%; border-radius: 10px; margin-bottom: 10px; font-size: 16px; border: none; }
+        input { padding: 15px; width: 80%; border-radius: 10px; margin-bottom: 10px; font-size: 16px; border: none; outline: none; }
+        #msgHola { margin: 10px 0; font-weight: bold; color: #ffc107; }
     </style>
 </head>
 <body onload="verificarNombreYViaje()">
     <h2>SOLICITAR OTIMAC 🚖</h2>
     
     <div id="registro" style="display:none;">
+        <p>¡Bienvenido! ¿Cómo te llamas?</p>
         <input type="text" id="inputNombre" placeholder="Tu nombre">
-        <button class="btn-pedido" onclick="guardarNombre()">GUARDAR REGISTRO</button>
+        <button class="btn-pedido" onclick="guardarNombre()">GUARDAR Y CONTINUAR</button>
     </div>
 
     <div id="areaPedido" style="display:none;">
@@ -29,8 +32,11 @@
             <div id="infoChofer" style="font-size: 18px;"></div>
             <div id="tiempoLlegada" style="color: #00ff00; font-weight: bold;"></div>
         </div>
+        
+        <p id="msgHola"></p>
         <button class="btn-pedido" id="btnPedir" onclick="pedirTaxi()">🚖 PEDIR TAXI AHORA</button>
-        <p id="msgHola" style="color:#aaa;"></p>
+        
+        <button class="btn-cancelar" id="btnCancelar" onclick="cancelarPedido()" style="display:none;">❌ CANCELAR PEDIDO</button>
     </div>
 
     <div id="map" style="margin-top:10px;"></div>
@@ -58,13 +64,10 @@
                 document.getElementById('registro').style.display = 'block';
             } else {
                 document.getElementById('areaPedido').style.display = 'block';
-                document.getElementById('msgHola').innerText = "Hola " + n + ", ¿listo para viajar?";
+                document.getElementById('msgHola').innerText = "Hola " + n + ", ¿necesitas un Otimac?";
                 
-                // SI YA HABÍA UN VIAJE GUARDADO EN MEMORIA, RECONECTAR
                 var viajeGuardado = localStorage.getItem("idViajeActivo");
-                if(viajeGuardado) {
-                    reconectarViaje(viajeGuardado);
-                }
+                if(viajeGuardado) { reconectarViaje(viajeGuardado); }
             }
         }
 
@@ -74,26 +77,21 @@
         }
 
         function pedirTaxi() {
-            // BLOQUEAR BOTÓN PARA EVITAR DOBLE CLICK
             document.getElementById('btnPedir').disabled = true;
-            document.getElementById('btnPedir').innerText = "PROCESANDO...";
+            document.getElementById('btnPedir').innerText = "BUSCANDO GPS...";
 
             navigator.geolocation.getCurrentPosition((pos) => {
                 miPos = { lat: pos.coords.latitude, lon: pos.coords.longitude };
                 idViaje = Math.floor(1000 + Math.random() * 9000); 
-                
-                // Guardar ID en memoria para que no pueda pedir otro
                 localStorage.setItem("idViajeActivo", idViaje);
                 
                 database.ref('viajes/' + idViaje).set({ 
                     cliente: miPos, 
                     nombre_cliente: localStorage.getItem("nombreCliente"),
                     estado: "esperando" 
-                }).then(() => {
-                    reconectarViaje(idViaje);
-                });
-            }, (error) => {
-                alert("Error de GPS. Activa tu ubicación.");
+                }).then(() => { reconectarViaje(idViaje); });
+            }, (err) => {
+                alert("Activa el GPS para pedir.");
                 document.getElementById('btnPedir').disabled = false;
                 document.getElementById('btnPedir').innerText = "🚖 PEDIR TAXI AHORA";
             });
@@ -101,28 +99,38 @@
 
         function reconectarViaje(id) {
             document.getElementById('btnPedir').style.display = 'none';
+            document.getElementById('btnCancelar').style.display = 'inline-block';
             document.getElementById('msgHola').innerText = "⏳ Buscando taxi... Viaje #" + id;
 
-            // Escuchar al chofer
+            // Escuchar Chofer
             database.ref('viajes/' + id + '/chofer').on('value', (snap) => {
                 var d = snap.val();
                 if (d && d.nombre) {
                     document.getElementById('cardChofer').style.display = 'block';
                     document.getElementById('infoChofer').innerHTML = `<b>Taxi:</b> ${d.economico}<br><b>Chofer:</b> ${d.nombre}`;
-                    
                     if (markerChofer) markerChofer.setLatLng([d.lat, d.lon]);
                     else markerChofer = L.marker([d.lat, d.lon], {icon: iconoTaxi}).addTo(map);
                 }
             });
 
-            // Escuchar si el viaje termina
+            // Escuchar si el viaje es borrado por el chofer o cancelación
             database.ref('viajes/' + id).on('value', (snap) => {
                 if(!snap.exists()) {
                     localStorage.removeItem("idViajeActivo");
-                    alert("Viaje finalizado.");
+                    alert("Servicio finalizado o cancelado.");
                     location.reload();
                 }
             });
+        }
+
+        function cancelarPedido() {
+            var id = localStorage.getItem("idViajeActivo");
+            if(id && confirm("¿Seguro que quieres cancelar tu pedido?")) {
+                database.ref('viajes/' + id).remove().then(() => {
+                    localStorage.removeItem("idViajeActivo");
+                    location.reload();
+                });
+            }
         }
     </script>
 </body>
