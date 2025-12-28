@@ -9,21 +9,29 @@
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
         body { font-family: 'Segoe UI', sans-serif; text-align: center; background: #1a1a1a; color: white; margin: 0; padding: 10px; }
-        #map { height: 450px; width: 100%; border-radius: 15px; border: 2px solid #ffc107; }
+        #map { height: 400px; width: 100%; border-radius: 15px; border: 2px solid #ffc107; }
         .btn-pedido { background: #ffc107; color: black; border: none; padding: 20px; font-weight: bold; border-radius: 10px; width: 100%; font-size: 18px; margin-top: 10px; }
-        #status { margin: 10px; font-weight: bold; color: #ffc107; font-size: 18px; }
-        .info-viaje { background: #333; padding: 10px; border-radius: 10px; margin-bottom: 10px; border: 1px solid #555; }
+        .card-chofer { background: #333; padding: 15px; border-radius: 12px; border: 2px solid #00ff00; margin-bottom: 10px; display: none; }
+        input { padding: 15px; width: 80%; border-radius: 10px; margin-bottom: 10px; font-size: 16px; border: none; }
     </style>
 </head>
-<body>
+<body onload="verificarNombreCliente()">
     <h2>SOLICITAR OTIMAC 🚖</h2>
     
-    <div id="info-contenedor" style="display:none;" class="info-viaje">
-        <div id="status">Buscando taxi...</div>
-        <div id="tiempo-llegada" style="color: #00ff00; font-size: 20px;"></div>
+    <div id="registro" style="display:none;">
+        <input type="text" id="inputNombre" placeholder="Tu nombre">
+        <button class="btn-pedido" onclick="guardarNombre()">GUARDAR REGISTRO</button>
     </div>
 
-    <button class="btn-pedido" id="btnPedir" onclick="pedirTaxi()">🚖 PEDIR TAXI AHORA</button>
+    <div id="areaPedido" style="display:none;">
+        <div id="cardChofer" class="card-chofer">
+            <div id="infoChofer" style="font-size: 18px;"></div>
+            <div id="tiempoLlegada" style="color: #00ff00; font-weight: bold;"></div>
+        </div>
+        <button class="btn-pedido" id="btnPedir" onclick="pedirTaxi()">🚖 PEDIR TAXI AHORA</button>
+        <p id="msgHola" style="color:#aaa;"></p>
+    </div>
+
     <div id="map" style="margin-top:10px;"></div>
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
@@ -41,45 +49,50 @@
         var iconoTaxi = L.icon({ iconUrl: 'https://img.icons8.com/color/48/taxi.png', iconSize: [40, 40], iconAnchor: [20, 20] });
         var iconoPasajero = L.icon({ iconUrl: 'https://img.icons8.com/color/48/person-male.png', iconSize: [40, 40], iconAnchor: [20, 40] });
 
-        var markerCliente, markerChofer, idViaje, miPos;
-
-        function calcularTiempo(lat1, lon1, lat2, lon2) {
-            var p1 = L.latLng(lat1, lon1);
-            var p2 = L.latLng(lat2, lon2);
-            var distanciaMetros = p1.distanceTo(p2);
-            // Estimación: 1 minuto por cada 300 metros en ciudad
-            var minutos = Math.round(distanciaMetros / 300);
-            return minutos < 1 ? "¡Está llegando!" : "Llega en aprox. " + minutos + " min";
+        function verificarNombreCliente() {
+            var n = localStorage.getItem("nombreCliente");
+            if(!n) document.getElementById('registro').style.display = 'block';
+            else {
+                document.getElementById('areaPedido').style.display = 'block';
+                document.getElementById('msgHola').innerText = "Hola " + n + ", ¿a dónde vamos hoy?";
+            }
         }
+
+        function guardarNombre() {
+            var n = document.getElementById('inputNombre').value;
+            if(n) { localStorage.setItem("nombreCliente", n); location.reload(); }
+        }
+
+        var markerCliente, markerChofer, idViaje, miPos;
 
         function pedirTaxi() {
             navigator.geolocation.getCurrentPosition((pos) => {
                 miPos = { lat: pos.coords.latitude, lon: pos.coords.longitude };
                 idViaje = Math.floor(1000 + Math.random() * 9000); 
-                
                 markerCliente = L.marker([miPos.lat, miPos.lon], {icon: iconoPasajero}).addTo(map);
                 map.setView([miPos.lat, miPos.lon], 16);
                 
-                database.ref('viajes/' + idViaje).set({ cliente: miPos, estado: "esperando" });
+                database.ref('viajes/' + idViaje).set({ 
+                    cliente: miPos, 
+                    nombre_cliente: localStorage.getItem("nombreCliente"),
+                    estado: "esperando" 
+                });
                 
                 document.getElementById('btnPedir').style.display = 'none';
-                document.getElementById('info-contenedor').style.display = 'block';
-                document.getElementById('status').innerText = "Viaje #" + idViaje + " - Buscando...";
+                document.getElementById('msgHola').innerText = "⏳ Buscando taxi...";
 
                 database.ref('viajes/' + idViaje + '/chofer').on('value', (snap) => {
-                    var posT = snap.val();
-                    if (posT) {
-                        document.getElementById('status').innerText = "✅ Taxi en camino (#" + idViaje + ")";
-                        document.getElementById('tiempo-llegada').innerText = calcularTiempo(miPos.lat, miPos.lon, posT.lat, posT.lon);
-                        
-                        if (markerChofer) { markerChofer.setLatLng([posT.lat, posT.lon]); } 
-                        else { markerChofer = L.marker([posT.lat, posT.lon], {icon: iconoTaxi}).addTo(map); }
+                    var d = snap.val();
+                    if (d && d.nombre) {
+                        document.getElementById('cardChofer').style.display = 'block';
+                        document.getElementById('infoChofer').innerHTML = `<b>Taxi:</b> ${d.economico}<br><b>Chofer:</b> ${d.nombre}`;
+                        var dist = L.latLng(miPos.lat, miPos.lon).distanceTo(L.latLng(d.lat, d.lon));
+                        document.getElementById('tiempoLlegada').innerText = "Llega en aprox: " + Math.round(dist/300) + " min";
+                        if (markerChofer) markerChofer.setLatLng([d.lat, d.lon]);
+                        else markerChofer = L.marker([d.lat, d.lon], {icon: iconoTaxi}).addTo(map);
                     }
                 });
-
-                database.ref('viajes/' + idViaje).on('value', (snap) => { 
-                    if (!snap.exists()) { alert("Viaje finalizado."); location.reload(); } 
-                });
+                database.ref('viajes/' + idViaje).on('value', (snap) => { if(!snap.exists()) location.reload(); });
             });
         }
     </script>
