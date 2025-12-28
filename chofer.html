@@ -5,30 +5,48 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Chofer - Otimac 🚖</title>
     <meta name="apple-mobile-web-app-capable" content="yes">
-    <link rel="apple-touch-icon" href="logo.png">
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <link rel="stylesheet" href="https://unpkg.com/leaflet-routing-machine/dist/leaflet-routing-machine.css" />
     <style>
         body { font-family: 'Segoe UI', sans-serif; text-align: center; background: #1a1a1a; color: white; margin: 0; padding: 10px; }
-        #map { height: 400px; width: 100%; border-radius: 15px; margin-top: 10px; border: 2px solid #333; }
+        #map { height: 350px; width: 100%; border-radius: 15px; margin-top: 10px; border: 2px solid #333; }
         .panel-pedidos { background: #2c2c2c; padding: 15px; border-radius: 12px; border: 1px solid #ffc107; margin-bottom: 10px; }
         .pedido-card { padding:15px; background:#444; margin:10px 0; border-radius:10px; border-left: 8px solid #ffc107; text-align: left; }
         .distancia-tag { color: #ffc107; font-weight: bold; float: right; }
         .btn-aceptar { background:#ffc107; border:none; padding:12px; border-radius:8px; font-weight:bold; width:100%; margin-top:10px; cursor: pointer; color: black; }
         .btn-rechazar { background:transparent; border:1px solid #ff4444; color: #ff4444; padding:8px; border-radius:8px; font-weight:bold; width:100%; margin-top:8px; cursor: pointer; font-size: 12px; }
         .btn-cancelar { background: #ff4444; color: white; border: none; padding: 15px; border-radius: 8px; font-weight: bold; width: 100%; margin-top: 10px; font-size: 16px; }
-        #status-gps { color: #00ff00; font-weight: bold; margin: 10px 0; font-size: 14px; }
+        
+        /* ESTILO DEL INTERRUPTOR DE TRABAJO */
+        .switch-container { background: #333; padding: 15px; border-radius: 50px; display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; border: 1px solid #555; }
+        .switch { position: relative; display: inline-block; width: 60px; height: 34px; }
+        .switch input { opacity: 0; width: 0; height: 0; }
+        .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #ff4444; transition: .4s; border-radius: 34px; }
+        .slider:before { position: absolute; content: ""; height: 26px; width: 26px; left: 4px; bottom: 4px; background-color: white; transition: .4s; border-radius: 50%; }
+        input:checked + .slider { background-color: #00ff00; }
+        input:checked + .slider:before { transform: translateX(26px); }
+        
+        #status-gps { font-weight: bold; font-size: 14px; margin-bottom: 5px; }
         .leaflet-routing-container { display: none !important; }
     </style>
 </head>
 <body onload="verificarEstadoChofer()">
     <h2>CENTRAL OTIMAC 🚖</h2>
+
+    <div class="switch-container">
+        <span id="txtModo" style="font-weight: bold; color: #ff4444;">MODO: DESCONECTADO</span>
+        <label class="switch">
+            <input type="checkbox" id="checkTrabajo" onchange="toggleTrabajo()">
+            <span class="slider"></span>
+        </label>
+    </div>
     
-    <div id="status-gps">📡 Buscando señal GPS...</div>
+    <div id="status-gps" style="color: #ff4444;">🔴 GPS APAGADO (Ahorro de batería)</div>
+
     <div id="interfaz">
         <div class="panel-pedidos">
             <h3 style="margin-top:0;">Viajes Disponibles</h3>
-            <div id="lista-pedidos">Cargando radar...</div>
+            <div id="lista-pedidos">Enciende el modo trabajo para ver pedidos.</div>
         </div>
     </div>
     <div id="map"></div>
@@ -49,19 +67,46 @@
         var iconoTaxi = L.icon({ iconUrl: 'https://img.icons8.com/color/48/taxi.png', iconSize: [40, 40], iconAnchor: [20, 20] });
         var iconoPasajero = L.icon({ iconUrl: 'https://img.icons8.com/color/48/person-male.png', iconSize: [40, 40], iconAnchor: [20, 40] });
 
-        var markerChofer, markerCliente, controlRuta, idViajeActivo;
+        var markerChofer, markerCliente, controlRuta, idViajeActivo, watchID;
         var viajesRechazados = [];
 
         function verificarEstadoChofer() {
             var vActivo = localStorage.getItem("idViajeChoferActivo");
-            if(vActivo) reconectarViajeChofer(vActivo);
-            iniciarGPSAutomatico();
+            if(vActivo) {
+                // Si hay viaje activo, forzar encendido de GPS
+                document.getElementById('checkTrabajo').checked = true;
+                toggleTrabajo();
+                reconectarViajeChofer(vActivo);
+            }
         }
 
-        function iniciarGPSAutomatico() {
-            navigator.geolocation.watchPosition((pos) => {
+        function toggleTrabajo() {
+            var activo = document.getElementById('checkTrabajo').checked;
+            var statusTxt = document.getElementById('status-gps');
+            var modoTxt = document.getElementById('txtModo');
+
+            if(activo) {
+                modoTxt.innerText = "MODO: TRABAJANDO";
+                modoTxt.style.color = "#00ff00";
+                statusTxt.innerText = "📡 Buscando señal GPS...";
+                statusTxt.style.color = "#ffc107";
+                iniciarGPS();
+                escucharPedidos();
+            } else {
+                modoTxt.innerText = "MODO: DESCONECTADO";
+                modoTxt.style.color = "#ff4444";
+                statusTxt.innerText = "🔴 GPS APAGADO (Ahorro de batería)";
+                statusTxt.style.color = "#ff4444";
+                detenerGPS();
+                document.getElementById('lista-pedidos').innerHTML = "Enciende el modo trabajo para ver pedidos.";
+            }
+        }
+
+        function iniciarGPS() {
+            watchID = navigator.geolocation.watchPosition((pos) => {
                 var lat = pos.coords.latitude, lon = pos.coords.longitude;
                 document.getElementById('status-gps').innerText = "✅ GPS ACTIVO";
+                document.getElementById('status-gps').style.color = "#00ff00";
                 if(markerChofer) markerChofer.setLatLng([lat, lon]);
                 else { markerChofer = L.marker([lat, lon], {icon: iconoTaxi}).addTo(map); map.setView([lat, lon], 17); }
                 
@@ -71,35 +116,37 @@
             }, null, {enableHighAccuracy: true});
         }
 
-        database.ref('viajes').orderByChild('estado').equalTo('esperando').on('value', (snapshot) => {
-            if (idViajeActivo) return;
-            var pedidos = snapshot.val();
-            var contenedor = document.getElementById('lista-pedidos');
-            contenedor.innerHTML = "";
-            
-            if (pedidos && markerChofer) {
-                for (var id in pedidos) {
-                    // Si el viaje fue rechazado manualmente, no lo mostramos
-                    if(viajesRechazados.includes(id)) continue;
+        function detenerGPS() {
+            if(watchID) navigator.geolocation.clearWatch(watchID);
+            watchID = null;
+        }
 
-                    var cli = pedidos[id].cliente;
-                    var nPasajero = pedidos[id].nombre_cliente || "Cliente";
-                    
-                    var p1 = L.latLng(markerChofer.getLatLng());
-                    var p2 = L.latLng(cli.lat, cli.lon);
-                    var metros = p1.distanceTo(p2);
-                    var km = (metros / 1000).toFixed(1);
+        function escucharPedidos() {
+            database.ref('viajes').orderByChild('estado').equalTo('esperando').on('value', (snapshot) => {
+                if (idViajeActivo || !document.getElementById('checkTrabajo').checked) return;
+                var pedidos = snapshot.val();
+                var contenedor = document.getElementById('lista-pedidos');
+                contenedor.innerHTML = "";
+                
+                if (pedidos && markerChofer) {
+                    for (var id in pedidos) {
+                        if(viajesRechazados.includes(id)) continue;
+                        var cli = pedidos[id].cliente;
+                        var nPasajero = pedidos[id].nombre_cliente || "Cliente";
+                        var dist = L.latLng(markerChofer.getLatLng()).distanceTo(L.latLng(cli.lat, cli.lon));
+                        var km = (dist / 1000).toFixed(1);
 
-                    contenedor.innerHTML += `
-                        <div class="pedido-card" id="card-${id}">
-                            <span class="distancia-tag">📍 ${km} km</span>
-                            <b>PASAJERO:</b> ${nPasajero}<br>
-                            <button class="btn-aceptar" onclick="aceptarViaje('${id}')">ACEPTAR VIAJE</button>
-                            <button class="btn-rechazar" onclick="rechazarViajeLocal('${id}')">OCULTAR / RECHAZAR</button>
-                        </div>`;
-                }
-            } else { contenedor.innerHTML = "Esperando solicitudes..."; }
-        });
+                        contenedor.innerHTML += `
+                            <div class="pedido-card" id="card-${id}">
+                                <span class="distancia-tag">📍 ${km} km</span>
+                                <b>PASAJERO:</b> ${nPasajero}<br>
+                                <button class="btn-aceptar" onclick="aceptarViaje('${id}')">ACEPTAR VIAJE</button>
+                                <button class="btn-rechazar" onclick="rechazarViajeLocal('${id}')">OCULTAR</button>
+                            </div>`;
+                    }
+                } else { contenedor.innerHTML = "Esperando solicitudes..."; }
+            });
+        }
 
         function rechazarViajeLocal(id) {
             viajesRechazados.push(id);
@@ -111,7 +158,6 @@
             var n = localStorage.getItem("choferNombre") || "Chofer";
             var e = localStorage.getItem("choferEco") || "S/N";
             localStorage.setItem("idViajeChoferActivo", id);
-            
             database.ref('viajes/' + id).update({ 
                 estado: 'en_curso',
                 chofer: { nombre: n, economico: e, lat: markerChofer.getLatLng().lat, lon: markerChofer.getLatLng().lng }
@@ -121,12 +167,7 @@
 
         function reconectarViajeChofer(id) {
             idViajeActivo = id;
-            document.getElementById('interfaz').innerHTML = `
-                <div class="panel-pedidos">
-                    <h3>VIAJE ACTIVO #${id}</h3>
-                    <button class="btn-cancelar" onclick="terminarViaje('${id}')">FINALIZAR SERVICIO</button>
-                </div>`;
-            
+            document.getElementById('interfaz').innerHTML = `<div class="panel-pedidos"><h3>VIAJE ACTIVO #${id}</h3><button class="btn-cancelar" onclick="terminarViaje('${id}')">FINALIZAR SERVICIO</button></div>`;
             database.ref('viajes/' + id + '/cliente').once('value', (snap) => {
                 var posC = snap.val();
                 if(!posC) return;
@@ -136,13 +177,10 @@
                 if(controlRuta) map.removeControl(controlRuta);
                 controlRuta = L.Routing.control({
                     waypoints: [markerChofer.getLatLng(), L.latLng(posC.lat, posC.lon)],
-                    show: false, addWaypoints: false,
-                    createMarker: function() { return null; },
+                    show: false, addWaypoints: false, createMarker: function() { return null; },
                     lineOptions: { styles: [{ color: '#2478ff', weight: 6 }] }
                 }).addTo(map);
-                
-                var group = new L.featureGroup([markerChofer, markerCliente]);
-                map.fitBounds(group.getBounds().pad(0.3));
+                map.fitBounds(new L.featureGroup([markerChofer, markerCliente]).getBounds().pad(0.3));
             });
         }
 
