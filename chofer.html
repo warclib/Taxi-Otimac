@@ -10,27 +10,25 @@
     <link rel="stylesheet" href="https://unpkg.com/leaflet-routing-machine/dist/leaflet-routing-machine.css" />
     <style>
         body { font-family: 'Segoe UI', sans-serif; text-align: center; background: #1a1a1a; color: white; margin: 0; padding: 10px; }
-        #map { height: 450px; width: 100%; border-radius: 15px; margin-top: 10px; border: 2px solid #333; }
+        #map { height: 400px; width: 100%; border-radius: 15px; margin-top: 10px; border: 2px solid #333; }
         .panel-pedidos { background: #2c2c2c; padding: 15px; border-radius: 12px; border: 1px solid #ffc107; margin-bottom: 10px; }
+        .pedido-card { padding:15px; background:#444; margin:10px 0; border-radius:10px; border-left: 8px solid #ffc107; text-align: left; }
+        .distancia-tag { color: #ffc107; font-weight: bold; float: right; }
+        .btn-aceptar { background:#ffc107; border:none; padding:12px; border-radius:8px; font-weight:bold; width:100%; margin-top:10px; cursor: pointer; color: black; }
+        .btn-rechazar { background:transparent; border:1px solid #ff4444; color: #ff4444; padding:8px; border-radius:8px; font-weight:bold; width:100%; margin-top:8px; cursor: pointer; font-size: 12px; }
         .btn-cancelar { background: #ff4444; color: white; border: none; padding: 15px; border-radius: 8px; font-weight: bold; width: 100%; margin-top: 10px; font-size: 16px; }
         #status-gps { color: #00ff00; font-weight: bold; margin: 10px 0; font-size: 14px; }
-        .info-header { font-size: 14px; color: #aaa; margin-bottom: 10px; cursor: pointer; }
-        /* OCULTAR PESTAÑA BLANCA DE RUTA */
         .leaflet-routing-container { display: none !important; }
     </style>
 </head>
 <body onload="verificarEstadoChofer()">
     <h2>CENTRAL OTIMAC 🚖</h2>
     
-    <div class="info-header" onclick="registrarChofer()">
-        👤 <span id="displayNombre">Cargando...</span> | 🚕 <span id="displayEco">...</span> (Toca para editar)
-    </div>
-
-    <div id="status-gps">📡 Buscando señal...</div>
+    <div id="status-gps">📡 Buscando señal GPS...</div>
     <div id="interfaz">
         <div class="panel-pedidos">
-            <h3>Viajes Disponibles</h3>
-            <div id="lista-pedidos">Esperando solicitudes...</div>
+            <h3 style="margin-top:0;">Viajes Disponibles</h3>
+            <div id="lista-pedidos">Cargando radar...</div>
         </div>
     </div>
     <div id="map"></div>
@@ -52,28 +50,11 @@
         var iconoPasajero = L.icon({ iconUrl: 'https://img.icons8.com/color/48/person-male.png', iconSize: [40, 40], iconAnchor: [20, 40] });
 
         var markerChofer, markerCliente, controlRuta, idViajeActivo;
-
-        function registrarChofer() {
-            var n = prompt("Tu nombre:", localStorage.getItem("choferNombre") || "");
-            var e = prompt("Número económico:", localStorage.getItem("choferEco") || "");
-            if(n && e) {
-                localStorage.setItem("choferNombre", n);
-                localStorage.setItem("choferEco", e);
-                location.reload();
-            }
-        }
+        var viajesRechazados = [];
 
         function verificarEstadoChofer() {
-            var n = localStorage.getItem("choferNombre");
-            var e = localStorage.getItem("choferEco");
-            if(!n) registrarChofer();
-            else {
-                document.getElementById('displayNombre').innerText = n;
-                document.getElementById('displayEco').innerText = e;
-            }
-
-            var viajeGuardado = localStorage.getItem("idViajeChoferActivo");
-            if(viajeGuardado) reconectarViajeChofer(viajeGuardado);
+            var vActivo = localStorage.getItem("idViajeChoferActivo");
+            if(vActivo) reconectarViajeChofer(vActivo);
             iniciarGPSAutomatico();
         }
 
@@ -94,38 +75,57 @@
             if (idViajeActivo) return;
             var pedidos = snapshot.val();
             var contenedor = document.getElementById('lista-pedidos');
-            if (pedidos) {
-                contenedor.innerHTML = "";
+            contenedor.innerHTML = "";
+            
+            if (pedidos && markerChofer) {
                 for (var id in pedidos) {
+                    // Si el viaje fue rechazado manualmente, no lo mostramos
+                    if(viajesRechazados.includes(id)) continue;
+
+                    var cli = pedidos[id].cliente;
                     var nPasajero = pedidos[id].nombre_cliente || "Cliente";
-                    contenedor.innerHTML += `<div style="padding:15px; background:#444; margin:10px; border-radius:10px; border-left: 5px solid #ffc107;">
-                        <b>PASAJERO: ${nPasajero}</b><br>
-                        <button onclick="aceptarViaje('${id}')" style="background:#ffc107; border:none; padding:12px; border-radius:8px; font-weight:bold; width:100%; margin-top:10px;">ACEPTAR VIAJE</button>
-                    </div>`;
+                    
+                    var p1 = L.latLng(markerChofer.getLatLng());
+                    var p2 = L.latLng(cli.lat, cli.lon);
+                    var metros = p1.distanceTo(p2);
+                    var km = (metros / 1000).toFixed(1);
+
+                    contenedor.innerHTML += `
+                        <div class="pedido-card" id="card-${id}">
+                            <span class="distancia-tag">📍 ${km} km</span>
+                            <b>PASAJERO:</b> ${nPasajero}<br>
+                            <button class="btn-aceptar" onclick="aceptarViaje('${id}')">ACEPTAR VIAJE</button>
+                            <button class="btn-rechazar" onclick="rechazarViajeLocal('${id}')">OCULTAR / RECHAZAR</button>
+                        </div>`;
                 }
             } else { contenedor.innerHTML = "Esperando solicitudes..."; }
         });
 
+        function rechazarViajeLocal(id) {
+            viajesRechazados.push(id);
+            var card = document.getElementById('card-' + id);
+            if(card) card.style.display = 'none';
+        }
+
         function aceptarViaje(id) {
-            var nombre = localStorage.getItem("choferNombre");
-            var eco = localStorage.getItem("choferEco");
+            var n = localStorage.getItem("choferNombre") || "Chofer";
+            var e = localStorage.getItem("choferEco") || "S/N";
             localStorage.setItem("idViajeChoferActivo", id);
             
             database.ref('viajes/' + id).update({ 
                 estado: 'en_curso',
-                chofer: {
-                    nombre: nombre,
-                    economico: eco,
-                    lat: markerChofer.getLatLng().lat,
-                    lon: markerChofer.getLatLng().lng
-                }
+                chofer: { nombre: n, economico: e, lat: markerChofer.getLatLng().lat, lon: markerChofer.getLatLng().lng }
             });
             reconectarViajeChofer(id);
         }
 
         function reconectarViajeChofer(id) {
             idViajeActivo = id;
-            document.getElementById('interfaz').innerHTML = `<div class="panel-pedidos"><h3>VIAJE ACTIVO #${id}</h3><button class="btn-cancelar" onclick="terminarViaje('${id}')">FINALIZAR SERVICIO</button></div>`;
+            document.getElementById('interfaz').innerHTML = `
+                <div class="panel-pedidos">
+                    <h3>VIAJE ACTIVO #${id}</h3>
+                    <button class="btn-cancelar" onclick="terminarViaje('${id}')">FINALIZAR SERVICIO</button>
+                </div>`;
             
             database.ref('viajes/' + id + '/cliente').once('value', (snap) => {
                 var posC = snap.val();
@@ -136,8 +136,7 @@
                 if(controlRuta) map.removeControl(controlRuta);
                 controlRuta = L.Routing.control({
                     waypoints: [markerChofer.getLatLng(), L.latLng(posC.lat, posC.lon)],
-                    show: false,
-                    addWaypoints: false,
+                    show: false, addWaypoints: false,
                     createMarker: function() { return null; },
                     lineOptions: { styles: [{ color: '#2478ff', weight: 6 }] }
                 }).addTo(map);
