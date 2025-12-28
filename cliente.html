@@ -3,40 +3,40 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Chofer - Otimac 🚖</title>
+    <title>Cliente - Otimac 🚖</title>
     <meta name="apple-mobile-web-app-capable" content="yes">
-    <link rel="apple-touch-icon" href="logo.png">
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-    <link rel="stylesheet" href="https://unpkg.com/leaflet-routing-machine/dist/leaflet-routing-machine.css" />
     <style>
         body { font-family: 'Segoe UI', sans-serif; text-align: center; background: #1a1a1a; color: white; margin: 0; padding: 10px; }
-        #map { height: 450px; width: 100%; border-radius: 15px; margin-top: 10px; border: 2px solid #333; }
-        .panel-pedidos { background: #2c2c2c; padding: 15px; border-radius: 12px; border: 1px solid #ffc107; margin-bottom: 10px; }
-        .btn-cancelar { background: #ff4444; color: white; border: none; padding: 15px; border-radius: 8px; font-weight: bold; width: 100%; margin-top: 10px; font-size: 16px; }
-        #status-gps { color: #00ff00; font-weight: bold; margin: 10px 0; font-size: 14px; }
-        .info-header { font-size: 14px; color: #aaa; margin-bottom: 10px; cursor: pointer; }
-        /* OCULTAR PESTAÑA BLANCA DE RUTA */
-        .leaflet-routing-container { display: none !important; }
+        #map { height: 400px; width: 100%; border-radius: 15px; border: 2px solid #ffc107; margin-top: 10px; }
+        .btn-pedido { background: #ffc107; color: black; border: none; padding: 20px; font-weight: bold; border-radius: 10px; width: 100%; font-size: 18px; margin-top: 10px; }
+        .btn-cancelar { background: #ff4444; color: white; border: none; padding: 12px; border-radius: 8px; font-weight: bold; width: 100%; margin-top: 10px; font-size: 14px; }
+        .card-chofer { background: #222; padding: 15px; border-radius: 12px; border: 2px solid #00ff00; margin-bottom: 10px; display: none; }
+        #status-viaje { color: #ffc107; font-weight: bold; margin: 10px 0; }
+        input { padding: 15px; width: 80%; border-radius: 10px; margin-bottom: 10px; font-size: 16px; border: none; }
     </style>
 </head>
-<body onload="verificarEstadoChofer()">
-    <h2>CENTRAL OTIMAC 🚖</h2>
+<body onload="verificarNombreYViaje()">
+    <h2>SOLICITAR OTIMAC 🚖</h2>
     
-    <div class="info-header" onclick="registrarChofer()">
-        👤 <span id="displayNombre">Cargando...</span> | 🚕 <span id="displayEco">...</span> (Toca para editar)
+    <div id="registro" style="display:none; padding: 20px;">
+        <p>¿Cuál es tu nombre?</p>
+        <input type="text" id="inputNombre" placeholder="Tu nombre">
+        <button class="btn-pedido" onclick="guardarNombre()">EMPEZAR</button>
     </div>
 
-    <div id="status-gps">📡 Buscando señal...</div>
-    <div id="interfaz">
-        <div class="panel-pedidos">
-            <h3>Viajes Disponibles</h3>
-            <div id="lista-pedidos">Esperando solicitudes...</div>
+    <div id="areaPedido" style="display:none;">
+        <div id="cardChofer" class="card-chofer">
+            <div id="infoChofer" style="font-size: 18px;"></div>
         </div>
+        <div id="status-viaje">Cargando...</div>
+        <button class="btn-pedido" id="btnPedir" onclick="pedirTaxi()">🚖 PEDIR TAXI AHORA</button>
+        <button class="btn-cancelar" id="btnCancelar" onclick="cancelarPedido()" style="display:none;">❌ CANCELAR PEDIDO</button>
     </div>
+
     <div id="map"></div>
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-    <script src="https://unpkg.com/leaflet-routing-machine/dist/leaflet-routing-machine.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
 
@@ -51,106 +51,82 @@
         var iconoTaxi = L.icon({ iconUrl: 'https://img.icons8.com/color/48/taxi.png', iconSize: [40, 40], iconAnchor: [20, 20] });
         var iconoPasajero = L.icon({ iconUrl: 'https://img.icons8.com/color/48/person-male.png', iconSize: [40, 40], iconAnchor: [20, 40] });
 
-        var markerChofer, markerCliente, controlRuta, idViajeActivo;
+        var markerCliente, markerChofer, idViaje;
 
-        function registrarChofer() {
-            var n = prompt("Tu nombre:", localStorage.getItem("choferNombre") || "");
-            var e = prompt("Número económico:", localStorage.getItem("choferEco") || "");
-            if(n && e) {
-                localStorage.setItem("choferNombre", n);
-                localStorage.setItem("choferEco", e);
-                location.reload();
-            }
-        }
-
-        function verificarEstadoChofer() {
-            var n = localStorage.getItem("choferNombre");
-            var e = localStorage.getItem("choferEco");
-            if(!n) registrarChofer();
+        function verificarNombreYViaje() {
+            var n = localStorage.getItem("nombreCliente");
+            if(!n) { document.getElementById('registro').style.display = 'block'; } 
             else {
-                document.getElementById('displayNombre').innerText = n;
-                document.getElementById('displayEco').innerText = e;
+                document.getElementById('areaPedido').style.display = 'block';
+                document.getElementById('status-viaje').innerText = "Hola " + n + ", ¿pedimos un taxi?";
+                var viajeActivo = localStorage.getItem("idViajeActivo");
+                if(viajeActivo) reconectarViaje(viajeActivo);
             }
-
-            var viajeGuardado = localStorage.getItem("idViajeChoferActivo");
-            if(viajeGuardado) reconectarViajeChofer(viajeGuardado);
-            iniciarGPSAutomatico();
         }
 
-        function iniciarGPSAutomatico() {
-            navigator.geolocation.watchPosition((pos) => {
-                var lat = pos.coords.latitude, lon = pos.coords.longitude;
-                document.getElementById('status-gps').innerText = "✅ GPS ACTIVO";
-                if(markerChofer) markerChofer.setLatLng([lat, lon]);
-                else { markerChofer = L.marker([lat, lon], {icon: iconoTaxi}).addTo(map); map.setView([lat, lon], 17); }
-                
-                if (idViajeActivo) {
-                    database.ref('viajes/' + idViajeActivo + '/chofer').update({ lat: lat, lon: lon });
-                }
-            }, null, {enableHighAccuracy: true});
+        function guardarNombre() {
+            var n = document.getElementById('inputNombre').value;
+            if(n) { localStorage.setItem("nombreCliente", n); location.reload(); }
         }
 
-        database.ref('viajes').orderByChild('estado').equalTo('esperando').on('value', (snapshot) => {
-            if (idViajeActivo) return;
-            var pedidos = snapshot.val();
-            var contenedor = document.getElementById('lista-pedidos');
-            if (pedidos) {
-                contenedor.innerHTML = "";
-                for (var id in pedidos) {
-                    var nPasajero = pedidos[id].nombre_cliente || "Cliente";
-                    contenedor.innerHTML += `<div style="padding:15px; background:#444; margin:10px; border-radius:10px; border-left: 5px solid #ffc107;">
-                        <b>PASAJERO: ${nPasajero}</b><br>
-                        <button onclick="aceptarViaje('${id}')" style="background:#ffc107; border:none; padding:12px; border-radius:8px; font-weight:bold; width:100%; margin-top:10px;">ACEPTAR VIAJE</button>
-                    </div>`;
-                }
-            } else { contenedor.innerHTML = "Esperando solicitudes..."; }
-        });
-
-        function aceptarViaje(id) {
-            var nombre = localStorage.getItem("choferNombre");
-            var eco = localStorage.getItem("choferEco");
-            localStorage.setItem("idViajeChoferActivo", id);
-            
-            database.ref('viajes/' + id).update({ 
-                estado: 'en_curso',
-                chofer: {
-                    nombre: nombre,
-                    economico: eco,
-                    lat: markerChofer.getLatLng().lat,
-                    lon: markerChofer.getLatLng().lng
-                }
-            });
-            reconectarViajeChofer(id);
-        }
-
-        function reconectarViajeChofer(id) {
-            idViajeActivo = id;
-            document.getElementById('interfaz').innerHTML = `<div class="panel-pedidos"><h3>VIAJE ACTIVO #${id}</h3><button class="btn-cancelar" onclick="terminarViaje('${id}')">FINALIZAR SERVICIO</button></div>`;
-            
-            database.ref('viajes/' + id + '/cliente').once('value', (snap) => {
-                var posC = snap.val();
-                if(!posC) return;
-                if(markerCliente) map.removeLayer(markerCliente);
-                markerCliente = L.marker([posC.lat, posC.lon], {icon: iconoPasajero}).addTo(map);
-
-                if(controlRuta) map.removeControl(controlRuta);
-                controlRuta = L.Routing.control({
-                    waypoints: [markerChofer.getLatLng(), L.latLng(posC.lat, posC.lon)],
-                    show: false,
-                    addWaypoints: false,
-                    createMarker: function() { return null; },
-                    lineOptions: { styles: [{ color: '#2478ff', weight: 6 }] }
-                }).addTo(map);
-                
-                var group = new L.featureGroup([markerChofer, markerCliente]);
-                map.fitBounds(group.getBounds().pad(0.3));
+        function pedirTaxi() {
+            navigator.geolocation.getCurrentPosition((pos) => {
+                var miPos = { lat: pos.coords.latitude, lon: pos.coords.longitude };
+                idViaje = Math.floor(1000 + Math.random() * 9000);
+                localStorage.setItem("idViajeActivo", idViaje);
+                database.ref('viajes/' + idViaje).set({
+                    cliente: miPos,
+                    nombre_cliente: localStorage.getItem("nombreCliente"),
+                    estado: "esperando"
+                }).then(() => { reconectarViaje(idViaje); });
             });
         }
 
-        function terminarViaje(id) {
-            if(confirm("¿Terminar servicio?")) {
-                localStorage.removeItem("idViajeChoferActivo");
-                database.ref('viajes/' + id).remove().then(() => { location.reload(); });
+        function reconectarViaje(id) {
+            document.getElementById('btnPedir').style.display = 'none';
+            document.getElementById('btnCancelar').style.display = 'block';
+
+            database.ref('viajes/' + id).on('value', (snap) => {
+                var viaje = snap.val();
+                if(!viaje) { localStorage.removeItem("idViajeActivo"); location.reload(); return; }
+
+                if (viaje.cliente) {
+                    if (markerCliente) markerCliente.setLatLng([viaje.cliente.lat, viaje.cliente.lon]);
+                    else markerCliente = L.marker([viaje.cliente.lat, viaje.cliente.lon], {icon: iconoPasajero}).addTo(map);
+                }
+
+                if (viaje.chofer && viaje.chofer.nombre) {
+                    document.getElementById('status-viaje').innerText = "✅ ¡Taxi en camino!";
+                    document.getElementById('cardChofer').style.display = 'block';
+                    
+                    // Cálculo de tiempo
+                    var dist = L.latLng(markerCliente.getLatLng()).distanceTo(L.latLng(viaje.chofer.lat, viaje.chofer.lon));
+                    var tiempo = Math.round(dist / 300); if(tiempo < 1) tiempo = 1;
+
+                    document.getElementById('infoChofer').innerHTML = `
+                        <b>Chofer:</b> ${viaje.chofer.nombre}<br>
+                        <b>Taxi:</b> ${viaje.chofer.economico}<br>
+                        <span style="color:#00ff00;">⏱️ Llega en: ${tiempo} min</span>`;
+                    
+                    if (markerChofer) markerChofer.setLatLng([viaje.chofer.lat, viaje.chofer.lon]);
+                    else markerChofer = L.marker([viaje.chofer.lat, viaje.chofer.lon], {icon: iconoTaxi}).addTo(map);
+
+                    var group = new L.featureGroup([markerCliente, markerChofer]);
+                    map.fitBounds(group.getBounds().pad(0.2));
+                } else {
+                    document.getElementById('status-viaje').innerText = "⏳ Buscando taxi... Viaje #" + id;
+                    map.setView(markerCliente.getLatLng(), 16);
+                }
+            });
+        }
+
+        function cancelarPedido() {
+            var id = localStorage.getItem("idViajeActivo");
+            if(confirm("¿Cancelar viaje?")) {
+                database.ref('viajes/' + id).remove().then(() => {
+                    localStorage.removeItem("idViajeActivo");
+                    location.reload();
+                });
             }
         }
     </script>
