@@ -11,9 +11,10 @@
         #map { height: 400px; width: 100%; border-radius: 15px; border: 2px solid #ffc107; margin-top: 10px; }
         .btn-pedido { background: #ffc107; color: black; border: none; padding: 20px; font-weight: bold; border-radius: 10px; width: 100%; font-size: 18px; margin-top: 10px; }
         .btn-cancelar { background: #ff4444; color: white; border: none; padding: 12px; border-radius: 8px; font-weight: bold; width: 100%; margin-top: 10px; }
-        .card-chofer { background: #222; padding: 15px; border-radius: 12px; border: 2px solid #00ff00; margin-bottom: 10px; display: none; text-align: left; }
-        .alerta-llegada { background: #00ff00; color: black; padding: 15px; border-radius: 10px; font-weight: bold; margin-bottom: 10px; display: none; }
-        #status-viaje { color: #ffc107; font-weight: bold; margin: 10px 0; font-size: 18px; }
+        .card-chofer { background: #222; padding: 15px; border-radius: 12px; border: 2px solid #00ff00; margin-bottom: 10px; display: none; }
+        .alerta-llegada { background: #00ff00; color: black; padding: 15px; border-radius: 10px; font-weight: bold; margin-bottom: 10px; display: none; animation: pulse 1s infinite; }
+        @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.5; } 100% { opacity: 1; } }
+        #status-viaje { color: #ffc107; font-weight: bold; margin: 10px 0; }
         input { padding: 15px; width: 80%; border-radius: 10px; margin-bottom: 10px; font-size: 16px; border: none; }
     </style>
 </head>
@@ -31,9 +32,7 @@
 
         <div id="cardChofer" class="card-chofer">
             <div id="infoChofer" style="font-size: 18px;"></div>
-            <div id="tiempoEstimado" style="color: #00ff00; font-weight: bold; margin-top: 5px;"></div>
         </div>
-
         <div id="status-viaje">Cargando...</div>
         <button class="btn-pedido" id="btnPedir" onclick="pedirTaxi()">🚖 PEDIR TAXI AHORA</button>
         <button class="btn-cancelar" id="btnCancelar" onclick="cancelarPedido()" style="display:none;">❌ CANCELAR PEDIDO</button>
@@ -93,15 +92,9 @@
 
             database.ref('viajes/' + id).on('value', (snap) => {
                 var viaje = snap.val();
-                
-                // --- MEJORA PARA DESCONECTAR AUTOMÁTICAMENTE ---
-                if(!viaje) { 
-                    localStorage.removeItem("idViajeActivo"); 
-                    location.reload(); 
-                    return; 
-                }
-                // ----------------------------------------------
+                if(!viaje) { localStorage.removeItem("idViajeActivo"); location.reload(); return; }
 
+                // --- NUEVO: DETECTAR SI EL CHOFER LLEGÓ ---
                 if (viaje.estado === 'chofer_llego') {
                     document.getElementById('alertaLlegada').style.display = 'block';
                     document.getElementById('status-viaje').innerText = "🚩 EL CHOFER ESTÁ AFUERA";
@@ -113,28 +106,15 @@
                     else markerCliente = L.marker(posC, {icon: iconoPasajero}).addTo(map);
                 }
 
-                if (viaje.chofer && viaje.chofer.nombre) {
+                if (viaje.chofer) {
                     document.getElementById('cardChofer').style.display = 'block';
-                    document.getElementById('status-viaje').innerText = "🚕 Taxi en camino";
-                    
-                    var dist = L.latLng(markerCliente.getLatLng()).distanceTo(L.latLng(viaje.chofer.lat, viaje.chofer.lon));
-                    var minutos = Math.round(dist / 300);
-                    if (minutos < 1) minutos = 1;
-
-                    document.getElementById('infoChofer').innerHTML = `
-                        <b>Taxista:</b> ${viaje.chofer.nombre}<br>
-                        <b>Unidad:</b> ${viaje.chofer.economico}`;
-                    
-                    document.getElementById('tiempoEstimado').innerText = `⏱️ Llega en aprox: ${minutos} min`;
-
+                    document.getElementById('infoChofer').innerHTML = `<b>Chofer:</b> ${viaje.chofer.nombre} | 🚕 ${viaje.chofer.economico}`;
                     var posT = [viaje.chofer.lat, viaje.chofer.lon];
                     if (markerChofer) markerChofer.setLatLng(posT);
                     else markerChofer = L.marker(posT, {icon: iconoTaxi}).addTo(map);
                     
                     var group = new L.featureGroup([markerCliente, markerChofer]);
                     map.fitBounds(group.getBounds().pad(0.2));
-                } else {
-                    document.getElementById('status-viaje').innerText = "⏳ Buscando taxi...";
                 }
             });
         }
@@ -150,55 +130,4 @@
         }
     </script>
 </body>
-</html>function reconectarViaje(id) {
-    document.getElementById('btnPedir').style.display = 'none';
-    document.getElementById('btnCancelar').style.display = 'block';
-
-    database.ref('viajes/' + id).on('value', (snap) => {
-        var viaje = snap.val();
-        
-        // --- ESTA ES LA MEJORA CLAVE ---
-        if(!viaje) { 
-            // Si el viaje ya no existe en Firebase (porque el chofer lo terminó o canceló)
-            localStorage.removeItem("idViajeActivo"); // Borramos la memoria
-            alert("El servicio ha finalizado."); // Avisamos al usuario
-            location.reload(); // Refrescamos para que pueda pedir otro
-            return; 
-        }
-        // -------------------------------
-
-        if (viaje.estado === 'chofer_llego') {
-            document.getElementById('alertaLlegada').style.display = 'block';
-            document.getElementById('status-viaje').innerText = "🚩 ¡TU TAXI LLEGÓ!";
-        }
-
-        if (viaje.cliente) {
-            var posC = [viaje.cliente.lat, viaje.cliente.lon];
-            if (markerCliente) markerCliente.setLatLng(posC);
-            else markerCliente = L.marker(posC, {icon: iconoPasajero}).addTo(map);
-        }
-
-        if (viaje.chofer && viaje.chofer.nombre) {
-            document.getElementById('cardChofer').style.display = 'block';
-            document.getElementById('status-viaje').innerText = "🚕 Taxi en camino";
-            
-            var dist = L.latLng(markerCliente.getLatLng()).distanceTo(L.latLng(viaje.chofer.lat, viaje.chofer.lon));
-            var minutos = Math.round(dist / 300);
-            if (minutos < 1) minutos = 1;
-
-            document.getElementById('infoChofer').innerHTML = `
-                <b>Taxista:</b> ${viaje.chofer.nombre}<br>
-                <b>Unidad:</b> ${viaje.chofer.economico}`;
-            
-            document.getElementById('tiempoEstimado').innerText = `⏱️ Llega en aprox: ${minutos} min`;
-
-            var posT = [viaje.chofer.lat, viaje.chofer.lon];
-            if (markerChofer) markerChofer.setLatLng(posT);
-            else markerChofer = L.marker(posT, {icon: iconoTaxi}).addTo(map);
-
-            var group = new L.featureGroup([markerCliente, markerChofer]);
-            map.fitBounds(group.getBounds().pad(0.3));
-        }
-    });
-}
-
+</html>
