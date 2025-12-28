@@ -34,7 +34,8 @@
             <div id="tiempoEstimado" style="color: #00ff00; font-weight: bold; margin-top: 5px;"></div>
         </div>
 
-        <div id="status-viaje">Cargando...</div>
+        <div id="status-viaje">Identificando...</div>
+
         <button class="btn-pedido" id="btnPedir" onclick="pedirTaxi()">🚖 PEDIR TAXI AHORA</button>
         <button class="btn-cancelar" id="btnCancelar" onclick="cancelarPedido()" style="display:none;">❌ CANCELAR PEDIDO</button>
     </div>
@@ -63,6 +64,8 @@
             if(!n) document.getElementById('registro').style.display = 'block';
             else {
                 document.getElementById('areaPedido').style.display = 'block';
+                // RESTAURADO: Tu frase de bienvenida
+                document.getElementById('status-viaje').innerText = "Hola " + n + ", ¿pedimos un taxi hoy?";
                 var vActivo = localStorage.getItem("idViajeActivo");
                 if(vActivo) reconectarViaje(vActivo);
             }
@@ -75,6 +78,7 @@
 
         function pedirTaxi() {
             document.getElementById('btnPedir').disabled = true;
+            document.getElementById('status-viaje').innerText = "Buscando taxi cercano...";
             navigator.geolocation.getCurrentPosition((pos) => {
                 var miPos = { lat: pos.coords.latitude, lon: pos.coords.longitude };
                 idViaje = Math.floor(1000 + Math.random() * 9000);
@@ -94,13 +98,12 @@
             database.ref('viajes/' + id).on('value', (snap) => {
                 var viaje = snap.val();
                 
-                // --- MEJORA PARA DESCONECTAR AUTOMÁTICAMENTE ---
+                // ÚNICO CAMBIO: Regresar a inicio si el viaje se borra
                 if(!viaje) { 
                     localStorage.removeItem("idViajeActivo"); 
                     location.reload(); 
                     return; 
                 }
-                // ----------------------------------------------
 
                 if (viaje.estado === 'chofer_llego') {
                     document.getElementById('alertaLlegada').style.display = 'block';
@@ -115,7 +118,7 @@
 
                 if (viaje.chofer && viaje.chofer.nombre) {
                     document.getElementById('cardChofer').style.display = 'block';
-                    document.getElementById('status-viaje').innerText = "🚕 Taxi en camino";
+                    document.getElementById('status-viaje').innerText = "🚕 El taxi va en camino...";
                     
                     var dist = L.latLng(markerCliente.getLatLng()).distanceTo(L.latLng(viaje.chofer.lat, viaje.chofer.lon));
                     var minutos = Math.round(dist / 300);
@@ -133,15 +136,13 @@
                     
                     var group = new L.featureGroup([markerCliente, markerChofer]);
                     map.fitBounds(group.getBounds().pad(0.2));
-                } else {
-                    document.getElementById('status-viaje').innerText = "⏳ Buscando taxi...";
                 }
             });
         }
 
         function cancelarPedido() {
             var id = localStorage.getItem("idViajeActivo");
-            if(confirm("¿Cancelar viaje?")) {
+            if(confirm("¿Deseas cancelar el viaje?")) {
                 database.ref('viajes/' + id).remove().then(() => {
                     localStorage.removeItem("idViajeActivo");
                     location.reload();
