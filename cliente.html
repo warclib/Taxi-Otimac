@@ -40,34 +40,25 @@
         function pedirTaxi() {
             navigator.geolocation.getCurrentPosition((pos) => {
                 var lat = pos.coords.latitude; var lon = pos.coords.longitude;
-                // GENERADOR DE NÚMERO CORTO (4 dígitos)
+                // NÚMERO DE VIAJE CORTO (EJ: 4582)
                 idViaje = Math.floor(1000 + Math.random() * 9000); 
                 
                 markerCliente = L.marker([lat, lon], {icon: iconoPasajero}).addTo(map);
                 map.setView([lat, lon], 16);
-                
                 database.ref('viajes/' + idViaje).set({ cliente: { lat: lat, lon: lon }, estado: "esperando" });
                 
                 document.getElementById('btnPedir').style.display = 'none';
-                document.getElementById('status').innerText = "⏳ Buscando taxi... Viaje #" + idViaje;
+                document.getElementById('status').innerText = "⏳ Buscando taxi... # " + idViaje;
 
-                // ESCUCHAR AL CHOFER
                 database.ref('viajes/' + idViaje + '/chofer').on('value', (snap) => {
                     var posT = snap.val();
                     if (posT) {
-                        document.getElementById('status').innerText = "✅ ¡Tu taxi va en camino! Viaje #" + idViaje;
+                        document.getElementById('status').innerText = "✅ ¡Taxi en camino! # " + idViaje;
                         if (markerChofer) { markerChofer.setLatLng([posT.lat, posT.lon]); } 
                         else { markerChofer = L.marker([posT.lat, posT.lon], {icon: iconoTaxi}).addTo(map); }
                     }
                 });
-
-                // SI EL VIAJE SE BORRA O FINALIZA
-                database.ref('viajes/' + idViaje).on('value', (snap) => {
-                    if (!snap.exists()) {
-                        alert("El servicio ha finalizado. ¡Gracias!");
-                        location.reload();
-                    }
-                });
+                database.ref('viajes/' + idViaje).on('value', (snap) => { if (!snap.exists()) { alert("Viaje terminado."); location.reload(); } });
             });
         }
     </script>
