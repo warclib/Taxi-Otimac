@@ -18,24 +18,23 @@
     </style>
 </head>
 <body onload="verificarNombreYViaje()">
-    <h2>SOLICITAR TAXI PLUS 🚖</h2>
+    <h2>SOLICITAR OTIMAC 🚖</h2>
     
     <div id="registro" style="display:none; padding: 20px;">
-        <p>¿Cuál es tu nombre para el taxista?</p>
+        <p>¿Cuál es tu nombre?</p>
         <input type="text" id="inputNombre" placeholder="Tu nombre">
         <button class="btn-pedido" onclick="guardarNombre()">EMPEZAR</button>
     </div>
 
     <div id="areaPedido" style="display:none;">
-        <div id="alertaLlegada" class="alerta-llegada">🚨 ¡TU TAXI HA LLEGADO! POR FAVOR SAL.</div>
+        <div id="alertaLlegada" class="alerta-llegada">🚨 ¡TU TAXI HA LLEGADO! POR FAVOR SAL A SU ENCUENTRO.</div>
 
         <div id="cardChofer" class="card-chofer">
             <div id="infoChofer" style="font-size: 18px;"></div>
             <div id="tiempoEstimado" style="color: #00ff00; font-weight: bold; margin-top: 5px;"></div>
         </div>
 
-        <div id="status-viaje">Cargando ubicación...</div>
-        
+        <div id="status-viaje">Cargando...</div>
         <button class="btn-pedido" id="btnPedir" onclick="pedirTaxi()">🚖 PEDIR TAXI AHORA</button>
         <button class="btn-cancelar" id="btnCancelar" onclick="cancelarPedido()" style="display:none;">❌ CANCELAR PEDIDO</button>
     </div>
@@ -47,7 +46,6 @@
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
 
     <script>
-        // CONFIGURACIÓN DE TU FIREBASE
         var firebaseConfig = { apiKey: "AIzaSyATLT5_woN8KO8-_E4_Nl7bEMlJGFI4uUQ", authDomain: "taxiotimac.firebaseapp.com", databaseURL: "https://taxiotimac-default-rtdb.firebaseio.com", projectId: "taxiotimac", storageBucket: "taxiotimac.firebasestorage.app", messagingSenderId: "533983007458", appId: "1:533983007458:web:254cef6b46c01a1718c4bb" };
         firebase.initializeApp(firebaseConfig);
         var database = firebase.database();
@@ -62,16 +60,11 @@
 
         function verificarNombreYViaje() {
             var n = localStorage.getItem("nombreCliente");
-            if(!n) {
-                document.getElementById('registro').style.display = 'block';
-            } else {
+            if(!n) document.getElementById('registro').style.display = 'block';
+            else {
                 document.getElementById('areaPedido').style.display = 'block';
                 var vActivo = localStorage.getItem("idViajeActivo");
-                if(vActivo) {
-                    reconectarViaje(vActivo);
-                } else {
-                    document.getElementById('status-viaje').innerText = "Hola " + n + ", ¿a dónde vamos hoy?";
-                }
+                if(vActivo) reconectarViaje(vActivo);
             }
         }
 
@@ -81,25 +74,16 @@
         }
 
         function pedirTaxi() {
-            // Bloqueo para no pedir más de uno
             document.getElementById('btnPedir').disabled = true;
-            document.getElementById('btnPedir').innerText = "Buscando unidad...";
-
             navigator.geolocation.getCurrentPosition((pos) => {
                 var miPos = { lat: pos.coords.latitude, lon: pos.coords.longitude };
                 idViaje = Math.floor(1000 + Math.random() * 9000);
                 localStorage.setItem("idViajeActivo", idViaje);
-
                 database.ref('viajes/' + idViaje).set({
                     cliente: miPos,
                     nombre_cliente: localStorage.getItem("nombreCliente"),
                     estado: "esperando"
-                }).then(() => {
-                    reconectarViaje(idViaje);
-                });
-            }, (err) => {
-                alert("Error: Por favor activa tu GPS.");
-                document.getElementById('btnPedir').disabled = false;
+                }).then(() => reconectarViaje(idViaje));
             });
         }
 
@@ -109,31 +93,32 @@
 
             database.ref('viajes/' + id).on('value', (snap) => {
                 var viaje = snap.val();
-                if(!viaje) {
-                    localStorage.removeItem("idViajeActivo");
-                    location.reload();
-                    return;
+                
+                // --- MEJORA PARA DESCONECTAR AUTOMÁTICAMENTE ---
+                if(!viaje) { 
+                    localStorage.removeItem("idViajeActivo"); 
+                    location.reload(); 
+                    return; 
                 }
+                // ----------------------------------------------
 
                 if (viaje.estado === 'chofer_llego') {
                     document.getElementById('alertaLlegada').style.display = 'block';
-                    document.getElementById('status-viaje').innerText = "🚩 ¡TU TAXI LLEGÓ!";
+                    document.getElementById('status-viaje').innerText = "🚩 EL CHOFER ESTÁ AFUERA";
                 }
 
                 if (viaje.cliente) {
                     var posC = [viaje.cliente.lat, viaje.cliente.lon];
                     if (markerCliente) markerCliente.setLatLng(posC);
                     else markerCliente = L.marker(posC, {icon: iconoPasajero}).addTo(map);
-                    if (!markerChofer) map.setView(posC, 16);
                 }
 
                 if (viaje.chofer && viaje.chofer.nombre) {
                     document.getElementById('cardChofer').style.display = 'block';
                     document.getElementById('status-viaje').innerText = "🚕 Taxi en camino";
                     
-                    // Cálculo de tiempo estimado
                     var dist = L.latLng(markerCliente.getLatLng()).distanceTo(L.latLng(viaje.chofer.lat, viaje.chofer.lon));
-                    var minutos = Math.round(dist / 300); // 300 metros por minuto aprox.
+                    var minutos = Math.round(dist / 300);
                     if (minutos < 1) minutos = 1;
 
                     document.getElementById('infoChofer').innerHTML = `
@@ -145,18 +130,18 @@
                     var posT = [viaje.chofer.lat, viaje.chofer.lon];
                     if (markerChofer) markerChofer.setLatLng(posT);
                     else markerChofer = L.marker(posT, {icon: iconoTaxi}).addTo(map);
-
+                    
                     var group = new L.featureGroup([markerCliente, markerChofer]);
-                    map.fitBounds(group.getBounds().pad(0.3));
+                    map.fitBounds(group.getBounds().pad(0.2));
                 } else {
-                    document.getElementById('status-viaje').innerText = "⏳ Buscando taxi cercano...";
+                    document.getElementById('status-viaje').innerText = "⏳ Buscando taxi...";
                 }
             });
         }
 
         function cancelarPedido() {
-            if(confirm("¿Deseas cancelar el viaje?")) {
-                var id = localStorage.getItem("idViajeActivo");
+            var id = localStorage.getItem("idViajeActivo");
+            if(confirm("¿Cancelar viaje?")) {
                 database.ref('viajes/' + id).remove().then(() => {
                     localStorage.removeItem("idViajeActivo");
                     location.reload();
@@ -166,4 +151,3 @@
     </script>
 </body>
 </html>
-
