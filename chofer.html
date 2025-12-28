@@ -74,11 +74,24 @@
         var avisoLlegadaEnviado = false;
         let wakeLock = null;
 
-        // Mantener pantalla encendida
+        // --- FUNCIÓN DE PANTALLA MEJORADA ---
         async function mantenerPantalla() {
-            try { if ('wakeLock' in navigator) wakeLock = await navigator.wakeLock.request('screen'); } catch (err) {}
+            if ('wakeLock' in navigator) {
+                try {
+                    wakeLock = await navigator.wakeLock.request('screen');
+                } catch (err) {
+                    console.log("WakeLock error");
+                }
+            }
         }
-        mantenerPantalla();
+
+        // Bloque de re-activación automática
+        document.addEventListener('visibilitychange', () => {
+            if (document.visibilityState === 'visible') {
+                mantenerPantalla();
+            }
+        });
+        // ------------------------------------
 
         function registrarChofer() {
             var n = prompt("Nombre:", localStorage.getItem("choferNombre") || "");
@@ -111,6 +124,7 @@
             var activo = document.getElementById('checkTrabajo').checked;
             localStorage.setItem("modoTrabajoActivo", activo);
             if(activo) {
+                mantenerPantalla(); // Activa al conectar
                 document.getElementById('txtModo').innerText = "MODO: TRABAJANDO";
                 document.getElementById('txtModo').style.color = "#00ff00";
                 iniciarGPS();
@@ -119,6 +133,7 @@
                 document.getElementById('txtModo').innerText = "MODO: DESCONECTADO";
                 document.getElementById('txtModo').style.color = "#ff4444";
                 detenerGPS();
+                if(wakeLock) wakeLock.release();
             }
         }
 
