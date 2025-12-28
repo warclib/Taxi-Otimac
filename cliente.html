@@ -14,8 +14,9 @@
         .card-chofer { background: #222; padding: 15px; border-radius: 12px; border: 2px solid #00ff00; margin-bottom: 10px; display: none; }
         .alerta-llegada { background: #00ff00; color: black; padding: 15px; border-radius: 10px; font-weight: bold; margin-bottom: 10px; display: none; animation: pulse 1s infinite; }
         @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.5; } 100% { opacity: 1; } }
-        #status-viaje { color: #ffc107; font-weight: bold; margin: 10px 0; }
+        #status-viaje { color: #ffc107; font-weight: bold; margin: 10px 0; font-size: 18px; }
         input { padding: 15px; width: 80%; border-radius: 10px; margin-bottom: 10px; font-size: 16px; border: none; }
+        #nombre-usuario { color: #ffc107; font-size: 20px; margin-bottom: 10px; display: block; }
     </style>
 </head>
 <body onload="verificarNombreYViaje()">
@@ -28,12 +29,14 @@
     </div>
 
     <div id="areaPedido" style="display:none;">
+        <span id="nombre-usuario"></span>
+
         <div id="alertaLlegada" class="alerta-llegada">🚨 ¡TU TAXI HA LLEGADO! POR FAVOR SAL A SU ENCUENTRO.</div>
 
         <div id="cardChofer" class="card-chofer">
             <div id="infoChofer" style="font-size: 18px;"></div>
         </div>
-        <div id="status-viaje">Cargando...</div>
+        <div id="status-viaje">Listo para pedir</div>
         <button class="btn-pedido" id="btnPedir" onclick="pedirTaxi()">🚖 PEDIR TAXI AHORA</button>
         <button class="btn-cancelar" id="btnCancelar" onclick="cancelarPedido()" style="display:none;">❌ CANCELAR PEDIDO</button>
     </div>
@@ -56,14 +59,26 @@
         var iconoPasajero = L.icon({ iconUrl: 'https://img.icons8.com/color/48/person-male.png', iconSize: [40, 40], iconAnchor: [20, 40] });
 
         var markerCliente, markerChofer, idViaje;
+        let wakeLock = null;
+
+        // Función para que no se apague la pantalla
+        async function mantenerPantalla() {
+            try { if ('wakeLock' in navigator) wakeLock = await navigator.wakeLock.request('screen'); } catch (err) {}
+        }
 
         function verificarNombreYViaje() {
             var n = localStorage.getItem("nombreCliente");
-            if(!n) document.getElementById('registro').style.display = 'block';
-            else {
+            if(!n) {
+                document.getElementById('registro').style.display = 'block';
+            } else {
                 document.getElementById('areaPedido').style.display = 'block';
+                document.getElementById('nombre-usuario').innerText = "Hola, " + n + " 👋";
+                
                 var vActivo = localStorage.getItem("idViajeActivo");
-                if(vActivo) reconectarViaje(vActivo);
+                if(vActivo) {
+                    mantenerPantalla();
+                    reconectarViaje(vActivo);
+                }
             }
         }
 
@@ -73,48 +88,57 @@
         }
 
         function pedirTaxi() {
+            mantenerPantalla(); // Bloquea la pantalla al pedir
             document.getElementById('btnPedir').disabled = true;
+            document.getElementById('status-viaje').innerText = "Buscando ubicación...";
+            
             navigator.geolocation.getCurrentPosition((pos) => {
                 var miPos = { lat: pos.coords.latitude, lon: pos.coords.longitude };
                 idViaje = Math.floor(1000 + Math.random() * 9000);
                 localStorage.setItem("idViajeActivo", idViaje);
+                
                 database.ref('viajes/' + idViaje).set({
                     cliente: miPos,
                     nombre_cliente: localStorage.getItem("nombreCliente"),
                     estado: "esperando"
                 }).then(() => reconectarViaje(idViaje));
+            }, (err) => {
+                alert("Por favor activa el GPS");
+                document.getElementById('btnPedir').disabled = false;
             });
         }
 
         function reconectarViaje(id) {
             document.getElementById('btnPedir').style.display = 'none';
             document.getElementById('btnCancelar').style.display = 'block';
+            document.getElementById('status-viaje').innerText = "Buscando chofer disponible...";
 
             database.ref('viajes/' + id).on('value', (snap) => {
                 var viaje = snap.val();
                 if(!viaje) { localStorage.removeItem("idViajeActivo"); location.reload(); return; }
 
-                // --- NUEVO: DETECTAR SI EL CHOFER LLEGÓ ---
                 if (viaje.estado === 'chofer_llego') {
                     document.getElementById('alertaLlegada').style.display = 'block';
                     document.getElementById('status-viaje').innerText = "🚩 EL CHOFER ESTÁ AFUERA";
+                } else if (viaje.estado === 'en_curso') {
+                    document.getElementById('status-viaje').innerText = "🚕 TU TAXI VA EN CAMINO";
                 }
 
                 if (viaje.cliente) {
                     var posC = [viaje.cliente.lat, viaje.cliente.lon];
                     if (markerCliente) markerCliente.setLatLng(posC);
-                    else markerCliente = L.marker(posC, {icon: iconoPasajero}).addTo(map);
+                    else { markerCliente = L.marker(posC, {icon: iconoPasajero}).addTo(map); map.setView(posC, 16); }
                 }
 
                 if (viaje.chofer) {
                     document.getElementById('cardChofer').style.display = 'block';
-                    document.getElementById('infoChofer').innerHTML = `<b>Chofer:</b> ${viaje.chofer.nombre} | 🚕 ${viaje.chofer.economico}`;
+                    document.getElementById('infoChofer').innerHTML = `<b>Chofer:</b> ${viaje.chofer.nombre} <br> <b>Unidad:</b> ${viaje.chofer.economico}`;
                     var posT = [viaje.chofer.lat, viaje.chofer.lon];
                     if (markerChofer) markerChofer.setLatLng(posT);
                     else markerChofer = L.marker(posT, {icon: iconoTaxi}).addTo(map);
                     
                     var group = new L.featureGroup([markerCliente, markerChofer]);
-                    map.fitBounds(group.getBounds().pad(0.2));
+                    map.fitBounds(group.getBounds().pad(0.3));
                 }
             });
         }
