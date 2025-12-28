@@ -74,24 +74,15 @@
         var avisoLlegadaEnviado = false;
         let wakeLock = null;
 
-        // --- FUNCIÓN DE PANTALLA MEJORADA ---
         async function mantenerPantalla() {
             if ('wakeLock' in navigator) {
-                try {
-                    wakeLock = await navigator.wakeLock.request('screen');
-                } catch (err) {
-                    console.log("WakeLock error");
-                }
+                try { wakeLock = await navigator.wakeLock.request('screen'); } catch (err) {}
             }
         }
 
-        // Bloque de re-activación automática
         document.addEventListener('visibilitychange', () => {
-            if (document.visibilityState === 'visible') {
-                mantenerPantalla();
-            }
+            if (document.visibilityState === 'visible') { mantenerPantalla(); }
         });
-        // ------------------------------------
 
         function registrarChofer() {
             var n = prompt("Nombre:", localStorage.getItem("choferNombre") || "");
@@ -124,16 +115,17 @@
             var activo = document.getElementById('checkTrabajo').checked;
             localStorage.setItem("modoTrabajoActivo", activo);
             if(activo) {
-                mantenerPantalla(); // Activa al conectar
+                mantenerPantalla();
                 document.getElementById('txtModo').innerText = "MODO: TRABAJANDO";
                 document.getElementById('txtModo').style.color = "#00ff00";
                 iniciarGPS();
-                escucharPedidos();
+                escucharPedidos(); 
             } else {
                 document.getElementById('txtModo').innerText = "MODO: DESCONECTADO";
                 document.getElementById('txtModo').style.color = "#ff4444";
                 detenerGPS();
                 if(wakeLock) wakeLock.release();
+                database.ref('viajes').off(); // Importante: apagar escucha al desconectar
             }
         }
 
@@ -151,9 +143,6 @@
                 if (idViajeActivo) {
                     database.ref('viajes/' + idViajeActivo + '/chofer').update({ lat: lat, lon: lon });
                     if (markerCliente) {
-                        var grupo = new L.featureGroup([markerChofer, markerCliente]);
-                        map.fitBounds(grupo.getBounds().pad(0.3));
-                        
                         var dist = miPos.distanceTo(markerCliente.getLatLng());
                         if (dist < 100 && !avisoLlegadaEnviado) {
                             avisoLlegadaEnviado = true;
@@ -173,17 +162,21 @@
         }
 
         function escucharPedidos() {
+            // Cambio clave: "on" se queda escuchando siempre, incluso los que ya estaban
             database.ref('viajes').orderByChild('estado').equalTo('esperando').on('value', (snapshot) => {
                 if (idViajeActivo || !document.getElementById('checkTrabajo').checked) return;
                 var pedidos = snapshot.val();
                 var contenedor = document.getElementById('lista-pedidos');
                 contenedor.innerHTML = "";
-                if (pedidos && markerChofer) {
+                if (pedidos) {
                     for (var id in pedidos) {
                         if(viajesRechazados.includes(id)) continue;
                         var cli = pedidos[id].cliente;
-                        var dist = L.latLng(markerChofer.getLatLng()).distanceTo(L.latLng(cli.lat, cli.lon));
-                        var km = (dist / 1000).toFixed(1);
+                        var km = "Calculando...";
+                        if(markerChofer) {
+                            var dist = L.latLng(markerChofer.getLatLng()).distanceTo(L.latLng(cli.lat, cli.lon));
+                            km = (dist / 1000).toFixed(1);
+                        }
                         contenedor.innerHTML += `<div class="pedido-card" id="card-${id}">
                             <span class="distancia-tag">📍 ${km} km</span>
                             <b>PASAJERO:</b> ${pedidos[id].nombre_cliente || "Cliente"}<br>
@@ -193,6 +186,11 @@
                     }
                 } else { contenedor.innerHTML = "Esperando solicitudes..."; }
             });
+        }
+
+        function rechazarViajeLocal(id) {
+            viajesRechazados.push(id);
+            escucharPedidos();
         }
 
         function aceptarViaje(id) {
