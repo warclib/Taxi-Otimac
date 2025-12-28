@@ -40,22 +40,34 @@
         function pedirTaxi() {
             navigator.geolocation.getCurrentPosition((pos) => {
                 var lat = pos.coords.latitude; var lon = pos.coords.longitude;
-                idViaje = Date.now();
+                // GENERADOR DE NÚMERO CORTO (4 dígitos)
+                idViaje = Math.floor(1000 + Math.random() * 9000); 
+                
                 markerCliente = L.marker([lat, lon], {icon: iconoPasajero}).addTo(map);
                 map.setView([lat, lon], 16);
+                
                 database.ref('viajes/' + idViaje).set({ cliente: { lat: lat, lon: lon }, estado: "esperando" });
+                
                 document.getElementById('btnPedir').style.display = 'none';
-                document.getElementById('status').innerText = "⏳ Buscando taxi cercano...";
+                document.getElementById('status').innerText = "⏳ Buscando taxi... Viaje #" + idViaje;
 
+                // ESCUCHAR AL CHOFER
                 database.ref('viajes/' + idViaje + '/chofer').on('value', (snap) => {
                     var posT = snap.val();
                     if (posT) {
-                        document.getElementById('status').innerText = "✅ ¡Tu taxi va en camino!";
+                        document.getElementById('status').innerText = "✅ ¡Tu taxi va en camino! Viaje #" + idViaje;
                         if (markerChofer) { markerChofer.setLatLng([posT.lat, posT.lon]); } 
                         else { markerChofer = L.marker([posT.lat, posT.lon], {icon: iconoTaxi}).addTo(map); }
                     }
                 });
-                database.ref('viajes/' + idViaje).on('value', (snap) => { if (!snap.exists()) { alert("Viaje terminado."); location.reload(); } });
+
+                // SI EL VIAJE SE BORRA O FINALIZA
+                database.ref('viajes/' + idViaje).on('value', (snap) => {
+                    if (!snap.exists()) {
+                        alert("El servicio ha finalizado. ¡Gracias!");
+                        location.reload();
+                    }
+                });
             });
         }
     </script>
