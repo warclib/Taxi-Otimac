@@ -5,41 +5,36 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Cliente - Otimac 🚖</title>
     <meta name="apple-mobile-web-app-capable" content="yes">
-    <link rel="apple-touch-icon" href="logo.png">
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
         body { font-family: 'Segoe UI', sans-serif; text-align: center; background: #1a1a1a; color: white; margin: 0; padding: 10px; }
-        #map { height: 380px; width: 100%; border-radius: 15px; border: 2px solid #ffc107; }
+        #map { height: 400px; width: 100%; border-radius: 15px; border: 2px solid #ffc107; margin-top: 10px; background: #222; }
         .btn-pedido { background: #ffc107; color: black; border: none; padding: 20px; font-weight: bold; border-radius: 10px; width: 100%; font-size: 18px; margin-top: 10px; }
         .btn-cancelar { background: #ff4444; color: white; border: none; padding: 12px; border-radius: 8px; font-weight: bold; width: 100%; margin-top: 10px; font-size: 14px; }
-        .btn-pedido:disabled { background: #555; color: #888; }
-        .card-chofer { background: #333; padding: 15px; border-radius: 12px; border: 2px solid #00ff00; margin-bottom: 10px; display: none; }
-        input { padding: 15px; width: 80%; border-radius: 10px; margin-bottom: 10px; font-size: 16px; border: none; outline: none; }
-        #msgHola { margin: 10px 0; font-weight: bold; color: #ffc107; }
+        .card-chofer { background: #1a1a1a; padding: 15px; border-radius: 12px; border: 2px solid #00ff00; margin-bottom: 10px; display: none; }
+        #status-viaje { color: #ffc107; font-weight: bold; margin: 10px 0; }
     </style>
 </head>
 <body onload="verificarNombreYViaje()">
     <h2>SOLICITAR OTIMAC 🚖</h2>
     
-    <div id="registro" style="display:none;">
-        <p>¡Bienvenido! ¿Cómo te llamas?</p>
-        <input type="text" id="inputNombre" placeholder="Tu nombre">
-        <button class="btn-pedido" onclick="guardarNombre()">GUARDAR Y CONTINUAR</button>
+    <div id="registro" style="display:none; padding: 20px;">
+        <input type="text" id="inputNombre" placeholder="Tu nombre" style="padding:15px; width:80%; border-radius:10px; border:none;">
+        <button class="btn-pedido" onclick="guardarNombre()">GUARDAR REGISTRO</button>
     </div>
 
     <div id="areaPedido" style="display:none;">
         <div id="cardChofer" class="card-chofer">
-            <div id="infoChofer" style="font-size: 18px;"></div>
-            <div id="tiempoLlegada" style="color: #00ff00; font-weight: bold;"></div>
+            <div id="infoChofer" style="font-size: 18px; color: white;"></div>
         </div>
         
-        <p id="msgHola"></p>
-        <button class="btn-pedido" id="btnPedir" onclick="pedirTaxi()">🚖 PEDIR TAXI AHORA</button>
+        <div id="status-viaje">Cargando...</div>
         
+        <button class="btn-pedido" id="btnPedir" onclick="pedirTaxi()">🚖 PEDIR TAXI AHORA</button>
         <button class="btn-cancelar" id="btnCancelar" onclick="cancelarPedido()" style="display:none;">❌ CANCELAR PEDIDO</button>
     </div>
 
-    <div id="map" style="margin-top:10px;"></div>
+    <div id="map"></div>
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
@@ -56,68 +51,74 @@
         var iconoTaxi = L.icon({ iconUrl: 'https://img.icons8.com/color/48/taxi.png', iconSize: [40, 40], iconAnchor: [20, 20] });
         var iconoPasajero = L.icon({ iconUrl: 'https://img.icons8.com/color/48/person-male.png', iconSize: [40, 40], iconAnchor: [20, 40] });
 
-        var markerCliente, markerChofer, idViaje, miPos;
+        var markerCliente, markerChofer, idViaje;
 
         function verificarNombreYViaje() {
             var n = localStorage.getItem("nombreCliente");
-            if(!n) {
-                document.getElementById('registro').style.display = 'block';
-            } else {
+            if(!n) { document.getElementById('registro').style.display = 'block'; } 
+            else {
                 document.getElementById('areaPedido').style.display = 'block';
-                document.getElementById('msgHola').innerText = "Hola " + n + ", ¿necesitas un Otimac?";
-                
-                var viajeGuardado = localStorage.getItem("idViajeActivo");
-                if(viajeGuardado) { reconectarViaje(viajeGuardado); }
+                document.getElementById('status-viaje').innerText = "Hola " + n + ", ¿a dónde vamos?";
+                var viajeActivo = localStorage.getItem("idViajeActivo");
+                if(viajeActivo) reconectarViaje(viajeActivo);
             }
         }
 
-        function guardarNombre() {
-            var n = document.getElementById('inputNombre').value;
-            if(n) { localStorage.setItem("nombreCliente", n); location.reload(); }
-        }
-
         function pedirTaxi() {
-            document.getElementById('btnPedir').disabled = true;
-            document.getElementById('btnPedir').innerText = "BUSCANDO GPS...";
-
             navigator.geolocation.getCurrentPosition((pos) => {
-                miPos = { lat: pos.coords.latitude, lon: pos.coords.longitude };
-                idViaje = Math.floor(1000 + Math.random() * 9000); 
+                var miPos = { lat: pos.coords.latitude, lon: pos.coords.longitude };
+                idViaje = Math.floor(1000 + Math.random() * 9000);
                 localStorage.setItem("idViajeActivo", idViaje);
                 
-                database.ref('viajes/' + idViaje).set({ 
-                    cliente: miPos, 
+                database.ref('viajes/' + idViaje).set({
+                    cliente: miPos,
                     nombre_cliente: localStorage.getItem("nombreCliente"),
-                    estado: "esperando" 
+                    estado: "esperando"
                 }).then(() => { reconectarViaje(idViaje); });
-            }, (err) => {
-                alert("Activa el GPS para pedir.");
-                document.getElementById('btnPedir').disabled = false;
-                document.getElementById('btnPedir').innerText = "🚖 PEDIR TAXI AHORA";
             });
         }
 
         function reconectarViaje(id) {
             document.getElementById('btnPedir').style.display = 'none';
-            document.getElementById('btnCancelar').style.display = 'inline-block';
-            document.getElementById('msgHola').innerText = "⏳ Buscando taxi... Viaje #" + id;
+            document.getElementById('btnCancelar').style.display = 'block';
+            document.getElementById('status-viaje').innerText = "⏳ Buscando taxi... Viaje #" + id;
 
-            // Escuchar Chofer
+            // RASTREO DE CHOFER Y ACTUALIZACIÓN DE MAPA
             database.ref('viajes/' + id + '/chofer').on('value', (snap) => {
                 var d = snap.val();
-                if (d && d.nombre) {
+                if (d && d.lat) {
+                    // Si ya hay chofer, ocultar mensaje de "Buscando" y mostrar Card
+                    document.getElementById('status-viaje').innerText = "✅ ¡Tu taxi va en camino!";
                     document.getElementById('cardChofer').style.display = 'block';
-                    document.getElementById('infoChofer').innerHTML = `<b>Taxi:</b> ${d.economico}<br><b>Chofer:</b> ${d.nombre}`;
-                    if (markerChofer) markerChofer.setLatLng([d.lat, d.lon]);
-                    else markerChofer = L.marker([d.lat, d.lon], {icon: iconoTaxi}).addTo(map);
+                    document.getElementById('infoChofer').innerHTML = `<b>Taxi:</b> ${d.economico} | <b>Chofer:</b> ${d.nombre}`;
+                    
+                    var posChofer = [d.lat, d.lon];
+                    if (markerChofer) markerChofer.setLatLng(posChofer);
+                    else markerChofer = L.marker(posChofer, {icon: iconoTaxi}).addTo(map);
+
+                    // Re-centrar el mapa para que se vean ambos
+                    if(markerCliente) {
+                        var group = new L.featureGroup([markerCliente, markerChofer]);
+                        map.fitBounds(group.getBounds().pad(0.2));
+                    } else {
+                        map.setView(posChofer, 16);
+                    }
                 }
             });
 
-            // Escuchar si el viaje es borrado por el chofer o cancelación
+            // MOSTRAR MI POSICIÓN (CLIENTE)
+            database.ref('viajes/' + id + '/cliente').once('value', (snap) => {
+                var p = snap.val();
+                if(p) {
+                    if (markerCliente) markerCliente.setLatLng([p.lat, p.lon]);
+                    else markerCliente = L.marker([p.lat, p.lon], {icon: iconoPasajero}).addTo(map);
+                }
+            });
+
             database.ref('viajes/' + id).on('value', (snap) => {
                 if(!snap.exists()) {
                     localStorage.removeItem("idViajeActivo");
-                    alert("Servicio finalizado o cancelado.");
+                    alert("Servicio finalizado.");
                     location.reload();
                 }
             });
@@ -125,7 +126,7 @@
 
         function cancelarPedido() {
             var id = localStorage.getItem("idViajeActivo");
-            if(id && confirm("¿Seguro que quieres cancelar tu pedido?")) {
+            if(confirm("¿Cancelar viaje?")) {
                 database.ref('viajes/' + id).remove().then(() => {
                     localStorage.removeItem("idViajeActivo");
                     location.reload();
