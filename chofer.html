@@ -45,7 +45,7 @@
         </label>
     </div>
     
-    <div id="status-gps" style="color: #ff4444;">🔴 GPS APAGADO (Ahorro de batería)</div>
+    <div id="status-gps" style="color: #ff4444;">🔴 GPS APAGADO</div>
 
     <div id="interfaz">
         <div class="panel-pedidos">
@@ -85,7 +85,6 @@
         }
 
         function verificarEstadoChofer() {
-            // Cargar datos al inicio
             var n = localStorage.getItem("choferNombre");
             var e = localStorage.getItem("choferEco");
             if(!n) registrarChofer();
@@ -94,16 +93,23 @@
                 document.getElementById('displayEco').innerText = e;
             }
 
+            // REVISAR SI EL CHOFER DEJÓ EL MODO TRABAJO PRENDIDO
+            var modoGuardado = localStorage.getItem("modoTrabajoActivo");
             var vActivo = localStorage.getItem("idViajeChoferActivo");
-            if(vActivo) {
+
+            if(modoGuardado === "true" || vActivo) {
                 document.getElementById('checkTrabajo').checked = true;
                 toggleTrabajo();
-                reconectarViajeChofer(vActivo);
+                if(vActivo) reconectarViajeChofer(vActivo);
             }
         }
 
         function toggleTrabajo() {
             var activo = document.getElementById('checkTrabajo').checked;
+            
+            // GUARDAR LA PREFERENCIA PARA EL PRÓXIMO REFRESCO
+            localStorage.setItem("modoTrabajoActivo", activo);
+
             var statusTxt = document.getElementById('status-gps');
             var modoTxt = document.getElementById('txtModo');
 
@@ -117,7 +123,7 @@
             } else {
                 modoTxt.innerText = "MODO: DESCONECTADO";
                 modoTxt.style.color = "#ff4444";
-                statusTxt.innerText = "🔴 GPS APAGADO (Ahorro de batería)";
+                statusTxt.innerText = "🔴 GPS APAGADO";
                 statusTxt.style.color = "#ff4444";
                 detenerGPS();
                 document.getElementById('lista-pedidos').innerHTML = "Enciende el modo trabajo para ver pedidos.";
@@ -125,6 +131,7 @@
         }
 
         function iniciarGPS() {
+            if(watchID) navigator.geolocation.clearWatch(watchID);
             watchID = navigator.geolocation.watchPosition((pos) => {
                 var lat = pos.coords.latitude, lon = pos.coords.longitude;
                 document.getElementById('status-gps').innerText = "✅ GPS ACTIVO";
