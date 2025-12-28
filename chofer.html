@@ -15,14 +15,13 @@
         .btn-cancelar { background: #ff4444; color: white; border: none; padding: 15px; border-radius: 8px; font-weight: bold; width: 100%; margin-top: 10px; font-size: 16px; }
         #status-gps { color: #00ff00; font-weight: bold; margin: 10px 0; font-size: 14px; }
         .info-header { font-size: 14px; color: #aaa; margin-bottom: 10px; cursor: pointer; }
-        .leaflet-routing-container { display: none !important; }
     </style>
 </head>
-<body onload="verificarRegistroChofer()">
+<body onload="verificarEstadoChofer()">
     <h2>CENTRAL OTIMAC 🚖</h2>
     
     <div class="info-header" onclick="registrarChofer()">
-        👤 <span id="displayNombre">Cargando...</span> | 🚕 <span id="displayEco">...</span> (Toca para editar)
+        👤 <span id="displayNombre">Cargando...</span> | 🚕 <span id="displayEco">...</span>
     </div>
 
     <div id="status-gps">📡 Buscando señal...</div>
@@ -52,25 +51,32 @@
 
         var markerChofer, markerCliente, controlRuta, idViajeActivo;
 
-        // REGISTRO ÚNICO DEL CHOFER
-        function registrarChofer() {
-            var n = prompt("Tu nombre:", localStorage.getItem("choferNombre") || "");
-            var e = prompt("Número económico (Ej: OTI-25):", localStorage.getItem("choferEco") || "");
-            if(n && e) {
-                localStorage.setItem("choferNombre", n);
-                localStorage.setItem("choferEco", e);
+        function verificarEstadoChofer() {
+            // Cargar datos del chofer
+            var n = localStorage.getItem("choferNombre");
+            var e = localStorage.getItem("choferEco");
+            if(!n) registrarChofer();
+            else {
                 document.getElementById('displayNombre').innerText = n;
                 document.getElementById('displayEco').innerText = e;
             }
-        }
 
-        function verificarRegistroChofer() {
-            if(!localStorage.getItem("choferNombre")) registrarChofer();
-            else {
-                document.getElementById('displayNombre').innerText = localStorage.getItem("choferNombre");
-                document.getElementById('displayEco').innerText = localStorage.getItem("choferEco");
+            // RECONECTAR VIAJE SI EXISTÍA UNO
+            var viajeGuardado = localStorage.getItem("idViajeChoferActivo");
+            if(viajeGuardado) {
+                reconectarViajeChofer(viajeGuardado);
             }
             iniciarGPSAutomatico();
+        }
+
+        function registrarChofer() {
+            var n = prompt("Tu nombre:", localStorage.getItem("choferNombre") || "");
+            var e = prompt("Número económico:", localStorage.getItem("choferEco") || "");
+            if(n && e) {
+                localStorage.setItem("choferNombre", n);
+                localStorage.setItem("choferEco", e);
+                location.reload();
+            }
         }
 
         function iniciarGPSAutomatico() {
@@ -79,11 +85,16 @@
                 document.getElementById('status-gps').innerText = "✅ GPS ACTIVO";
                 if(markerChofer) markerChofer.setLatLng([lat, lon]);
                 else { markerChofer = L.marker([lat, lon], {icon: iconoTaxi}).addTo(map); map.setView([lat, lon], 16); }
-                if (idViajeActivo) { database.ref('viajes/' + idViajeActivo + '/chofer').update({ lat: lat, lon: lon }); }
+                
+                if (idViajeActivo) {
+                    database.ref('viajes/' + idViajeActivo + '/chofer').update({ lat: lat, lon: lon });
+                }
             }, null, {enableHighAccuracy: true});
         }
 
+        // Solo mostrar lista si no hay viaje activo
         database.ref('viajes').orderByChild('estado').equalTo('esperando').on('value', (snapshot) => {
+            if (idViajeActivo) return; // Si ya estoy en un viaje, no mostrar lista
             var pedidos = snapshot.val();
             var contenedor = document.getElementById('lista-pedidos');
             if (pedidos) {
@@ -99,30 +110,52 @@
         });
 
         function aceptarViaje(id, nPasajero) {
-            idViajeActivo = id;
-            document.getElementById('interfaz').innerHTML = `<div class="panel-pedidos"><h3>VIAJE: ${nPasajero}</h3><button class="btn-cancelar" onclick="terminarViaje('${id}')">FINALIZAR</button></div>`;
+            localStorage.setItem("idViajeChoferActivo", id);
+            reconectarViajeChofer(id);
             
+            // Publicar datos en Firebase para el cliente
             database.ref('viajes/' + id + '/chofer').set({
                 nombre: localStorage.getItem("choferNombre"),
                 economico: localStorage.getItem("choferEco"),
                 lat: markerChofer.getLatLng().lat,
                 lon: markerChofer.getLatLng().lng
             });
+            database.ref('viajes/' + id).update({ estado: 'en_curso' });
+        }
 
+        function reconectarViajeChofer(id) {
+            idViajeActivo = id;
+            document.getElementById('interfaz').innerHTML = `<div class="panel-pedidos"><h3>VIAJE ACTIVO #${id}</h3><button class="btn-cancelar" onclick="terminarViaje('${id}')">FINALIZAR SERVICIO</button></div>`;
+            
             database.ref('viajes/' + id + '/cliente').once('value', (snap) => {
                 var posC = snap.val();
+                if(!posC) return; // Por si el cliente canceló justo antes
                 if(markerCliente) map.removeLayer(markerCliente);
                 markerCliente = L.marker([posC.lat, posC.lon], {icon: iconoPasajero}).addTo(map);
+                
+                if(controlRuta) map.removeControl(controlRuta);
                 controlRuta = L.Routing.control({
                     waypoints: [markerChofer.getLatLng(), L.latLng(posC.lat, posC.lon)],
                     lineOptions: { styles: [{ color: '#2478ff', weight: 8, opacity: 0.8 }] },
                     createMarker: function() { return null; }
                 }).addTo(map);
             });
+
+            // Si el cliente cancela el viaje mientras yo estoy en él
+            database.ref('viajes/' + id).on('value', (snap) => {
+                if(!snap.exists()) {
+                    localStorage.removeItem("idViajeChoferActivo");
+                    alert("El cliente canceló el viaje.");
+                    location.reload();
+                }
+            });
         }
 
         function terminarViaje(id) {
-            if(confirm("¿Finalizar?")) { database.ref('viajes/' + id).remove().then(() => { location.reload(); }); }
+            if(confirm("¿Terminar servicio?")) {
+                localStorage.removeItem("idViajeChoferActivo");
+                database.ref('viajes/' + id).remove().then(() => { location.reload(); });
+            }
         }
     </script>
 </body>
