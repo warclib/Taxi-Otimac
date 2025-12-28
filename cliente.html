@@ -4,10 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Cliente - Otimac 🚖</title>
-    
     <meta name="apple-mobile-web-app-capable" content="yes">
     <link rel="apple-touch-icon" href="logo.png">
-    
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
         body { font-family: 'Segoe UI', sans-serif; text-align: center; background: #1a1a1a; color: white; margin: 0; padding: 10px; }
@@ -17,11 +15,9 @@
     </style>
 </head>
 <body>
-
     <h2>SOLICITAR OTIMAC 🚖</h2>
     <div id="status">Presiona el botón para pedir un taxi</div>
     <button class="btn-pedido" id="btnPedir" onclick="pedirTaxi()">🚖 PEDIR TAXI AHORA</button>
-    
     <div id="map" style="margin-top:10px;"></div>
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
@@ -36,60 +32,30 @@
         var map = L.map('map').setView([23.6345, -102.5528], 5);
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
 
-        // MISMOS ICONOS QUE EN EL CHOFER
-        var iconoTaxi = L.icon({
-            iconUrl: 'https://cdn-icons-png.flaticon.com/512/3448/3448636.png',
-            iconSize: [40, 40],
-            iconAnchor: [20, 20]
-        });
-
-        var iconoPasajero = L.icon({
-            iconUrl: 'https://cdn-icons-png.flaticon.com/512/3063/3063822.png',
-            iconSize: [40, 40],
-            iconAnchor: [20, 40]
-        });
+        var iconoTaxi = L.icon({ iconUrl: 'https://img.icons8.com/color/48/taxi.png', iconSize: [40, 40], iconAnchor: [20, 20] });
+        var iconoPasajero = L.icon({ iconUrl: 'https://img.icons8.com/color/48/person-male.png', iconSize: [40, 40], iconAnchor: [20, 40] });
 
         var markerCliente, markerChofer, idViaje;
 
         function pedirTaxi() {
             navigator.geolocation.getCurrentPosition((pos) => {
-                var lat = pos.coords.latitude;
-                var lon = pos.coords.longitude;
-                idViaje = Date.now(); // ID único del viaje
-
-                // Colocar al cliente en el mapa
+                var lat = pos.coords.latitude; var lon = pos.coords.longitude;
+                idViaje = Date.now();
                 markerCliente = L.marker([lat, lon], {icon: iconoPasajero}).addTo(map);
                 map.setView([lat, lon], 16);
-
-                // Guardar en Firebase
-                database.ref('viajes/' + idViaje).set({
-                    cliente: { lat: lat, lon: lon },
-                    estado: "esperando"
-                });
-
+                database.ref('viajes/' + idViaje).set({ cliente: { lat: lat, lon: lon }, estado: "esperando" });
                 document.getElementById('btnPedir').style.display = 'none';
                 document.getElementById('status').innerText = "⏳ Buscando taxi cercano...";
 
-                // ESCUCHAR CUANDO EL CHOFER SE MUEVA
                 database.ref('viajes/' + idViaje + '/chofer').on('value', (snap) => {
                     var posT = snap.val();
                     if (posT) {
                         document.getElementById('status').innerText = "✅ ¡Tu taxi va en camino!";
-                        if (markerChofer) {
-                            markerChofer.setLatLng([posT.lat, posT.lon]);
-                        } else {
-                            markerChofer = L.marker([posT.lat, posT.lon], {icon: iconoTaxi}).addTo(map);
-                        }
+                        if (markerChofer) { markerChofer.setLatLng([posT.lat, posT.lon]); } 
+                        else { markerChofer = L.marker([posT.lat, posT.lon], {icon: iconoTaxi}).addTo(map); }
                     }
                 });
-                
-                // Si el chofer borra el viaje (finaliza), se reinicia el cliente
-                database.ref('viajes/' + idViaje).on('value', (snap) => {
-                    if (!snap.exists()) {
-                        alert("El viaje ha terminado. ¡Gracias por usar Otimac!");
-                        location.reload();
-                    }
-                });
+                database.ref('viajes/' + idViaje).on('value', (snap) => { if (!snap.exists()) { alert("Viaje terminado."); location.reload(); } });
             });
         }
     </script>
