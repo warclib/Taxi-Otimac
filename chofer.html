@@ -17,7 +17,6 @@
         .btn-rechazar { background:transparent; border:1px solid #ff4444; color: #ff4444; padding:8px; border-radius:8px; font-weight:bold; width:100%; margin-top:8px; cursor: pointer; font-size: 12px; }
         .btn-cancelar { background: #ff4444; color: white; border: none; padding: 15px; border-radius: 8px; font-weight: bold; width: 100%; margin-top: 10px; font-size: 16px; }
         
-        /* ESTILO DEL INTERRUPTOR DE TRABAJO */
         .switch-container { background: #333; padding: 15px; border-radius: 50px; display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; border: 1px solid #555; }
         .switch { position: relative; display: inline-block; width: 60px; height: 34px; }
         .switch input { opacity: 0; width: 0; height: 0; }
@@ -27,11 +26,16 @@
         input:checked + .slider:before { transform: translateX(26px); }
         
         #status-gps { font-weight: bold; font-size: 14px; margin-bottom: 5px; }
+        .info-header { font-size: 16px; color: #ccc; margin-bottom: 15px; cursor: pointer; padding: 10px; background: #222; border-radius: 10px; }
         .leaflet-routing-container { display: none !important; }
     </style>
 </head>
 <body onload="verificarEstadoChofer()">
     <h2>CENTRAL OTIMAC 🚖</h2>
+
+    <div class="info-header" onclick="registrarChofer()">
+        👤 <span id="displayNombre">Cargando...</span> | 🚕 <span id="displayEco">...</span> (Toca para editar)
+    </div>
 
     <div class="switch-container">
         <span id="txtModo" style="font-weight: bold; color: #ff4444;">MODO: DESCONECTADO</span>
@@ -70,10 +74,28 @@
         var markerChofer, markerCliente, controlRuta, idViajeActivo, watchID;
         var viajesRechazados = [];
 
+        function registrarChofer() {
+            var n = prompt("Tu nombre:", localStorage.getItem("choferNombre") || "");
+            var e = prompt("Número económico:", localStorage.getItem("choferEco") || "");
+            if(n && e) {
+                localStorage.setItem("choferNombre", n);
+                localStorage.setItem("choferEco", e);
+                location.reload();
+            }
+        }
+
         function verificarEstadoChofer() {
+            // Cargar datos al inicio
+            var n = localStorage.getItem("choferNombre");
+            var e = localStorage.getItem("choferEco");
+            if(!n) registrarChofer();
+            else {
+                document.getElementById('displayNombre').innerText = n;
+                document.getElementById('displayEco').innerText = e;
+            }
+
             var vActivo = localStorage.getItem("idViajeChoferActivo");
             if(vActivo) {
-                // Si hay viaje activo, forzar encendido de GPS
                 document.getElementById('checkTrabajo').checked = true;
                 toggleTrabajo();
                 reconectarViajeChofer(vActivo);
@@ -155,8 +177,8 @@
         }
 
         function aceptarViaje(id) {
-            var n = localStorage.getItem("choferNombre") || "Chofer";
-            var e = localStorage.getItem("choferEco") || "S/N";
+            var n = localStorage.getItem("choferNombre");
+            var e = localStorage.getItem("choferEco");
             localStorage.setItem("idViajeChoferActivo", id);
             database.ref('viajes/' + id).update({ 
                 estado: 'en_curso',
