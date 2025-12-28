@@ -11,11 +11,12 @@
         body { font-family: 'Segoe UI', sans-serif; text-align: center; background: #1a1a1a; color: white; margin: 0; padding: 10px; }
         #map { height: 400px; width: 100%; border-radius: 15px; border: 2px solid #ffc107; }
         .btn-pedido { background: #ffc107; color: black; border: none; padding: 20px; font-weight: bold; border-radius: 10px; width: 100%; font-size: 18px; margin-top: 10px; }
+        .btn-pedido:disabled { background: #555; color: #888; cursor: not-allowed; }
         .card-chofer { background: #333; padding: 15px; border-radius: 12px; border: 2px solid #00ff00; margin-bottom: 10px; display: none; }
         input { padding: 15px; width: 80%; border-radius: 10px; margin-bottom: 10px; font-size: 16px; border: none; }
     </style>
 </head>
-<body onload="verificarNombreCliente()">
+<body onload="verificarNombreYViaje()">
     <h2>SOLICITAR OTIMAC 🚖</h2>
     
     <div id="registro" style="display:none;">
@@ -49,12 +50,21 @@
         var iconoTaxi = L.icon({ iconUrl: 'https://img.icons8.com/color/48/taxi.png', iconSize: [40, 40], iconAnchor: [20, 20] });
         var iconoPasajero = L.icon({ iconUrl: 'https://img.icons8.com/color/48/person-male.png', iconSize: [40, 40], iconAnchor: [20, 40] });
 
-        function verificarNombreCliente() {
+        var markerCliente, markerChofer, idViaje, miPos;
+
+        function verificarNombreYViaje() {
             var n = localStorage.getItem("nombreCliente");
-            if(!n) document.getElementById('registro').style.display = 'block';
-            else {
+            if(!n) {
+                document.getElementById('registro').style.display = 'block';
+            } else {
                 document.getElementById('areaPedido').style.display = 'block';
-                document.getElementById('msgHola').innerText = "Hola " + n + ", ¿a dónde vamos hoy?";
+                document.getElementById('msgHola').innerText = "Hola " + n + ", ¿listo para viajar?";
+                
+                // SI YA HABÍA UN VIAJE GUARDADO EN MEMORIA, RECONECTAR
+                var viajeGuardado = localStorage.getItem("idViajeActivo");
+                if(viajeGuardado) {
+                    reconectarViaje(viajeGuardado);
+                }
             }
         }
 
@@ -63,36 +73,55 @@
             if(n) { localStorage.setItem("nombreCliente", n); location.reload(); }
         }
 
-        var markerCliente, markerChofer, idViaje, miPos;
-
         function pedirTaxi() {
+            // BLOQUEAR BOTÓN PARA EVITAR DOBLE CLICK
+            document.getElementById('btnPedir').disabled = true;
+            document.getElementById('btnPedir').innerText = "PROCESANDO...";
+
             navigator.geolocation.getCurrentPosition((pos) => {
                 miPos = { lat: pos.coords.latitude, lon: pos.coords.longitude };
                 idViaje = Math.floor(1000 + Math.random() * 9000); 
-                markerCliente = L.marker([miPos.lat, miPos.lon], {icon: iconoPasajero}).addTo(map);
-                map.setView([miPos.lat, miPos.lon], 16);
+                
+                // Guardar ID en memoria para que no pueda pedir otro
+                localStorage.setItem("idViajeActivo", idViaje);
                 
                 database.ref('viajes/' + idViaje).set({ 
                     cliente: miPos, 
                     nombre_cliente: localStorage.getItem("nombreCliente"),
                     estado: "esperando" 
+                }).then(() => {
+                    reconectarViaje(idViaje);
                 });
-                
-                document.getElementById('btnPedir').style.display = 'none';
-                document.getElementById('msgHola').innerText = "⏳ Buscando taxi...";
+            }, (error) => {
+                alert("Error de GPS. Activa tu ubicación.");
+                document.getElementById('btnPedir').disabled = false;
+                document.getElementById('btnPedir').innerText = "🚖 PEDIR TAXI AHORA";
+            });
+        }
 
-                database.ref('viajes/' + idViaje + '/chofer').on('value', (snap) => {
-                    var d = snap.val();
-                    if (d && d.nombre) {
-                        document.getElementById('cardChofer').style.display = 'block';
-                        document.getElementById('infoChofer').innerHTML = `<b>Taxi:</b> ${d.economico}<br><b>Chofer:</b> ${d.nombre}`;
-                        var dist = L.latLng(miPos.lat, miPos.lon).distanceTo(L.latLng(d.lat, d.lon));
-                        document.getElementById('tiempoLlegada').innerText = "Llega en aprox: " + Math.round(dist/300) + " min";
-                        if (markerChofer) markerChofer.setLatLng([d.lat, d.lon]);
-                        else markerChofer = L.marker([d.lat, d.lon], {icon: iconoTaxi}).addTo(map);
-                    }
-                });
-                database.ref('viajes/' + idViaje).on('value', (snap) => { if(!snap.exists()) location.reload(); });
+        function reconectarViaje(id) {
+            document.getElementById('btnPedir').style.display = 'none';
+            document.getElementById('msgHola').innerText = "⏳ Buscando taxi... Viaje #" + id;
+
+            // Escuchar al chofer
+            database.ref('viajes/' + id + '/chofer').on('value', (snap) => {
+                var d = snap.val();
+                if (d && d.nombre) {
+                    document.getElementById('cardChofer').style.display = 'block';
+                    document.getElementById('infoChofer').innerHTML = `<b>Taxi:</b> ${d.economico}<br><b>Chofer:</b> ${d.nombre}`;
+                    
+                    if (markerChofer) markerChofer.setLatLng([d.lat, d.lon]);
+                    else markerChofer = L.marker([d.lat, d.lon], {icon: iconoTaxi}).addTo(map);
+                }
+            });
+
+            // Escuchar si el viaje termina
+            database.ref('viajes/' + id).on('value', (snap) => {
+                if(!snap.exists()) {
+                    localStorage.removeItem("idViajeActivo");
+                    alert("Viaje finalizado.");
+                    location.reload();
+                }
             });
         }
     </script>
