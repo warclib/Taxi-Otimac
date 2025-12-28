@@ -5,6 +5,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Chofer - Otimac 🚖</title>
     
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black">
+    <meta name="apple-mobile-web-app-title" content="Otimac">
+    
     <link rel="apple-touch-icon" href="logo.png">
     <link rel="icon" type="image/png" href="logo.png">
 
@@ -24,12 +28,8 @@
 <body onload="iniciarGPSAutomatico()">
 
     <h2>CENTRAL OTIMAC 🚖</h2>
-
-    <button class="btn-activar-sonido" id="btnSonido" onclick="activarSonido()">
-        🔔 ACTIVAR ALERTAS SONORAS
-    </button>
-
-    <div id="status-gps">📡 Buscando señal...</div>
+    <button class="btn-activar-sonido" id="btnSonido" onclick="activarSonido()">🔔 ACTIVAR ALERTAS</button>
+    <div id="status-gps">📡 Buscando señal GPS...</div>
 
     <div id="interfaz">
         <div class="panel-pedidos">
@@ -37,7 +37,6 @@
             <div id="lista-pedidos">Cargando...</div>
         </div>
     </div>
-    
     <div id="map"></div>
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
@@ -53,41 +52,28 @@
         var map = L.map('map').setView([23.6345, -102.5528], 5);
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
 
-        // CONFIGURACIÓN DE ICONOS PERSONALIZADOS
+        // ICONOS CORREGIDOS
         var iconoTaxi = L.icon({
-            iconUrl: 'https://cdn-icons-png.flaticon.com/512/3448/3448636.png', // Icono de Taxi
-            iconSize: [40, 40],
-            iconAnchor: [20, 20]
+            iconUrl: 'https://img.icons8.com/color/48/taxi.png',
+            iconSize: [40, 40], iconAnchor: [20, 20]
         });
-
         var iconoPasajero = L.icon({
-            iconUrl: 'https://cdn-icons-png.flaticon.com/512/3063/3063822.png', // Icono de Persona/Pasajero
-            iconSize: [40, 40],
-            iconAnchor: [20, 40]
+            iconUrl: 'https://img.icons8.com/color/48/person-male.png',
+            iconSize: [40, 40], iconAnchor: [20, 40]
         });
 
         var markerChofer, markerCliente, controlRuta, ultimaRutaLatLon;
         var sistemaSonidoListo = false;
 
         function iniciarGPSAutomatico() {
-            if ("geolocation" in navigator) {
-                navigator.geolocation.watchPosition((pos) => {
-                    var lat = pos.coords.latitude, lon = pos.coords.longitude;
-                    var actual = L.latLng(lat, lon);
-                    
-                    document.getElementById('status-gps').innerText = "✅ GPS ACTIVO (Taxi listo)";
-                    
-                    if(markerChofer) {
-                        markerChofer.setLatLng(actual);
-                    } else {
-                        // CREAR ICONO DE TAXI POR PRIMERA VEZ
-                        markerChofer = L.marker(actual, {icon: iconoTaxi}).addTo(map);
-                        map.setView(actual, 16);
-                    }
-
-                    if (ultimaRutaLatLon) { trazarRutaAzul(actual, ultimaRutaLatLon); }
-                }, null, {enableHighAccuracy: true});
-            }
+            navigator.geolocation.watchPosition((pos) => {
+                var lat = pos.coords.latitude, lon = pos.coords.longitude;
+                var actual = L.latLng(lat, lon);
+                document.getElementById('status-gps').innerText = "✅ GPS ACTIVO";
+                if(markerChofer) markerChofer.setLatLng(actual);
+                else { markerChofer = L.marker(actual, {icon: iconoTaxi}).addTo(map); map.setView(actual, 16); }
+                if (ultimaRutaLatLon) { trazarRutaAzul(actual, ultimaRutaLatLon); }
+            }, null, {enableHighAccuracy: true});
         }
 
         function trazarRutaAzul(inicio, fin) {
@@ -104,11 +90,7 @@
 
         function activarSonido() {
             var audio = new Audio('https://assets.mixkit.co/active_storage/sfx/2358/2358-preview.mp3');
-            audio.play().then(() => {
-                audio.pause();
-                sistemaSonidoListo = true;
-                document.getElementById('btnSonido').style.display = 'none';
-            });
+            audio.play().then(() => { audio.pause(); sistemaSonidoListo = true; document.getElementById('btnSonido').style.display = 'none'; });
         }
 
         database.ref('viajes').orderByChild('estado').equalTo('esperando').on('value', (snapshot) => {
@@ -123,18 +105,12 @@
         });
 
         function aceptarViaje(idViaje) {
-            document.getElementById('interfaz').innerHTML = `<div class="panel-pedidos"><h3>VIAJE: #${idViaje}</h3><button class="btn-cancelar" onclick="terminarViaje('${idViaje}')">FINALIZAR</button></div>`;
-            
+            document.getElementById('interfaz').innerHTML = `<div class="panel-pedidos"><h3>VIAJE: #${idViaje}</h3><button class="btn-cancelar" onclick="terminarViaje('${idViaje}')">FINALIZAR SERVICIO</button></div>`;
             database.ref('viajes/' + idViaje + '/cliente').once('value', (snap) => {
                 var posC = snap.val();
                 ultimaRutaLatLon = L.latLng(posC.lat, posC.lon);
-                
-                // CREAR ICONO DE PASAJERO
                 if(markerCliente) map.removeLayer(markerCliente);
                 markerCliente = L.marker(ultimaRutaLatLon, {icon: iconoPasajero}).addTo(map);
-                
-                if (markerChofer) { trazarRutaAzul(markerChofer.getLatLng(), ultimaRutaLatLon); }
-
                 navigator.geolocation.watchPosition((pos) => {
                     database.ref('viajes/' + idViaje + '/chofer').set({ lat: pos.coords.latitude, lon: pos.coords.longitude });
                 });
