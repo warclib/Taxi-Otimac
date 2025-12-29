@@ -15,7 +15,7 @@
     <link rel="stylesheet" href="https://unpkg.com/leaflet-routing-machine/dist/leaflet-routing-machine.css" />
     
     <style>
-        /* --- ESTILOS DEL SPLASH SCREEN (Efecto Dark Blue) --- */
+        /* --- ESTILOS DEL SPLASH SCREEN --- */
         #splash-screen {
             position: fixed;
             top: 0; left: 0;
@@ -38,25 +38,19 @@
 
         /* --- REDISEÑO DARK BLUE & CARBON --- */
         body { font-family: 'Segoe UI', sans-serif; text-align: center; background: #0f0f0f; color: #e0e0e0; margin: 0; padding: 10px; }
-        
         h2 { color: #1a73e8; letter-spacing: 1px; font-weight: 800; margin-bottom: 5px; }
 
-        #map { height: 320px; width: 100%; border-radius: 20px; margin-top: 10px; border: 1px solid #333; box-shadow: 0 4px 15px rgba(0,0,0,0.5); }
+        /* MAPA: Ajustado para que el fondo claro del mapa no choque con el modo oscuro */
+        #map { height: 320px; width: 100%; border-radius: 20px; margin-top: 10px; border: 2px solid #1a73e8; box-shadow: 0 4px 15px rgba(0,0,0,0.5); }
         
         .panel-pedidos { background: #1e1e1e; padding: 15px; border-radius: 18px; border: 1px solid #333; margin-bottom: 15px; box-shadow: 0 5px 15px rgba(0,0,0,0.3); }
-        
         .pedido-card { padding:18px; background:#252525; margin:12px 0; border-radius:15px; border-left: 6px solid #1a73e8; text-align: left; box-shadow: 0 4px 10px rgba(0,0,0,0.2); }
-        
         .distancia-tag { color: #1a73e8; font-weight: 800; float: right; background: rgba(26, 115, 232, 0.1); padding: 4px 10px; border-radius: 20px; font-size: 12px; }
-        
         .cliente-id-tag { color: #666; font-size: 11px; display: block; margin-top: 6px; font-family: monospace; }
         
-        /* BOTONES MODERNOS */
+        /* BOTONES */
         .btn-aceptar { background: #1a73e8; border: none; padding: 14px; border-radius: 12px; font-weight: bold; width: 100%; margin-top: 12px; cursor: pointer; color: white; text-transform: uppercase; transition: 0.3s; }
-        .btn-aceptar:active { background: #155cb0; transform: scale(0.98); }
-
         .btn-rechazar { background: transparent; border: 1px solid #444; color: #888; padding: 10px; border-radius: 10px; font-weight: bold; width: 100%; margin-top: 10px; cursor: pointer; font-size: 12px; }
-        
         .btn-cancelar { background: #d93025; color: white; border: none; padding: 16px; border-radius: 12px; font-weight: bold; width: 100%; margin-top: 15px; font-size: 16px; box-shadow: 0 4px 10px rgba(217, 48, 37, 0.3); }
 
         /* NAVEGACIÓN EXTERNA */
@@ -64,7 +58,7 @@
         .btn-navegar-waze { background: #33ccff; color: #003d4d; border: none; padding: 14px; border-radius: 12px; font-weight: 800; width: 50%; cursor: pointer; font-size: 13px; }
         .btn-navegar-maps { background: #ffffff; color: #4285F4; border: none; padding: 14px; border-radius: 12px; font-weight: 800; width: 50%; cursor: pointer; font-size: 13px; box-shadow: 0 2px 5px rgba(0,0,0,0.2); }
 
-        /* MODO TRABAJO */
+        /* INTERFAZ DE CONTROL */
         .switch-container { background: #1e1e1e; padding: 15px 20px; border-radius: 50px; display: flex; align-items: center; justify-content: space-between; margin-bottom: 15px; border: 1px solid #333; }
         .switch { position: relative; display: inline-block; width: 55px; height: 30px; }
         .switch input { opacity: 0; width: 0; height: 0; }
@@ -77,7 +71,6 @@
         .info-header { font-size: 15px; color: #aaa; margin-bottom: 15px; cursor: pointer; padding: 12px; background: #1e1e1e; border-radius: 15px; border: 1px solid #333; }
         
         .leaflet-routing-container { display: none !important; }
-        .leaflet-bar { border: none !important; box-shadow: 0 4px 10px rgba(0,0,0,0.3) !important; }
     </style>
 </head>
 <body onload="iniciarAppCentral()">
@@ -85,7 +78,7 @@
     <div id="splash-screen">
         <div class="logo-animado">🚖</div>
         <div style="color: #ffffff; font-size: 28px; font-weight: 900; margin-top: 10px;">OTIMAC <span style="color:#1a73e8">PRO</span></div>
-        <div class="texto-carga">Cifrando conexión...</div>
+        <div class="texto-carga">Iniciando sistema...</div>
     </div>
 
     <h2>OTIMAC CHÓFER</h2>
@@ -131,8 +124,13 @@
             }, 2500);
         }
 
-        var map = L.map('map', { zoomControl: false }).setView([23.6345, -102.5528], 5);
-        L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png').addTo(map);
+        // MAPA MODIFICADO: Con control de zoom activo y estilo Voyager
+        var map = L.map('map', { zoomControl: true }).setView([23.6345, -102.5528], 5);
+        
+        // Capa de mapa clara pero profesional (Voyager)
+        L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
+            attribution: '© OpenStreetMap'
+        }).addTo(map);
 
         var iconoTaxi = L.icon({ iconUrl: 'https://img.icons8.com/fluency/48/taxi.png', iconSize: [45, 45], iconAnchor: [22, 22] });
         var iconoPasajero = L.icon({ iconUrl: 'https://img.icons8.com/fluency/48/user-location.png', iconSize: [45, 45], iconAnchor: [22, 45] });
@@ -140,7 +138,6 @@
         var markerChofer, markerCliente, controlRuta, idViajeActivo, watchID;
         var viajesRechazados = [];
         var avisoLlegadaEnviado = false;
-        var vozLlegadaActivada = false;
         let wakeLock = null;
 
         function avisarConVoz(mensaje) {
@@ -215,7 +212,7 @@
                         if (dist < 100 && !avisoLlegadaEnviado) {
                             avisoLlegadaEnviado = true;
                             database.ref('viajes/' + idViajeActivo).update({ estado: 'chofer_llego' });
-                            avisarConVoz("Has llegado al destino.");
+                            avisarConVoz("Has llegado por el pasajero.");
                         }
                     }
                 }
@@ -250,7 +247,7 @@
             });
         }
 
-        function rechazarViajeLocal(id) { viajesRechazados.push(id); location.reload(); }
+        function rechazarViajeLocal(id) { viajesRechazados.push(id); }
 
         function aceptarViaje(id) {
             localStorage.setItem("idViajeChoferActivo", id);
