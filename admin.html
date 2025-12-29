@@ -6,56 +6,89 @@
     <title>Admin - Otimac 🛡️</title>
     <style>
         body { font-family: 'Segoe UI', sans-serif; text-align: center; background: #000; color: white; padding: 20px; }
+        #contenido-protegido { display: none; } /* Oculto hasta que pongas la clave */
         .card { background: #1a1a1a; padding: 20px; border-radius: 15px; border: 2px solid #ff4444; margin-top: 20px; }
         input { padding: 15px; width: 80%; border-radius: 8px; border: none; font-size: 16px; margin-bottom: 10px; text-align: center; }
         .btn-ban { background: #ff4444; color: white; border: none; padding: 15px; width: 85%; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 16px; }
         .lista-baneados { margin-top: 20px; text-align: left; background: #222; border-radius: 10px; padding: 15px; }
         .item-ban { border-bottom: 1px solid #333; padding: 10px 0; display: flex; justify-content: space-between; align-items: center; }
-        .btn-perdon { background: #00ff00; color: black; border: none; padding: 5px 10px; border-radius: 5px; font-size: 12px; font-weight: bold; }
+        .btn-perdon { background: #00ff00; color: black; border: none; padding: 5px 10px; border-radius: 5px; font-size: 12px; font-weight: bold; cursor: pointer; }
     </style>
 </head>
 <body>
-    <h2>ADMINISTRADOR OTIMAC 🛡️</h2>
-    <p>Control de Lista Negra</p>
 
-    <div class="card">
-        <input type="text" id="idBloquear" placeholder="ID del Cliente (ej: ID-123456)">
-        <button class="btn-ban" onclick="bloquearCliente()">🚫 BLOQUEAR DISPOSITIVO</button>
-    </div>
+    <script>
+        var claveMaestra = "OTIMAC2025"; // <--- AQUÍ PUEDES CAMBIAR TU CONTRASEÑA
+        var intento = prompt("Acceso Restringido. Introduce la clave de Administrador:");
 
-    <div class="lista-baneados">
-        <h3>Clientes Bloqueados</h3>
-        <div id="contenedorBaneados">Cargando lista...</div>
+        if (intento === claveMaestra) {
+            alert("Acceso concedido, Warclib");
+        } else {
+            alert("Clave incorrecta. No tienes permiso.");
+            window.location.href = "https://google.com"; // Redirige a los intrusos
+        }
+    </script>
+
+    <div id="contenido-protegido" style="display: block;">
+        <h2>ADMINISTRADOR OTIMAC 🛡️</h2>
+        <p>Control de Lista Negra</p>
+
+        <div class="card">
+            <input type="text" id="idBloquear" placeholder="Pegar ID del Cliente aquí">
+            <button class="btn-ban" onclick="bloquearCliente()">🚫 BLOQUEAR DISPOSITIVO</button>
+        </div>
+
+        <div class="lista-baneados">
+            <h3>Clientes Bloqueados actualmente:</h3>
+            <div id="contenedorBaneados">Cargando lista...</div>
+        </div>
     </div>
 
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
 
     <script>
-        var firebaseConfig = { apiKey: "AIzaSyATLT5_woN8KO8-_E4_Nl7bEMlJGFI4uUQ", authDomain: "taxiotimac.firebaseapp.com", databaseURL: "https://taxiotimac-default-rtdb.firebaseio.com", projectId: "taxiotimac", storageBucket: "taxiotimac.firebasestorage.app", messagingSenderId: "533983007458", appId: "1:533983007458:web:254cef6b46c01a1718c4bb" };
+        // Tu configuración de Firebase
+        var firebaseConfig = { 
+            apiKey: "AIzaSyATLT5_woN8KO8-_E4_Nl7bEMlJGFI4uUQ", 
+            authDomain: "taxiotimac.firebaseapp.com", 
+            databaseURL: "https://taxiotimac-default-rtdb.firebaseio.com", 
+            projectId: "taxiotimac", 
+            storageBucket: "taxiotimac.firebasestorage.app", 
+            messagingSenderId: "533983007458", 
+            appId: "1:533983007458:web:254cef6b46c01a1718c4bb" 
+        };
         firebase.initializeApp(firebaseConfig);
         var database = firebase.database();
 
-        // 1. FUNCIÓN PARA BLOQUEAR
+        // Función para bloquear un ID
         function bloquearCliente() {
             var id = document.getElementById('idBloquear').value.trim();
             if(id) {
                 database.ref('baneados/' + id).set(true).then(() => {
-                    alert("Cliente " + id + " ha sido bloqueado.");
+                    alert("¡Listo! El ID " + id + " ha sido expulsado de Otimac.");
                     document.getElementById('idBloquear').value = "";
                 });
             } else {
-                alert("Escribe un ID válido");
+                alert("Por favor, pega un ID válido.");
             }
         }
 
-        // 2. FUNCIÓN PARA VER LA LISTA Y QUITAR EL BLOQUEO
+        // Escuchar cambios en la lista de baneados
         database.ref('baneados').on('value', (snapshot) => {
             var datos = snapshot.val();
             var contenedor = document.getElementById('contenedorBaneados');
             contenedor.innerHTML = "";
+            
+            if (!datos) {
+                contenedor.innerHTML = "No hay nadie bloqueado aún.";
+                return;
+            }
+
             for(var id in datos) {
-                if(id === "lista") continue; // Saltamos el marcador inicial
+                // No mostrar el marcador 'lista' que creamos manualmente
+                if(id === "lista") continue; 
+
                 contenedor.innerHTML += `
                     <div class="item-ban">
                         <span>❌ ${id}</span>
@@ -64,8 +97,9 @@
             }
         });
 
+        // Función para quitar el baneo
         function perdonarCliente(id) {
-            if(confirm("¿Quieres volver a permitir que este cliente pida taxis?")) {
+            if(confirm("¿Seguro que quieres desbloquear a " + id + "?")) {
                 database.ref('baneados/' + id).remove();
             }
         }
