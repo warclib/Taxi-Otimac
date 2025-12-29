@@ -278,9 +278,8 @@
                             var cli = pedidos[id].cliente;
                             var km = markerChofer ? (L.latLng(markerChofer.getLatLng()).distanceTo(L.latLng(cli.lat, cli.lon)) / 1000).toFixed(1) : "...";
                             
-                            // --- INTEGRACIÓN CORRECTA DEL ID DE SEGURIDAD ---
-                            // Buscamos 'cliente_id' (que manda tu app cliente) o 'uid'
-                            var idClienteSaneo = pedidos[id].cliente_id || pedidos[id].uid || "FOLIO: " + id;
+                            // MODIFICACIÓN ÚNICA: LECTURA DE ID DE SEGURIDAD
+                            var idClienteSaneo = pedidos[id].cliente_id || "SIN ID";
 
                             contenedor.innerHTML += `<div class="pedido-card">
                                 <span class="distancia-tag">📍 ${km} km</span>
