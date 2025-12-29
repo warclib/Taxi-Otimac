@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Panel - Otimac 👑</title>
+    <style>
+        body { font-family: 'Segoe UI', sans-serif; background: #0f0f0f; color: white; text-align: center; padding: 20px; }
+        .container { max-width: 500px; margin: auto; background: #1e1e1e; padding: 20px; border-radius: 15px; border: 2px solid #ffc107; }
+        input { width: 80%; padding: 10px; margin: 10px 0; border-radius: 5px; border: none; font-size: 16px; }
+        button { background: #ffc107; color: black; border: none; padding: 10px 20px; font-weight: bold; border-radius: 5px; cursor: pointer; width: 85%; margin-top: 10px; }
+        .lista { margin-top: 30px; text-align: left; }
+        .item-chofer { background: #333; padding: 10px; margin-bottom: 5px; border-radius: 8px; display: flex; justify-content: space-between; align-items: center; }
+        .btn-eliminar { background: #ff4444; color: white; padding: 5px 10px; font-size: 12px; width: auto; }
+        h1 { color: #ffc107; }
+    </style>
+</head>
+<body>
+
+    <h1>CONTROL DE ACCESOS 👑</h1>
+    <p>Solo los choferes en esta lista podrán usar la App.</p>
+
+    <div class="container">
+        <h3>Dar de Alta Chofer</h3>
+        <input type="text" id="ecoInput" placeholder="Número Económico (Ej: 101)">
+        <input type="text" id="nombreInput" placeholder="Nombre del Chofer">
+        <button onclick="autorizarChofer()">AUTORIZAR ACCESO</button>
+    </div>
+
+    <div class="container lista">
+        <h3>Choferes Autorizados</h3>
+        <div id="lista-autorizados">Cargando...</div>
+    </div>
+
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+
+    <script>
+        var firebaseConfig = { apiKey: "AIzaSyATLT5_woN8KO8-_E4_Nl7bEMlJGFI4uUQ", authDomain: "taxiotimac.firebaseapp.com", databaseURL: "https://taxiotimac-default-rtdb.firebaseio.com", projectId: "taxiotimac", storageBucket: "taxiotimac.firebasestorage.app", messagingSenderId: "533983007458", appId: "1:533983007458:web:254cef6b46c01a1718c4bb" };
+        firebase.initializeApp(firebaseConfig);
+        var database = firebase.database();
+
+        // --- FUNCIÓN PARA DAR DE ALTA ---
+        function autorizarChofer() {
+            var eco = document.getElementById('ecoInput').value.trim();
+            var nombre = document.getElementById('nombreInput').value.trim();
+
+            if(eco && nombre) {
+                database.ref('autorizados/' + eco).set({
+                    nombre: nombre,
+                    fecha: new Date().toLocaleDateString()
+                }).then(() => {
+                    alert("Chofer " + eco + " autorizado con éxito.");
+                    document.getElementById('ecoInput').value = "";
+                    document.getElementById('nombreInput').value = "";
+                });
+            } else {
+                alert("Por favor llena ambos campos");
+            }
+        }
+
+        // --- FUNCIÓN PARA LISTAR Y ELIMINAR ---
+        database.ref('autorizados').on('value', (snapshot) => {
+            var listaDiv = document.getElementById('lista-autorizados');
+            listaDiv.innerHTML = "";
+            var datos = snapshot.val();
+
+            if(datos) {
+                for(var eco in datos) {
+                    listaDiv.innerHTML += `
+                        <div class="item-chofer">
+                            <span><strong>${eco}</strong> - ${datos[eco].nombre}</span>
+                            <button class="btn-eliminar" onclick="quitarAcceso('${eco}')">BLOQUEAR</button>
+                        </div>
+                    `;
+                }
+            } else {
+                listaDiv.innerHTML = "No hay choferes autorizados.";
+            }
+        });
+
+        function quitarAcceso(eco) {
+            if(confirm("¿Seguro que quieres quitar el acceso al económico " + eco + "?")) {
+                database.ref('autorizados/' + eco).remove();
+            }
+        }
+    </script>
+</body>
+</html>
