@@ -142,7 +142,8 @@
         firebase.initializeApp(firebaseConfig);
         var database = firebase.database();
 
-        var audioNotificacion = new Audio('https://assets.mixkit.co/active_storage/sfx/2358/2358-preview.mp3');
+        // Sonido tipo "Ding-Ding" de alta calidad para notificaciones
+        var audioNotificacion = new Audio('https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3');
         var ultimoConteoPedidos = 0, markerChofer, markerCliente, controlRuta, idViajeActivo, watchID;
         var viajesRechazados = [], avisoLlegadaEnviado = false;
         var wakeLock = null;
@@ -368,3 +369,4 @@
     </script>
 </body>
 </html>
+
