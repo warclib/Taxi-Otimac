@@ -7,20 +7,19 @@
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <link rel="stylesheet" href="https://unpkg.com/leaflet-routing-machine/dist/leaflet-routing-machine.css" />
     <style>
-        #splash-screen { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #b39ddb; display: flex; flex-direction: column; justify-content: center; align-items: center; z-index: 10000; transition: opacity 0.6s ease, visibility 0.6s; }
+        #splash-screen { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #b39ddb; display: flex; flex-direction: column; justify-content: center; align-items: center; z-index: 10000; transition: opacity 0.6s ease; }
         .logo-animado { font-size: 80px; animation: latido 1.5s infinite; }
         @keyframes latido { 0% { transform: scale(1); } 50% { transform: scale(1.2); } 100% { transform: scale(1); } }
         body { font-family: 'Segoe UI', sans-serif; text-align: center; background: #1a1a1a; color: white; margin: 0; padding: 0; overflow: hidden; }
-        #btn-menu { position: fixed; top: 15px; left: 15px; z-index: 5000; background: rgba(179, 157, 219, 0.4); color: white; border: 1px solid white; width: 45px; height: 45px; border-radius: 50%; font-size: 24px; cursor: pointer; }
+        #btn-menu { position: fixed; top: 15px; left: 15px; z-index: 5000; background: rgba(179, 157, 219, 0.4); color: white; border: 1px solid white; width: 45px; height: 45px; border-radius: 50%; font-size: 24px; cursor: pointer; backdrop-filter: blur(5px); }
         #sidebar { position: fixed; top: 0; left: -320px; width: 260px; height: 100%; background: rgba(17, 17, 17, 0.95); z-index: 4500; transition: 0.4s; padding: 70px 15px 20px 15px; text-align: left; }
         #sidebar.active { left: 0; box-shadow: 10px 0 30px black; border-right: 2px solid #b39ddb; }
         #overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); display: none; z-index: 4000; }
         #map { height: 100vh; width: 100%; z-index: 1; }
         #interfaz { position: fixed; bottom: 0; left: 0; right: 0; z-index: 2000; padding: 10px; }
-        .panel-pedidos { background: rgba(0, 0, 0, 0.85); padding: 20px; border-radius: 25px 25px 0 0; border-top: 3px solid #b39ddb; }
+        .panel-pedidos { background: rgba(0, 0, 0, 0.85); padding: 20px; border-radius: 25px 25px 15px 15px; border-top: 3px solid #b39ddb; backdrop-filter: blur(10px); }
         .pedido-card { padding: 15px; background: rgba(255,255,255,0.1); margin: 10px 0; border-radius: 12px; border-left: 6px solid #b39ddb; }
-        .btn-aceptar { background:#b39ddb; border:none; padding:14px; border-radius:10px; font-weight:bold; width:100%; cursor: pointer; color: black; }
-        .btn-cancelar { background: #ff4444; color: white; border: none; padding: 15px; border-radius: 10px; width: 100%; font-weight: bold; }
+        .btn-aceptar { background:#b39ddb; border:none; padding:14px; border-radius:10px; font-weight:bold; width:100%; cursor: pointer; color: black; font-size: 16px; }
         .sidebar-item { background: rgba(255,255,255,0.05); padding: 15px; border-radius: 12px; margin-bottom: 15px; border-left: 4px solid #b39ddb; cursor: pointer; }
         .switch { position: relative; display: inline-block; width: 50px; height: 28px; }
         .switch input { opacity: 0; width: 0; height: 0; }
@@ -33,7 +32,7 @@
 <body onload="iniciarAppCentral()">
     <div id="splash-screen">
         <div class="logo-animado">🚖</div>
-        <div style="font-size: 24px; font-weight: bold; margin-top: 10px;">OTIMAC CENTRAL</div>
+        <div style="font-size: 24px; font-weight: bold; margin-top: 10px; color: #1a1a1a;">OTIMAC CENTRAL</div>
     </div>
     <button id="btn-menu" onclick="toggleSidebar()">☰</button>
     <div id="overlay" onclick="toggleSidebar()"></div>
@@ -45,14 +44,14 @@
             </div>
         </div>
         <div class="sidebar-item" onclick="editarDatos()">
-            <div style="font-size: 14px; color:#aaa;">EDITAR PERFIL ✎</div>
+            <div style="font-size: 11px; color:#b39ddb; margin-bottom: 5px;">TOQUE PARA EDITAR ✎</div>
             <div style="font-size: 16px; font-weight: bold;">👤 <span id="displayNombre">...</span></div>
             <div style="font-size: 16px; font-weight: bold;">🚕 Eco: <span id="displayEco">...</span></div>
         </div>
-        <div id="status-gps" style="color: #ff4444; font-size: 12px;">🔴 GPS APAGADO</div>
+        <div id="status-gps" style="color: #ff4444; font-size: 12px; padding-left: 5px;">🔴 GPS APAGADO</div>
     </div>
     <div id="map"></div>
-    <div id="interfaz"><div class="panel-pedidos"><h3>Viajes Disponibles</h3><div id="lista-pedidos">Enciende el modo trabajo.</div></div></div>
+    <div id="interfaz"><div class="panel-pedidos"><h3>Viajes Disponibles</h3><div id="lista-pedidos" style="color: #aaa;">Cargando sistema...</div></div></div>
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script src="https://unpkg.com/leaflet-routing-machine/dist/leaflet-routing-machine.js"></script>
@@ -64,12 +63,11 @@
         var database = firebase.database();
         var markerChofer, markerCliente, controlRuta, idViajeActivo, watchID;
 
-        // --- ICONOS INCRUSTADOS (BASE64) PARA QUE NUNCA FALLEN ---
-        const imgTaxi = "https://img.icons8.com/external-flat-icons-inmotus-design/67/external-Taxi-gps-flat-icons-inmotus-design.png";
-        const imgUser = "https://img.icons8.com/external-flat-icons-inmotus-design/67/external-User-gps-flat-icons-inmotus-design.png";
+        const svgTaxi = 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAzODQgNTEyIj48cGF0aCBmaWxsPSIjRkZEMzAwIiBkPSJNMzY4LjUgMzIwaC0zNTNDNy44IDMyMCAwIDMxMi4yIDAgMzAyLjhWMjA5LjJjMC05LjQgNy44LTE3IDMTcuNS0xN2gzNTNjOS43IDAgMTcuNSA3LjYgMTcuNSAxN3Y5My42YzAgOS40LTcuOCAxNy0xNy41IDE3eiIvPjxwYXRoIGZpbGw9IiNGRkQzMDAiIGQ9Ik0xOTIgOEM4NS45IDAgMCA4NS45IDAgMTkyYzAgNzUuMiA0NC4xIDEzOS4yIDEwNy44IDE3NkwxOTIgNTEybDg0LjItMTQ0QzMzOS45IDMzMS4yIDM4NCAyNjcuMiAzODQgMTkyIDM4NCA4NS45IDI5OC4xIDAgMTkyIDB6bTgzLjQgMjk2SDEwOC42di00MGgxNjd2NDB6bTAtNjRoLTE2N3YtNDBoMTY3djQweiIvPjwvc3ZnPg==';
+        const svgUser = 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAzODQgNTEyIj48cGF0aCBmaWxsPSIjQjM5RERCIiBkPSJNMTkyIDBDODUuOSAwIDAgODUuOSAwIDE5MmMwIDc1LjIgNDQuMSAxMzkuMiAxMDcuOCAxNzZMMTkyIDUxMmw4NC4yLTE0NEMzMzkuOSAzMzEuMiAzODQgMjY3LjIgMzg0IDE5MiAzODQgODUuOSAyOTguMSAwIDE5MiAwem0wIDk2YzMzLjEgMCA2MCAyNi45IDYwIDYwcy0yNi45IDYwLTYwIDYwLTYwLTI2LjktNjAtNjAgMjYuOS02MCA2MC02MHptMTA0IDE5MmgtMjA4di04YzAtMzUuMyAyOC43LTY0IDY0LTY0aDgwYzM1LjMgMCA2NCAyOC43IDY0IDY0djh6Ii8+PC9zdmc+';
 
-        var iconoTaxi = L.icon({ iconUrl: imgTaxi, iconSize: [50, 50], iconAnchor: [25, 50] });
-        var iconoPasajero = L.icon({ iconUrl: imgUser, iconSize: [50, 50], iconAnchor: [25, 50] });
+        var iconoTaxi = L.icon({ iconUrl: svgTaxi, iconSize: [45, 45], iconAnchor: [22, 45] });
+        var iconoPasajero = L.icon({ iconUrl: svgUser, iconSize: [45, 45], iconAnchor: [22, 45] });
 
         function toggleSidebar() {
             var side = document.getElementById('sidebar');
@@ -94,19 +92,30 @@
             if(!n) { n = prompt("Nombre:"); e = prompt("Económico:"); localStorage.setItem("choferNombre", n); localStorage.setItem("choferEco", e); }
             document.getElementById('displayNombre').innerText = n;
             document.getElementById('displayEco').innerText = e;
+
+            // --- AUTO-CONECTAR SI ESTABA TRABAJANDO ---
+            if(localStorage.getItem("trabajando") === "true") {
+                document.getElementById('checkTrabajo').checked = true;
+                toggleTrabajo();
+            } else {
+                document.getElementById('lista-pedidos').innerText = "Enciende el modo trabajo.";
+            }
+
             setTimeout(() => { document.getElementById('splash-screen').style.opacity = '0'; setTimeout(() => document.getElementById('splash-screen').style.visibility = 'hidden', 600); }, 2000);
         }
 
         var map = L.map('map', { zoomControl: false }).setView([23.6, -102], 5);
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
+        L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}').addTo(map);
 
         function toggleTrabajo() {
             let activo = document.getElementById('checkTrabajo').checked;
+            localStorage.setItem("trabajando", activo);
             if(activo) {
                 document.getElementById('txtModo').innerText = "TRABAJANDO";
                 document.getElementById('txtModo').style.color = "#00ff00";
                 iniciarGPS(); escucharPedidos();
             } else {
+                if(watchID) navigator.geolocation.clearWatch(watchID);
                 location.reload();
             }
         }
@@ -117,9 +126,12 @@
                 document.getElementById('status-gps').innerText = "✅ GPS ACTIVO";
                 document.getElementById('status-gps').style.color = "#00ff00";
                 if(markerChofer) markerChofer.setLatLng([lat, lon]);
-                else { markerChofer = L.marker([lat, lon], {icon: iconoTaxi}).addTo(map); map.setView([lat, lon], 16); }
+                else { markerChofer = L.marker([lat, lon], {icon: iconoTaxi}).addTo(map); map.setView([lat, lon], 17); }
                 if(idViajeActivo) database.ref('viajes/' + idViajeActivo + '/chofer').update({ lat, lon });
-            }, null, {enableHighAccuracy: true});
+            }, (err) => {
+                console.error(err);
+                document.getElementById('status-gps').innerText = "⚠️ ERROR GPS";
+            }, {enableHighAccuracy: true, maximumAge: 0});
         }
 
         function escucharPedidos() {
@@ -127,11 +139,14 @@
                 let pedidos = snap.val(), cont = document.getElementById('lista-pedidos');
                 if(!idViajeActivo) {
                     cont.innerHTML = "";
+                    let hayViajes = false;
                     for(let id in pedidos) {
                         if(pedidos[id].estado === 'esperando') {
-                            cont.innerHTML += `<div class="pedido-card"><b>PASAJERO:</b> ${pedidos[id].nombre_cliente}<br><button class="btn-aceptar" onclick="aceptarViaje('${id}')">ACEPTAR</button></div>`;
+                            hayViajes = true;
+                            cont.innerHTML += `<div class="pedido-card"><b>PASAJERO:</b> ${pedidos[id].nombre_cliente}<br><button class="btn-aceptar" onclick="aceptarViaje('${id}')">ACEPTAR VIAJE</button></div>`;
                         }
                     }
+                    if(!hayViajes) cont.innerText = "Esperando solicitudes...";
                 }
             });
         }
@@ -141,8 +156,9 @@
             database.ref('viajes/' + id).update({ estado: 'en_curso', chofer: { nombre: localStorage.getItem("choferNombre"), economico: localStorage.getItem("choferEco") } });
             database.ref('viajes/' + id + '/cliente').once('value', (s) => {
                 let p = s.val();
+                if(markerCliente) map.removeLayer(markerCliente);
                 markerCliente = L.marker([p.lat, p.lon], {icon: iconoPasajero}).addTo(map);
-                document.getElementById('interfaz').innerHTML = `<div class="panel-pedidos"><h3>VIAJE EN CURSO</h3><button class="btn-cancelar" onclick="location.reload()">FINALIZAR</button></div>`;
+                document.getElementById('interfaz').innerHTML = `<div class="panel-pedidos"><h3>VIAJE EN CURSO</h3><button class="btn-aceptar" style="background:#ff4444; color:white;" onclick="location.reload()">FINALIZAR</button></div>`;
             });
         }
     </script>
