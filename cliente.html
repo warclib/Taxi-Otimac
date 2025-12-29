@@ -59,9 +59,20 @@
         var iconoPasajero = L.icon({ iconUrl: 'https://img.icons8.com/color/48/person-male.png', iconSize: [40, 40], iconAnchor: [20, 40] });
 
         var markerCliente, markerChofer, idViaje;
+        var vozLlegadaActivada = false; // Nueva variable para controlar la voz
         let wakeLock = null;
 
-        // Función para que no se apague la pantalla
+        // --- FUNCIÓN DE VOZ ---
+        function avisarConVoz(mensaje) {
+            if ('speechSynthesis' in window) {
+                var msg = new SpeechSynthesisUtterance();
+                msg.text = mensaje;
+                msg.lang = 'es-MX';
+                msg.rate = 1;
+                window.speechSynthesis.speak(msg);
+            }
+        }
+
         async function mantenerPantalla() {
             try { if ('wakeLock' in navigator) wakeLock = await navigator.wakeLock.request('screen'); } catch (err) {}
         }
@@ -88,7 +99,8 @@
         }
 
         function pedirTaxi() {
-            mantenerPantalla(); // Bloquea la pantalla al pedir
+            mantenerPantalla();
+            vozLlegadaActivada = false; // Reiniciar voz para el nuevo viaje
             document.getElementById('btnPedir').disabled = true;
             document.getElementById('status-viaje').innerText = "Buscando ubicación...";
             
@@ -120,6 +132,13 @@
                 if (viaje.estado === 'chofer_llego') {
                     document.getElementById('alertaLlegada').style.display = 'block';
                     document.getElementById('status-viaje').innerText = "🚩 EL CHOFER ESTÁ AFUERA";
+                    
+                    // ACTIVAR VOZ SOLO UNA VEZ
+                    if (!vozLlegadaActivada) {
+                        avisarConVoz("Tu taxi ha llegado. Por favor, sal a su encuentro.");
+                        vozLlegadaActivada = true;
+                    }
+
                 } else if (viaje.estado === 'en_curso') {
                     document.getElementById('status-viaje').innerText = "🚕 TU TAXI VA EN CAMINO";
                 }
