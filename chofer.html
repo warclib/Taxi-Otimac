@@ -120,13 +120,11 @@
 
         var map = L.map('map').setView([23.6345, -102.5528], 5);
         
-        // --- CAMBIO A ESRI WORLD NAVIGATION MAP ---
-        L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Light_Gray_Base/MapServer/tile/{z}/{y}/{x}', {
+        // --- CORRECCIÓN: MAPA CON CALLES Y EDIFICIOS ---
+        L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}', {
             attribution: 'Tiles &copy; Esri &mdash; Esri, DeLorme, NAVTEQ',
-            maxZoom: 16
+            maxZoom: 18
         }).addTo(map);
-        // Capa de etiquetas para que los nombres de calles se vean siempre arriba
-        L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Transportation/MapServer/tile/{z}/{y}/{x}').addTo(map);
 
         var iconoTaxi = L.icon({ iconUrl: 'https://img.icons8.com/color/48/taxi.png', iconSize: [40, 40], iconAnchor: [20, 20] });
         var iconoPasajero = L.icon({ iconUrl: 'https://img.icons8.com/color/48/person-male.png', iconSize: [40, 40], iconAnchor: [20, 40] });
@@ -137,19 +135,16 @@
         var vozLlegadaActivada = false;
         let wakeLock = null;
 
-        // --- FUNCIÓN PARA MANTENER PANTALLA ---
         async function mantenerPantalla() {
             if ('wakeLock' in navigator) {
                 try { 
                     wakeLock = await navigator.wakeLock.request('screen');
-                    console.log("Pantalla bloqueada: No se apagará.");
                 } catch (err) {
                     console.log("Error con WakeLock: " + err.message);
                 }
             }
         }
 
-        // --- LIBERAR PANTALLA CUANDO SE DESCONECTE ---
         function liberarPantalla() {
             if (wakeLock !== null) {
                 wakeLock.release().then(() => { wakeLock = null; });
@@ -343,6 +338,8 @@
         }
 
         function abrirWaze(lat, lon) { window.open(`https://www.waze.com/ul?ll=${lat},${lon}&navigate=yes`, '_blank'); }
+        
+        // --- CORRECCIÓN: URL DE GOOGLE MAPS ---
         function abrirGoogleMaps(lat, lon) { window.open(`https://www.google.com/maps/dir/?api=1&destination=${lat},${lon}&travelmode=driving`, '_blank'); }
 
         function terminarViaje(id) {
