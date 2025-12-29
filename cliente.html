@@ -59,7 +59,7 @@
         var iconoPasajero = L.icon({ iconUrl: 'https://img.icons8.com/color/48/person-male.png', iconSize: [40, 40], iconAnchor: [20, 40] });
 
         var markerCliente, markerChofer, idViaje;
-        var vozLlegadaActivada = false; // Nueva variable para controlar la voz
+        var vozLlegadaActivada = false;
         let wakeLock = null;
 
         // --- FUNCIÓN DE VOZ ---
@@ -100,7 +100,7 @@
 
         function pedirTaxi() {
             mantenerPantalla();
-            vozLlegadaActivada = false; // Reiniciar voz para el nuevo viaje
+            vozLlegadaActivada = false; 
             document.getElementById('btnPedir').disabled = true;
             document.getElementById('status-viaje').innerText = "Buscando ubicación...";
             
@@ -112,7 +112,8 @@
                 database.ref('viajes/' + idViaje).set({
                     cliente: miPos,
                     nombre_cliente: localStorage.getItem("nombreCliente"),
-                    estado: "esperando"
+                    estado: "esperando",
+                    timestamp: Date.now() // <--- AGREGADO: Marca de tiempo para la caducidad
                 }).then(() => reconectarViaje(idViaje));
             }, (err) => {
                 alert("Por favor activa el GPS");
@@ -133,7 +134,6 @@
                     document.getElementById('alertaLlegada').style.display = 'block';
                     document.getElementById('status-viaje').innerText = "🚩 EL CHOFER ESTÁ AFUERA";
                     
-                    // ACTIVAR VOZ SOLO UNA VEZ
                     if (!vozLlegadaActivada) {
                         avisarConVoz("Tu taxi ha llegado. Por favor, sal a su encuentro.");
                         vozLlegadaActivada = true;
