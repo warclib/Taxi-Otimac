@@ -14,7 +14,6 @@
     <link rel="stylesheet" href="https://unpkg.com/leaflet-routing-machine/dist/leaflet-routing-machine.css" />
     
     <style>
-        /* --- ESTILOS DEL SPLASH SCREEN --- */
         #splash-screen {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background: #b39ddb; display: flex; flex-direction: column;
@@ -25,7 +24,6 @@
         @keyframes latido { 0% { transform: scale(1); } 50% { transform: scale(1.2); } 100% { transform: scale(1); } }
         .texto-carga { color: #1a1a1a; font-weight: bold; margin-top: 20px; letter-spacing: 3px; font-size: 14px; }
 
-        /* --- ESTILOS BASE --- */
         body { font-family: 'Segoe UI', Roboto, Helvetica, sans-serif; text-align: center; background: #1a1a1a; color: white; margin: 0; padding: 0; overflow: hidden; }
         
         #btn-menu {
@@ -138,11 +136,11 @@
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
 
     <script>
+        // Configuración de Firebase
         var firebaseConfig = { apiKey: "AIzaSyATLT5_woN8KO8-_E4_Nl7bEMlJGFI4uUQ", authDomain: "taxiotimac.firebaseapp.com", databaseURL: "https://taxiotimac-default-rtdb.firebaseio.com", projectId: "taxiotimac", storageBucket: "taxiotimac.firebasestorage.app", messagingSenderId: "533983007458", appId: "1:533983007458:web:254cef6b46c01a1718c4bb" };
         firebase.initializeApp(firebaseConfig);
         var database = firebase.database();
 
-        // Sonido tipo "Ding-Ding" de alta calidad para notificaciones
         var audioNotificacion = new Audio('https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3');
         var ultimoConteoPedidos = 0, markerChofer, markerCliente, controlRuta, idViajeActivo, watchID;
         var viajesRechazados = [], avisoLlegadaEnviado = false;
@@ -287,8 +285,8 @@
                             var cli = pedidos[id].cliente;
                             var km = markerChofer ? (L.latLng(markerChofer.getLatLng()).distanceTo(L.latLng(cli.lat, cli.lon)) / 1000).toFixed(1) : "...";
                             
-                            // ID del Cliente para seguridad/saneo
-                            var idClienteSaneo = pedidos[id].id_cliente || "No disponible";
+                            // LÓGICA DE ID DE SEGURIDAD CORREGIDA
+                            var idClienteSaneo = pedidos[id].id_cliente || pedidos[id].uid || "FOLIO: " + id;
 
                             contenedor.innerHTML += `<div class="pedido-card">
                                 <span class="distancia-tag">📍 ${km} km</span>
@@ -327,10 +325,6 @@
                     localStorage.setItem("respaldoLat", posC.lat);
                     localStorage.setItem("respaldoLon", posC.lon);
                     dibujarInterfazYRuta(posC.lat, posC.lon, id);
-                } else {
-                    let rLat = localStorage.getItem("respaldoLat");
-                    let rLon = localStorage.getItem("respaldoLon");
-                    if(rLat && rLon) dibujarInterfazYRuta(rLat, rLon, id);
                 }
             });
         }
@@ -362,8 +356,6 @@
         function terminarViaje(id) {
             if(confirm("¿Terminar servicio?")) {
                 localStorage.removeItem("idViajeChoferActivo");
-                localStorage.removeItem("respaldoLat");
-                localStorage.removeItem("respaldoLon");
                 database.ref('viajes/' + id).remove().then(() => { location.reload(); });
             }
         }
