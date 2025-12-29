@@ -116,9 +116,10 @@
                 </label>
             </div>
         </div>
-        <div class="sidebar-item">
+        <div class="sidebar-item" onclick="cambiarDatosChofer()" style="cursor:pointer;">
             <div style="font-size: 15px; font-weight: bold;">👤 <span id="displayNombre">...</span></div>
             <div style="font-size: 15px; font-weight: bold;">🚕 Eco: <span id="displayEco">...</span></div>
+            <small style="color: #b39ddb; font-size: 10px;">(Toca para editar)</small>
         </div>
     </div>
 
@@ -179,10 +180,12 @@
             var n = localStorage.getItem("choferNombre"), e = localStorage.getItem("choferEco");
             if(!n) {
                 n = prompt("Nombre:"); e = prompt("Económico:");
-                localStorage.setItem("choferNombre", n); localStorage.setItem("choferEco", e);
+                if(n && e) {
+                    localStorage.setItem("choferNombre", n); localStorage.setItem("choferEco", e);
+                }
             }
-            document.getElementById('displayNombre').innerText = n;
-            document.getElementById('displayEco').innerText = e;
+            document.getElementById('displayNombre').innerText = n || "---";
+            document.getElementById('displayEco').innerText = e || "---";
             if(localStorage.getItem("modoTrabajoActivo") === "true") {
                 document.getElementById('checkTrabajo').checked = true;
                 toggleTrabajo();
@@ -191,9 +194,22 @@
             }
         }
 
+        function cambiarDatosChofer() {
+            if(idViajeActivo) return alert("No puedes cambiar datos durante un viaje.");
+            let n = prompt("Nuevo Nombre:", localStorage.getItem("choferNombre"));
+            let e = prompt("Nuevo Económico:", localStorage.getItem("choferEco"));
+            if(n && e) {
+                localStorage.setItem("choferNombre", n);
+                localStorage.setItem("choferEco", e);
+                location.reload();
+            }
+        }
+
         function toggleTrabajo() {
             var activo = document.getElementById('checkTrabajo').checked;
             var eco = localStorage.getItem("choferEco");
+            var contenedor = document.getElementById('lista-pedidos');
+
             if(activo) {
                 database.ref('autorizados/' + eco).once('value', (snapshot) => {
                     if (snapshot.exists()) { 
@@ -203,7 +219,7 @@
                         iniciarGPS(); escucharPedidos();
                         if(document.getElementById('sidebar').classList.contains('active')) toggleSidebar();
                     } else {
-                        alert("ACCESO DENEGADO");
+                        alert("ACCESO DENEGADO - Económico no autorizado.");
                         document.getElementById('checkTrabajo').checked = false;
                     }
                 });
@@ -214,7 +230,9 @@
                 document.getElementById('status-gps').innerText = "🔴 GPS OFF";
                 document.getElementById('status-gps').style.color = "#ff4444";
                 
-                // DETENER GPS Y QUITAR MARCADOR
+                // LIMPIAR PANEL AL DESCONECTAR
+                contenedor.innerHTML = "Enciende el modo trabajo.";
+                
                 if(watchID) navigator.geolocation.clearWatch(watchID);
                 if(markerChofer) { map.removeLayer(markerChofer); markerChofer = null; }
                 database.ref('viajes').off();
@@ -249,6 +267,8 @@
             database.ref('viajes').on('value', (snapshot) => {
                 var pedidos = snapshot.val();
                 var contenedor = document.getElementById('lista-pedidos');
+                
+                // Solo mostrar si el modo trabajo está ACTIVO
                 if (!idViajeActivo && document.getElementById('checkTrabajo').checked) {
                     contenedor.innerHTML = "";
                     let conteoActual = 0;
