@@ -4,7 +4,13 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Cliente - Otimac 🚖</title>
+    
     <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="theme-color" content="#ffc107">
+    <link rel="manifest" href="manifest-cliente.json">
+    <link rel="apple-touch-icon" href="icon-192.png">
+
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
         body { font-family: 'Segoe UI', sans-serif; text-align: center; background: #1a1a1a; color: white; margin: 0; padding: 10px; }
@@ -52,7 +58,6 @@
         firebase.initializeApp(firebaseConfig);
         var database = firebase.database();
 
-        // GENERACIÓN DE ID ÚNICO (HUELLA DIGITAL)
         if (!localStorage.getItem("otimac_uuid")) {
             localStorage.setItem("otimac_uuid", "ID-" + Math.floor(100000 + Math.random() * 900000));
         }
@@ -102,7 +107,6 @@
             if(n) { localStorage.setItem("nombreCliente", n); location.reload(); }
         }
 
-        // NUEVA FUNCIÓN: VALIDA SI ESTÁ BANEADO ANTES DE PEDIR
         function validarYPedir() {
             database.ref('baneados/' + miUUID).once('value', (snapshot) => {
                 if (snapshot.exists()) {
@@ -127,7 +131,7 @@
                 database.ref('viajes/' + idViaje).set({
                     cliente: miPos,
                     nombre_cliente: localStorage.getItem("nombreCliente"),
-                    cliente_id: miUUID, // <--- ENVIAMOS EL ID ÚNICO AL CHOFER
+                    cliente_id: miUUID,
                     estado: "esperando",
                     timestamp: Date.now()
                 }).then(() => reconectarViaje(idViaje));
