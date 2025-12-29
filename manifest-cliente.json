@@ -4,7 +4,7 @@
   "description": "Servicio de taxis en línea Otimac",
   "icons": [
     {
-      "src": "icon-192.png",
+      "src": "logo.png",
       "type": "image/png",
       "sizes": "192x192"
     },
