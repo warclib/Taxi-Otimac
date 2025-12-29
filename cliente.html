@@ -7,18 +7,18 @@
     
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <meta name="theme-color" content="#ffc107">
+    <meta name="theme-color" content="#b39ddb">
     <link rel="manifest" href="manifest-cliente.json">
     <link rel="apple-touch-icon" href="icon-192.png">
 
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
-        /* --- NUEVO: ESTILOS DEL SPLASH SCREEN --- */
+        /* --- ESTILOS DEL SPLASH SCREEN (Morado Pastel) --- */
         #splash-screen {
             position: fixed;
             top: 0; left: 0;
             width: 100%; height: 100%;
-            background: #ffc107;
+            background: #b39ddb; /* Morado Pastel */
             display: flex;
             flex-direction: column;
             justify-content: center;
@@ -26,34 +26,30 @@
             z-index: 10000;
             transition: opacity 0.6s ease, visibility 0.6s;
         }
-        .logo-animado {
-            font-size: 80px;
-            animation: latido 1.5s infinite;
-        }
+        .logo-animado { font-size: 80px; animation: latido 1.5s infinite; }
         @keyframes latido {
             0% { transform: scale(1); }
             50% { transform: scale(1.2); }
             100% { transform: scale(1); }
         }
-        .texto-carga {
-            color: #1a1a1a;
-            font-weight: bold;
-            margin-top: 20px;
-            letter-spacing: 3px;
-            font-size: 14px;
-        }
+        .texto-carga { color: #1a1a1a; font-weight: bold; margin-top: 20px; letter-spacing: 3px; font-size: 14px; }
 
-        /* --- ESTILOS ORIGINALES --- */
+        /* --- ESTILOS ORIGINALES PERSONALIZADOS --- */
         body { font-family: 'Segoe UI', sans-serif; text-align: center; background: #1a1a1a; color: white; margin: 0; padding: 10px; }
-        #map { height: 400px; width: 100%; border-radius: 15px; border: 2px solid #ffc107; margin-top: 10px; }
-        .btn-pedido { background: #ffc107; color: black; border: none; padding: 20px; font-weight: bold; border-radius: 10px; width: 100%; font-size: 18px; margin-top: 10px; }
-        .btn-cancelar { background: #ff4444; color: white; border: none; padding: 12px; border-radius: 8px; font-weight: bold; width: 100%; margin-top: 10px; }
-        .card-chofer { background: #222; padding: 15px; border-radius: 12px; border: 2px solid #00ff00; margin-bottom: 10px; display: none; }
+        #map { height: 400px; width: 100%; border-radius: 15px; border: 2px solid #b39ddb; margin-top: 10px; }
+        
+        /* Botones y Cards con el nuevo color Morado */
+        .btn-pedido { background: #b39ddb; color: black; border: none; padding: 20px; font-weight: bold; border-radius: 10px; width: 100%; font-size: 18px; margin-top: 10px; cursor: pointer; }
+        .btn-cancelar { background: #ff4444; color: white; border: none; padding: 12px; border-radius: 8px; font-weight: bold; width: 100%; margin-top: 10px; cursor: pointer; }
+        
+        .card-chofer { background: #222; padding: 15px; border-radius: 12px; border: 2px solid #b39ddb; margin-bottom: 10px; display: none; }
         .alerta-llegada { background: #00ff00; color: black; padding: 15px; border-radius: 10px; font-weight: bold; margin-bottom: 10px; display: none; animation: pulse 1s infinite; }
+        
         @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.5; } 100% { opacity: 1; } }
-        #status-viaje { color: #ffc107; font-weight: bold; margin: 10px 0; font-size: 18px; }
-        input { padding: 15px; width: 80%; border-radius: 10px; margin-bottom: 10px; font-size: 16px; border: none; }
-        #nombre-usuario { color: #ffc107; font-size: 20px; margin-bottom: 10px; display: block; }
+        
+        #status-viaje { color: #b39ddb; font-weight: bold; margin: 10px 0; font-size: 18px; }
+        input { padding: 15px; width: 80%; border-radius: 10px; margin-bottom: 10px; font-size: 16px; border: 2px solid #b39ddb; background: #333; color: white; }
+        #nombre-usuario { color: #b39ddb; font-size: 20px; margin-bottom: 10px; display: block; font-weight: bold; }
     </style>
 </head>
 <body onload="iniciarAppCliente()">
@@ -94,7 +90,7 @@
         firebase.initializeApp(firebaseConfig);
         var database = firebase.database();
 
-        let enviandoPedido = false; // CONTROL DE BLOQUEO
+        let enviandoPedido = false;
 
         function iniciarAppCliente() {
             verificarNombreYViaje();
@@ -110,8 +106,12 @@
         }
         var miUUID = localStorage.getItem("otimac_uuid");
 
+        // --- MAPA ELEGANTE (ESRI STREET MAP) ---
         var map = L.map('map').setView([23.6345, -102.5528], 5);
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
+        L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}', {
+            attribution: 'Tiles © Esri',
+            maxZoom: 18
+        }).addTo(map);
 
         var iconoTaxi = L.icon({ iconUrl: 'https://img.icons8.com/color/48/taxi.png', iconSize: [40, 40], iconAnchor: [20, 20] });
         var iconoPasajero = L.icon({ iconUrl: 'https://img.icons8.com/color/48/person-male.png', iconSize: [40, 40], iconAnchor: [20, 40] });
@@ -140,7 +140,6 @@
             } else {
                 document.getElementById('areaPedido').style.display = 'block';
                 document.getElementById('nombre-usuario').innerText = "Hola, " + n + " 👋";
-                
                 var vActivo = localStorage.getItem("idViajeActivo");
                 if(vActivo) {
                     mantenerPantalla();
@@ -155,11 +154,10 @@
         }
 
         function validarYPedir() {
-            if (enviandoPedido) return; // Si ya se está procesando, ignorar clic
-
+            if (enviandoPedido) return;
             database.ref('baneados/' + miUUID).once('value', (snapshot) => {
                 if (snapshot.exists()) {
-                    alert("⚠️ ACCESO DENEGADO: Tu dispositivo ha sido suspendido por mal uso del servicio.");
+                    alert("⚠️ ACCESO DENEGADO: Tu dispositivo ha sido suspendido.");
                 } else {
                     pedirTaxi();
                 }
@@ -167,7 +165,7 @@
         }
 
         function pedirTaxi() {
-            enviandoPedido = true; // Bloqueamos nuevas peticiones
+            enviandoPedido = true;
             const btn = document.getElementById('btnPedir');
             btn.disabled = true;
             btn.innerText = "PROCESANDO...";
@@ -178,8 +176,6 @@
             
             navigator.geolocation.getCurrentPosition((pos) => {
                 var miPos = { lat: pos.coords.latitude, lon: pos.coords.longitude };
-                
-                // Usamos el UUID para el ID del viaje para evitar duplicados en la base de datos
                 idViaje = miUUID.replace("ID-", "V-"); 
                 localStorage.setItem("idViajeActivo", idViaje);
                 
@@ -188,7 +184,7 @@
                     nombre_cliente: localStorage.getItem("nombreCliente"),
                     cliente_id: miUUID,
                     estado: "esperando",
-                    timestamp: firebase.database.ServerValue.TIMESTAMP // Hora exacta del servidor
+                    timestamp: firebase.database.ServerValue.TIMESTAMP
                 }).then(() => {
                     enviandoPedido = false;
                     reconectarViaje(idViaje);
@@ -196,14 +192,13 @@
                     enviandoPedido = false;
                     btn.disabled = false;
                     btn.innerText = "🚖 PEDIR TAXI AHORA";
-                    alert("Error de conexión. Intenta de nuevo.");
+                    alert("Error de conexión.");
                 });
             }, (err) => {
                 alert("Por favor activa el GPS");
                 enviandoPedido = false;
                 btn.disabled = false;
                 btn.innerText = "🚖 PEDIR TAXI AHORA";
-                document.getElementById('status-viaje').innerText = "Error: GPS necesario";
             });
         }
 
@@ -229,7 +224,7 @@
                     }
                 } else if (viaje.estado === 'en_curso') {
                     document.getElementById('status-viaje').innerText = "🚕 TU TAXI VA EN CAMINO";
-                    document.getElementById('btnCancelar').style.display = 'none'; // Ya no se puede cancelar si ya va en camino
+                    document.getElementById('btnCancelar').style.display = 'none';
                 }
 
                 if (viaje.cliente) {
