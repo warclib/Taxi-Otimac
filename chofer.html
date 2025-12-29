@@ -116,13 +116,10 @@
             var eco = localStorage.getItem("choferEco");
 
             if(activo) {
-                // VALIDACIÓN DE SEGURIDAD WARCLIB
                 database.ref('autorizados/' + eco).once('value', (snapshot) => {
                     if (snapshot.exists()) {
-                        // SI ESTÁ AUTORIZADO
                         iniciarModoTrabajo();
                     } else {
-                        // NO ESTÁ AUTORIZADO
                         alert("ACCESO DENEGADO, CONTACTA AL ADMINISTRADOR");
                         document.getElementById('checkTrabajo').checked = false;
                         localStorage.setItem("modoTrabajoActivo", false);
@@ -190,12 +187,28 @@
         function escucharPedidos() {
             database.ref('viajes').orderByChild('estado').equalTo('esperando').on('value', (snapshot) => {
                 if (idViajeActivo || !document.getElementById('checkTrabajo').checked) return;
+                
                 var pedidos = snapshot.val();
                 var contenedor = document.getElementById('lista-pedidos');
                 contenedor.innerHTML = "";
+                
+                var ahora = Date.now();
+                var limiteTiempo = 10 * 60 * 1000; // 10 MINUTOS DE CADUCIDAD
+
                 if (pedidos) {
                     for (var id in pedidos) {
                         if(viajesRechazados.includes(id)) continue;
+
+                        // --- LÓGICA DE CADUCIDAD ---
+                        if (pedidos[id].timestamp) {
+                            var tiempoTranscurrido = ahora - pedidos[id].timestamp;
+                            if (tiempoTranscurrido > limiteTiempo) {
+                                database.ref('viajes/' + id).remove(); // Borra viaje viejo
+                                continue; 
+                            }
+                        }
+                        // ---------------------------
+
                         var cli = pedidos[id].cliente;
                         var km = "Calculando...";
                         if(markerChofer) {
