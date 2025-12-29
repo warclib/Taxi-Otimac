@@ -1,0 +1,22 @@
+{
+  "short_name": "Otimac",
+  "name": "Otimac: Solicita tu Taxi",
+  "description": "Servicio de taxis en línea Otimac",
+  "icons": [
+    {
+      "src": "icon-192.png",
+      "type": "image/png",
+      "sizes": "192x192"
+    },
+    {
+      "src": "icon-512.png",
+      "type": "image/png",
+      "sizes": "512x512"
+    }
+  ],
+  "start_url": "cliente.html",
+  "background_color": "#1a1a1a",
+  "display": "standalone",
+  "scope": "/",
+  "theme_color": "#ffc107"
+}
