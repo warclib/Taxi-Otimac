@@ -1,15 +1,22 @@
 {
-  "name": "TaxiOtimac",
   "short_name": "Otimac",
-  "start_url": "chofer.html",
-  "display": "standalone",
-  "background_color": "#1a1a1a",
-  "theme_color": "#ffc107",
+  "name": "Otimac: Chofer",
+  "description": "Servicio de taxis en línea Otimac",
   "icons": [
     {
       "src": "logo.png",
-      "sizes": "512x512",
-      "type": "image/png"
+      "type": "image/png",
+      "sizes": "192x192"
+    },
+    {
+      "src": "logo.png",
+      "type": "image/png",
+      "sizes": "512x512"
     }
-  ]
+  ],
+  "start_url": "chofer.html",
+  "background_color": "#1a1a1a",
+  "display": "standalone",
+  "scope": "/",
+  "theme_color": "#ffc107"
 }
