@@ -9,16 +9,16 @@
     
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <meta name="theme-color" content="#8a2be2">
+    <meta name="theme-color" content="#121212">
 
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <link rel="stylesheet" href="https://unpkg.com/leaflet-routing-machine/dist/leaflet-routing-machine.css" />
     
     <style>
-        /* --- AJUSTE DE COLORES WARCLIB ---
-           Dominante: Morado (#8a2be2)
-           Acento: Verde Spotify (#1db954)
+        /* --- ESTILO MINIMALISTA DARK BY WARCLIB ---
            Fondo: Negro Carbón (#121212)
+           Acento: Turquesa Vibrante (#00f2ff)
+           Tarjetas: Gris Grafito (#1e1e1e)
         */
 
         #splash-screen {
@@ -33,50 +33,48 @@
             z-index: 10000;
             transition: opacity 0.6s ease;
         }
-        .logo-animado { font-size: 80px; filter: drop-shadow(0 0 15px #8a2be2); animation: latido 1.5s infinite; }
+        .logo-animado { font-size: 80px; filter: drop-shadow(0 0 15px #00f2ff); animation: latido 1.5s infinite; }
         @keyframes latido {
             0% { transform: scale(1); }
             50% { transform: scale(1.1); }
             100% { transform: scale(1); }
         }
-        .texto-carga { color: #1db954; font-weight: bold; margin-top: 20px; letter-spacing: 3px; font-size: 14px; text-transform: uppercase; }
+        .texto-carga { color: #00f2ff; font-weight: bold; margin-top: 20px; letter-spacing: 3px; font-size: 14px; text-transform: uppercase; }
 
-        body { font-family: 'Segoe UI', sans-serif; text-align: center; background: #121212; color: white; margin: 0; padding: 10px; }
+        body { font-family: 'Segoe UI', sans-serif; text-align: center; background: #121212; color: #e0e0e0; margin: 0; padding: 10px; }
         
-        h2 { color: #8a2be2; letter-spacing: 1px; font-weight: 800; margin-bottom: 5px; text-shadow: 2px 2px #000; }
+        h2 { color: #ffffff; letter-spacing: 2px; font-weight: 800; margin-bottom: 5px; }
 
-        /* MAPA CON BORDE VERDE */
-        #map { height: 320px; width: 100%; border-radius: 20px; margin-top: 10px; border: 3px solid #1db954; box-shadow: 0 0 20px rgba(29, 185, 84, 0.2); }
+        /* MAPA DARK CON BORDE TURQUESA */
+        #map { height: 320px; width: 100%; border-radius: 20px; margin-top: 10px; border: 2px solid #333; box-shadow: 0 0 15px rgba(0, 242, 255, 0.1); }
         
-        .panel-pedidos { background: #181818; padding: 15px; border-radius: 18px; border: 1px solid #333; margin-bottom: 15px; }
+        .panel-pedidos { background: #1e1e1e; padding: 15px; border-radius: 18px; border: 1px solid #333; margin-bottom: 15px; }
         
-        .pedido-card { padding:18px; background:#282828; margin:12px 0; border-radius:15px; border-left: 6px solid #8a2be2; text-align: left; }
+        .pedido-card { padding:18px; background:#252525; margin:12px 0; border-radius:15px; border: 1px solid #333; text-align: left; position: relative; }
         
-        .distancia-tag { color: #8a2be2; font-weight: 800; float: right; background: rgba(138, 43, 226, 0.1); padding: 4px 10px; border-radius: 20px; }
+        .distancia-tag { color: #00f2ff; font-weight: 800; float: right; background: rgba(0, 242, 255, 0.1); padding: 4px 10px; border-radius: 20px; font-size: 12px; }
         
-        /* BOTONES - ACEPTAR AHORA ES MORADO */
-        .btn-aceptar { background: #8a2be2; border: none; padding: 14px; border-radius: 12px; font-weight: bold; width: 100%; cursor: pointer; color: white; text-transform: uppercase; font-size: 14px; box-shadow: 0 4px 10px rgba(138, 43, 226, 0.3); }
-        .btn-rechazar { background: transparent; border: 1px solid #444; color: #888; padding: 10px; border-radius: 10px; width: 100%; margin-top: 10px; cursor: pointer; }
+        /* BOTONES - TURQUESA */
+        .btn-aceptar { background: #00f2ff; border: none; padding: 14px; border-radius: 12px; font-weight: 900; width: 100%; cursor: pointer; color: #000; text-transform: uppercase; font-size: 14px; margin-top: 10px; }
+        .btn-rechazar { background: transparent; border: 1px solid #444; color: #888; padding: 10px; border-radius: 10px; width: 100%; margin-top: 10px; cursor: pointer; font-size: 12px; }
         
-        /* FINALIZAR AHORA ES VERDE */
-        .btn-cancelar { background: #1db954; color: black; border: none; padding: 16px; border-radius: 12px; font-weight: bold; width: 100%; margin-top: 15px; font-size: 16px; box-shadow: 0 4px 15px rgba(29, 185, 84, 0.4); text-transform: uppercase; }
+        .btn-cancelar { background: #ff4444; color: white; border: none; padding: 16px; border-radius: 12px; font-weight: bold; width: 100%; margin-top: 15px; font-size: 16px; text-transform: uppercase; }
 
-        /* NAVEGACIÓN EXTERNA */
         .contenedor-navegacion { display: flex; justify-content: space-between; gap: 12px; margin-bottom: 12px; }
         .btn-navegar-waze { background: #33ccff; color: white; border: none; padding: 14px; border-radius: 12px; font-weight: 800; width: 50%; }
         .btn-navegar-maps { background: #ffffff; color: #4285F4; border: none; padding: 14px; border-radius: 12px; font-weight: 800; width: 50%; }
 
         /* MODO TRABAJO */
-        .switch-container { background: #181818; padding: 15px 20px; border-radius: 50px; display: flex; align-items: center; justify-content: space-between; margin-bottom: 15px; border: 1px solid #333; }
+        .switch-container { background: #1e1e1e; padding: 15px 20px; border-radius: 50px; display: flex; align-items: center; justify-content: space-between; margin-bottom: 15px; border: 1px solid #333; }
         .switch { position: relative; display: inline-block; width: 55px; height: 30px; }
         .switch input { opacity: 0; width: 0; height: 0; }
         .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #333; transition: .4s; border-radius: 34px; }
         .slider:before { position: absolute; content: ""; height: 22px; width: 22px; left: 4px; bottom: 4px; background-color: white; transition: .4s; border-radius: 50%; }
-        input:checked + .slider { background-color: #8a2be2; }
+        input:checked + .slider { background-color: #00f2ff; }
         input:checked + .slider:before { transform: translateX(25px); }
         
-        #status-gps { font-weight: bold; font-size: 13px; margin-bottom: 8px; }
-        .info-header { font-size: 15px; color: #aaa; margin-bottom: 15px; cursor: pointer; padding: 12px; background: #181818; border-radius: 15px; border: 1px solid #333; }
+        #status-gps { font-weight: bold; font-size: 12px; margin-bottom: 8px; text-transform: uppercase; }
+        .info-header { font-size: 14px; color: #888; margin-bottom: 15px; cursor: pointer; padding: 12px; background: #1e1e1e; border-radius: 15px; border: 1px solid #333; }
         
         .leaflet-routing-container { display: none !important; }
     </style>
@@ -85,30 +83,30 @@
 
     <div id="splash-screen">
         <div class="logo-animado">🚖</div>
-        <div style="color: #8a2be2; font-size: 28px; font-weight: 900; margin-top: 10px;">OTIMAC <span style="color:#1db954">PRO</span></div>
-        <div class="texto-carga">Sincronizando...</div>
+        <div style="color: #ffffff; font-size: 28px; font-weight: 900; margin-top: 10px;">OTIMAC <span style="color:#00f2ff">PRO</span></div>
+        <div class="texto-carga">Iniciando sistema...</div>
     </div>
 
     <h2>OTIMAC CHÓFER</h2>
 
     <div class="info-header" onclick="registrarChofer()">
-        👤 <span id="displayNombre" style="color:#8a2be2">...</span> | 🚕 <span id="displayEco" style="color:#1db954">...</span>
+        👤 <span id="displayNombre" style="color:#fff">...</span> | 🚕 <span id="displayEco" style="color:#00f2ff">...</span>
     </div>
 
     <div class="switch-container">
-        <span id="txtModo" style="font-weight: bold; color: #555;">MODO TRABAJO</span>
+        <span id="txtModo" style="font-weight: bold; color: #666;">MODO TRABAJO</span>
         <label class="switch">
             <input type="checkbox" id="checkTrabajo" onchange="toggleTrabajo()">
             <span class="slider"></span>
         </label>
     </div>
     
-    <div id="status-gps" style="color: #ff4444;">🔴 GPS DESCONECTADO</div>
+    <div id="status-gps" style="color: #ff4444;">● GPS DESCONECTADO</div>
 
     <div id="interfaz">
         <div class="panel-pedidos">
-            <h3 style="margin-top:0; font-size: 16px; color: #888;">PEDIDOS DISPONIBLES</h3>
-            <div id="lista-pedidos" style="color: #555; font-style: italic;">Esperando conexión...</div>
+            <h3 style="margin-top:0; font-size: 14px; color: #666; text-transform: uppercase;">Pedidos en la zona</h3>
+            <div id="lista-pedidos" style="color: #444; font-style: italic;">Esperando conexión...</div>
         </div>
     </div>
     <div id="map"></div>
@@ -132,11 +130,15 @@
             }, 2500);
         }
 
-        var map = L.map('map', { zoomControl: true }).setView([23.6345, -102.5528], 5);
-        L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png').addTo(map);
+        var map = L.map('map', { zoomControl: false }).setView([23.6345, -102.5528], 5);
+        
+        // MAPA DARK PROFESIONAL
+        L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+            attribution: '© CartoDB'
+        }).addTo(map);
 
-        var iconoTaxi = L.icon({ iconUrl: 'https://img.icons8.com/fluency/48/taxi.png', iconSize: [45, 45], iconAnchor: [22, 22] });
-        var iconoPasajero = L.icon({ iconUrl: 'https://img.icons8.com/fluency/48/user-location.png', iconSize: [45, 45], iconAnchor: [22, 45] });
+        var iconoTaxi = L.icon({ iconUrl: 'https://img.icons8.com/fluency/48/taxi.png', iconSize: [40, 40], iconAnchor: [20, 20] });
+        var iconoPasajero = L.icon({ iconUrl: 'https://img.icons8.com/fluency/48/user-location.png', iconSize: [40, 40], iconAnchor: [20, 40] });
 
         var markerChofer, markerCliente, controlRuta, idViajeActivo, watchID;
         var viajesRechazados = [];
@@ -187,15 +189,15 @@
             var activo = document.getElementById('checkTrabajo').checked;
             if(activo) {
                 localStorage.setItem("modoTrabajoActivo", true);
-                document.getElementById('txtModo').innerText = "CONECTADO";
-                document.getElementById('txtModo').style.color = "#8a2be2";
+                document.getElementById('txtModo').innerText = "EN LÍNEA";
+                document.getElementById('txtModo').style.color = "#00f2ff";
                 iniciarGPS();
                 escucharPedidos();
                 mantenerPantalla();
             } else {
                 localStorage.setItem("modoTrabajoActivo", false);
-                document.getElementById('txtModo').innerText = "MODO TRABAJO";
-                document.getElementById('txtModo').style.color = "#555";
+                document.getElementById('txtModo').innerText = "DESCONECTADO";
+                document.getElementById('txtModo').style.color = "#666";
                 detenerGPS();
                 database.ref('viajes').off();
             }
@@ -204,25 +206,26 @@
         function iniciarGPS() {
             watchID = navigator.geolocation.watchPosition((pos) => {
                 var lat = pos.coords.latitude, lon = pos.coords.longitude;
-                document.getElementById('status-gps').innerText = "✅ SEÑAL GPS OK";
-                document.getElementById('status-gps').style.color = "#8a2be2";
+                document.getElementById('status-gps').innerText = "● GPS ACTIVO";
+                document.getElementById('status-gps').style.color = "#00f2ff";
                 if(markerChofer) markerChofer.setLatLng([lat, lon]);
                 else { markerChofer = L.marker([lat, lon], {icon: iconoTaxi}).addTo(map); map.setView([lat, lon], 17); }
+                
                 if (idViajeActivo) {
                     database.ref('viajes/' + idViajeActivo + '/chofer').update({ lat: lat, lon: lon });
                     if(markerCliente) {
                         var dist = L.latLng(lat, lon).distanceTo(markerCliente.getLatLng());
-                        if (dist < 100 && !avisoLlegadaEnviado) {
+                        if (dist < 80 && !avisoLlegadaEnviado) {
                             avisoLlegadaEnviado = true;
                             database.ref('viajes/' + idViajeActivo).update({ estado: 'chofer_llego' });
-                            avisarConVoz("Has llegado al punto del pasajero.");
+                            avisarConVoz("Has llegado. El cliente ha sido notificado.");
                         }
                     }
                 }
             }, null, {enableHighAccuracy: true});
         }
 
-        function detenerGPS() { if(watchID) navigator.geolocation.clearWatch(watchID); document.getElementById('status-gps').innerText = "🔴 GPS DESCONECTADO"; document.getElementById('status-gps').style.color = "#ff4444"; }
+        function detenerGPS() { if(watchID) navigator.geolocation.clearWatch(watchID); document.getElementById('status-gps').innerText = "● GPS APAGADO"; document.getElementById('status-gps').style.color = "#ff4444"; }
 
         function escucharPedidos() {
             database.ref('viajes').on('value', (snapshot) => {
@@ -238,14 +241,13 @@
                             var km = markerChofer ? (L.latLng(markerChofer.getLatLng()).distanceTo(L.latLng(cli.lat, cli.lon)) / 1000).toFixed(1) : "...";
                             contenedor.innerHTML += `<div class="pedido-card">
                                 <span class="distancia-tag">${km} km</span>
-                                <b style="color:#8a2be2">${pedidos[id].nombre_cliente || "PASAJERO"}</b>
-                                <span style="display:block; font-size:11px; color:#666; margin-top:5px;">ID: ${id.substring(0,8)}</span>
-                                <button class="btn-aceptar" style="margin-top:10px" onclick="aceptarViaje('${id}')">ACEPTAR VIAJE</button>
+                                <b style="color:#fff; font-size:16px;">${pedidos[id].nombre_cliente || "PASAJERO"}</b>
+                                <button class="btn-aceptar" onclick="aceptarViaje('${id}')">Aceptar Viaje</button>
                                 <button class="btn-rechazar" onclick="rechazarViajeLocal('${id}')">Ignorar</button>
                             </div>`;
                         }
                     }
-                    if (!hay) contenedor.innerHTML = "Buscando pasajeros...";
+                    if (!hay) contenedor.innerHTML = "Buscando pasajeros en la zona...";
                 }
             });
         }
@@ -267,13 +269,13 @@
                 var posC = snap.val();
                 if(!posC) return;
                 document.getElementById('interfaz').innerHTML = `
-                    <div class="panel-pedidos" style="border-color: #1db954">
-                        <h3 style="margin:0 0 12px 0; color: #1db954;">SERVICIO EN CURSO</h3>
+                    <div class="panel-pedidos" style="border-color: #00f2ff">
+                        <h3 style="margin:0 0 12px 0; color: #00f2ff; font-size:14px;">VIAJE EN CURSO</h3>
                         <div class="contenedor-navegacion">
-                            <button class="btn-navegar-waze" onclick="abrirWaze(${posC.lat}, ${posC.lon})">🚙 WAZE</button>
-                            <button class="btn-navegar-maps" onclick="abrirGoogleMaps(${posC.lat}, ${posC.lon})">📍 MAPS</button>
+                            <button class="btn-navegar-waze" onclick="abrirWaze(${posC.lat}, ${posC.lon})">WAZE</button>
+                            <button class="btn-navegar-maps" onclick="abrirGoogleMaps(${posC.lat}, ${posC.lon})">MAPS</button>
                         </div>
-                        <button class="btn-cancelar" onclick="terminarViaje('${id}')">FINALIZAR SERVICIO</button>
+                        <button class="btn-cancelar" onclick="terminarViaje('${id}')">Finalizar Servicio</button>
                     </div>`;
                 if(markerCliente) map.removeLayer(markerCliente);
                 markerCliente = L.marker([posC.lat, posC.lon], {icon: iconoPasajero}).addTo(map);
@@ -281,8 +283,11 @@
                 controlRuta = L.Routing.control({
                     waypoints: [markerChofer.getLatLng(), L.latLng(posC.lat, posC.lon)],
                     show: false, addWaypoints: false, createMarker: function() { return null; },
-                    lineOptions: { styles: [{ color: '#1db954', weight: 6, opacity: 0.8 }] }
+                    lineOptions: { styles: [{ color: '#00f2ff', weight: 6, opacity: 0.8 }] }
                 }).addTo(map);
+                
+                var group = new L.featureGroup([markerChofer, markerCliente]);
+                map.fitBounds(group.getBounds().pad(0.3));
             });
         }
 
@@ -290,7 +295,7 @@
         function abrirGoogleMaps(lat, lon) { window.open(`https://www.google.com/maps/dir/?api=1&destination=${lat},${lon}&travelmode=driving`, '_blank'); }
 
         function terminarViaje(id) {
-            if(confirm("¿Confirmar llegada?")) {
+            if(confirm("¿Confirmar que el pasajero llegó a su destino?")) {
                 localStorage.removeItem("idViajeChoferActivo");
                 database.ref('viajes/' + id).remove().then(() => { location.reload(); });
             }
