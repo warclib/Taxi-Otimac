@@ -26,7 +26,7 @@
         .texto-carga { color: #1a1a1a; font-weight: bold; margin-top: 20px; letter-spacing: 3px; font-size: 14px; }
 
         /* --- ESTILOS BASE --- */
-        body { font-family: 'Segoe UI', Roboto, Helvetica, sans-serif; text-align: center; background: #1a1a1a; color: white; margin: 0; padding: 0; overflow-x: hidden; }
+        body { font-family: 'Segoe UI', Roboto, Helvetica, sans-serif; text-align: center; background: #1a1a1a; color: white; margin: 0; padding: 0; overflow: hidden; }
         
         /* Botón Menú Flotante */
         #btn-menu {
@@ -38,24 +38,31 @@
             display: flex; align-items: center; justify-content: center;
         }
 
-        /* Sidebar / Pestaña Lateral */
+        /* Sidebar - REPARADO: Sin bordes visibles y más alejado */
         #sidebar {
-            position: fixed; top: 0; left: -280px; width: 260px; height: 100%;
-            background: #222; z-index: 4500; transition: 0.3s;
-            box-shadow: 5px 0 15px rgba(0,0,0,0.5); padding: 70px 15px 20px 15px;
-            border-right: 2px solid #b39ddb; text-align: left;
+            position: fixed; top: 0; left: -320px; /* Suficiente para ocultar sombras y bordes */
+            width: 260px; height: 100%;
+            background: #222; z-index: 4500; transition: 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            padding: 70px 15px 20px 15px;
+            text-align: left;
+            border-right: none; /* Eliminada la línea morada fea */
         }
-        #sidebar.active { left: 0; }
+        /* Solo mostramos la sombra y el borde cuando está activo */
+        #sidebar.active { 
+            left: 0; 
+            box-shadow: 8px 0 20px rgba(0,0,0,0.8);
+            border-right: 2px solid #b39ddb;
+        }
+
         #overlay {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background: rgba(0,0,0,0.7); display: none; z-index: 4000;
         }
 
-        /* Elementos del Sidebar */
         .sidebar-item { background: #333; padding: 15px; border-radius: 12px; margin-bottom: 15px; border-left: 4px solid #b39ddb; }
         .sidebar-label { font-size: 11px; color: #aaa; text-transform: uppercase; margin-bottom: 8px; display: block; }
 
-        #map { height: 100vh; width: 100%; transition: all 0.5s ease; z-index: 1; }
+        #map { height: 100vh; width: 100%; z-index: 1; }
         
         /* Paneles de Pedidos */
         #interfaz { position: fixed; bottom: 0; left: 0; right: 0; z-index: 2000; }
@@ -65,7 +72,7 @@
         
         /* Botones */
         .btn-aceptar { background:#b39ddb; border:none; padding:14px; border-radius:8px; font-weight:bold; width:100%; margin-top:10px; cursor: pointer; color: black; font-size: 15px; }
-        .btn-rechazar { background:transparent; border:none; color: #ff4444; padding:5px; border-radius:8px; font-weight:normal; width:100%; margin-top:5px; cursor: pointer; font-size: 11px; text-decoration: underline; }
+        .btn-rechazar { background:transparent; border:none; color: #ff4444; padding:5px; border-radius:8px; width:100%; margin-top:5px; cursor: pointer; font-size: 11px; text-decoration: underline; }
         .btn-cancelar { background: #ff4444; color: white; border: none; padding: 15px; border-radius: 8px; font-weight: bold; width: 100%; margin-top: 10px; font-size: 16px; }
         
         .contenedor-navegacion { display: flex; justify-content: space-between; gap: 10px; margin-bottom: 10px; }
@@ -84,8 +91,6 @@
         .btn-editar-mini { background: #444; border: 1px solid #b39ddb; color: #b39ddb; padding: 5px 10px; border-radius: 5px; font-size: 11px; margin-top: 10px; cursor: pointer; width: 100%; }
 
         .leaflet-routing-container { display: none !important; }
-        
-        /* Ocultar botón menú en modo enfocado para que no estorbe */
         .modo-enfocado #btn-menu { display: none; }
     </style>
 </head>
@@ -137,20 +142,19 @@
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
 
     <script>
-        // Tu configuración de Firebase
         var firebaseConfig = { apiKey: "AIzaSyATLT5_woN8KO8-_E4_Nl7bEMlJGFI4uUQ", authDomain: "taxiotimac.firebaseapp.com", databaseURL: "https://taxiotimac-default-rtdb.firebaseio.com", projectId: "taxiotimac", storageBucket: "taxiotimac.firebasestorage.app", messagingSenderId: "533983007458", appId: "1:533983007458:web:254cef6b46c01a1718c4bb" };
         firebase.initializeApp(firebaseConfig);
         var database = firebase.database();
 
         var audioNotificacion = new Audio('https://assets.mixkit.co/active_storage/sfx/2358/2358-preview.mp3');
-        var ultimoConteoPedidos = 0;
-        var markerChofer, markerCliente, controlRuta, idViajeActivo, watchID, wakeLock = null;
+        var ultimoConteoPedidos = 0, markerChofer, markerCliente, controlRuta, idViajeActivo, watchID, wakeLock = null;
         var viajesRechazados = [], avisoLlegadaEnviado = false, vozLlegadaActivada = false;
 
-        // Función para el menú
         function toggleSidebar() {
-            document.getElementById('sidebar').classList.toggle('active');
-            document.getElementById('overlay').style.display = document.getElementById('sidebar').classList.contains('active') ? 'block' : 'none';
+            var side = document.getElementById('sidebar');
+            var over = document.getElementById('overlay');
+            side.classList.toggle('active');
+            over.style.display = side.classList.contains('active') ? 'block' : 'none';
         }
 
         function iniciarAppCentral() {
@@ -167,12 +171,6 @@
 
         var iconoTaxi = L.icon({ iconUrl: 'https://img.icons8.com/color/48/taxi.png', iconSize: [40, 40], iconAnchor: [20, 20] });
         var iconoPasajero = L.icon({ iconUrl: 'https://img.icons8.com/color/48/person-male.png', iconSize: [40, 40], iconAnchor: [20, 40] });
-
-        async function mantenerPantalla() {
-            if ('wakeLock' in navigator) { try { wakeLock = await navigator.wakeLock.request('screen'); } catch (err) {} }
-        }
-
-        function liberarPantalla() { if (wakeLock !== null) { wakeLock.release().then(() => { wakeLock = null; }); } }
 
         function avisarConVoz(mensaje) {
             if ('speechSynthesis' in window) {
@@ -214,7 +212,7 @@
                 database.ref('autorizados/' + eco).once('value', (snapshot) => {
                     if (snapshot.exists()) { 
                         iniciarModoTrabajo(); 
-                        toggleSidebar(); // Cierra el menú automáticamente al conectar
+                        if(document.getElementById('sidebar').classList.contains('active')) toggleSidebar();
                     } 
                     else {
                         alert("ACCESO DENEGADO");
@@ -226,7 +224,6 @@
 
         function iniciarModoTrabajo() {
             localStorage.setItem("modoTrabajoActivo", true);
-            mantenerPantalla(); 
             document.getElementById('txtModo').innerText = "MODO: TRABAJANDO";
             document.getElementById('txtModo').style.color = "#00ff00";
             iniciarGPS(); escucharPedidos(); 
@@ -234,7 +231,6 @@
 
         function detenerModoTrabajo() {
             localStorage.setItem("modoTrabajoActivo", false);
-            liberarPantalla(); 
             document.getElementById('txtModo').innerText = "MODO: DESCONECTADO";
             document.getElementById('txtModo').style.color = "#ff4444";
             detenerGPS(); database.ref('viajes').off(); 
@@ -248,7 +244,6 @@
                 var miPos = L.latLng(lat, lon);
                 document.getElementById('status-gps').innerText = "✅ GPS ACTIVO";
                 document.getElementById('status-gps').style.color = "#00ff00";
-                
                 if(markerChofer) markerChofer.setLatLng(miPos);
                 else { markerChofer = L.marker(miPos, {icon: iconoTaxi}).addTo(map); map.setView(miPos, 17); }
                 
@@ -270,12 +265,7 @@
             }, null, {enableHighAccuracy: true});
         }
 
-        function detenerGPS() {
-            if(watchID) navigator.geolocation.clearWatch(watchID);
-            watchID = null;
-            document.getElementById('status-gps').innerText = "🔴 GPS APAGADO";
-            document.getElementById('status-gps').style.color = "#ff4444";
-        }
+        function detenerGPS() { if(watchID) navigator.geolocation.clearWatch(watchID); watchID = null; document.getElementById('status-gps').innerText = "🔴 GPS APAGADO"; document.getElementById('status-gps').style.color = "#ff4444"; }
 
         function escucharPedidos() {
             database.ref('viajes').on('value', (snapshot) => {
@@ -328,8 +318,8 @@
                     <div class="panel-pedidos">
                         <h3 style="margin:0 0 10px 0; font-size:16px;">VIAJE ACTIVO</h3>
                         <div class="contenedor-navegacion">
-                            <button class="btn-navegar-waze" onclick="abrirWaze(${posC.lat}, ${posC.lon})">🚙 WAZE</button>
-                            <button class="btn-navegar-maps" onclick="abrirGoogleMaps(${posC.lat}, ${posC.lon})">📍 MAPS</button>
+                            <button class="btn-navegar-waze" onclick="window.open('https://www.waze.com/ul?ll=${posC.lat},${posC.lon}&navigate=yes', '_blank')">🚙 WAZE</button>
+                            <button class="btn-navegar-maps" onclick="window.open('https://www.google.com/maps/dir/?api=1&destination=${posC.lat},${posC.lon}&travelmode=driving', '_blank')">📍 MAPS</button>
                         </div>
                         <button class="btn-cancelar" onclick="terminarViaje('${id}')">FINALIZAR SERVICIO</button>
                     </div>`;
@@ -344,9 +334,6 @@
                 setTimeout(() => { map.invalidateSize(); map.fitBounds([markerChofer.getLatLng(), markerCliente.getLatLng()], {padding: [50, 50]}); }, 400);
             });
         }
-
-        function abrirWaze(lat, lon) { window.open(`https://www.waze.com/ul?ll=${lat},${lon}&navigate=yes`, '_blank'); }
-        function abrirGoogleMaps(lat, lon) { window.open(`https://www.google.com/maps/dir/?api=1&destination=${lat},${lon}&travelmode=driving`, '_blank'); }
 
         function terminarViaje(id) {
             if(confirm("¿Terminar servicio?")) {
