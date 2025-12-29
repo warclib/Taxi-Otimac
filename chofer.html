@@ -9,18 +9,18 @@
     
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <meta name="theme-color" content="#ffc107">
+    <meta name="theme-color" content="#b39ddb">
 
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <link rel="stylesheet" href="https://unpkg.com/leaflet-routing-machine/dist/leaflet-routing-machine.css" />
     
     <style>
-        /* --- ESTILOS DEL SPLASH SCREEN (Efecto Amarillo) --- */
+        /* --- ESTILOS DEL SPLASH SCREEN (Morado Pastel) --- */
         #splash-screen {
             position: fixed;
             top: 0; left: 0;
             width: 100%; height: 100%;
-            background: #ffc107;
+            background: #b39ddb;
             display: flex;
             flex-direction: column;
             justify-content: center;
@@ -39,15 +39,14 @@
         /* --- ESTILOS ORIGINALES CENTRAL OTIMAC --- */
         body { font-family: 'Segoe UI', sans-serif; text-align: center; background: #1a1a1a; color: white; margin: 0; padding: 10px; }
         #map { height: 350px; width: 100%; border-radius: 15px; margin-top: 10px; border: 2px solid #333; }
-        .panel-pedidos { background: #2c2c2c; padding: 15px; border-radius: 12px; border: 1px solid #ffc107; margin-bottom: 10px; }
-        .pedido-card { padding:15px; background:#444; margin:10px 0; border-radius:10px; border-left: 8px solid #ffc107; text-align: left; }
-        .distancia-tag { color: #ffc107; font-weight: bold; float: right; }
+        .panel-pedidos { background: #2c2c2c; padding: 15px; border-radius: 12px; border: 1px solid #b39ddb; margin-bottom: 10px; }
+        .pedido-card { padding:15px; background:#444; margin:10px 0; border-radius:10px; border-left: 8px solid #b39ddb; text-align: left; }
+        .distancia-tag { color: #b39ddb; font-weight: bold; float: right; }
         .cliente-id-tag { color: #888; font-size: 11px; display: block; margin-top: 4px; }
-        .btn-aceptar { background:#ffc107; border:none; padding:12px; border-radius:8px; font-weight:bold; width:100%; margin-top:10px; cursor: pointer; color: black; }
+        .btn-aceptar { background:#b39ddb; border:none; padding:12px; border-radius:8px; font-weight:bold; width:100%; margin-top:10px; cursor: pointer; color: black; }
         .btn-rechazar { background:transparent; border:1px solid #ff4444; color: #ff4444; padding:8px; border-radius:8px; font-weight:bold; width:100%; margin-top:8px; cursor: pointer; font-size: 12px; }
         .btn-cancelar { background: #ff4444; color: white; border: none; padding: 15px; border-radius: 8px; font-weight: bold; width: 100%; margin-top: 10px; font-size: 16px; }
         
-        /* NUEVOS ESTILOS PARA NAVEGACIÓN EXTERNA */
         .contenedor-navegacion { display: flex; justify-content: space-between; gap: 10px; margin-bottom: 10px; }
         .btn-navegar-waze { background: #33ccff; color: white; border: none; padding: 12px; border-radius: 8px; font-weight: bold; width: 50%; cursor: pointer; font-size: 14px; }
         .btn-navegar-maps { background: #4285F4; color: white; border: none; padding: 12px; border-radius: 8px; font-weight: bold; width: 50%; cursor: pointer; font-size: 14px; }
@@ -105,6 +104,10 @@
         var firebaseConfig = { apiKey: "AIzaSyATLT5_woN8KO8-_E4_Nl7bEMlJGFI4uUQ", authDomain: "taxiotimac.firebaseapp.com", databaseURL: "https://taxiotimac-default-rtdb.firebaseio.com", projectId: "taxiotimac", storageBucket: "taxiotimac.firebasestorage.app", messagingSenderId: "533983007458", appId: "1:533983007458:web:254cef6b46c01a1718c4bb" };
         firebase.initializeApp(firebaseConfig);
         var database = firebase.database();
+
+        // --- SONIDO DE NOTIFICACIÓN ---
+        var audioNotificacion = new Audio('https://assets.mixkit.co/active_storage/sfx/2358/2358-preview.mp3');
+        var ultimoConteoPedidos = 0;
 
         function iniciarAppCentral() {
             verificarEstadoChofer();
@@ -244,11 +247,14 @@
                 if (!idViajeActivo && document.getElementById('checkTrabajo').checked) {
                     contenedor.innerHTML = "";
                     let hayPedidosActivos = false;
+                    let conteoActual = 0;
+
                     if (pedidos) {
                         for (var id in pedidos) {
                             if (pedidos[id].estado === 'esperando') {
                                 if(viajesRechazados.includes(id)) continue;
                                 hayPedidosActivos = true;
+                                conteoActual++;
                                 var cli = pedidos[id].cliente;
                                 var km = markerChofer ? (L.latLng(markerChofer.getLatLng()).distanceTo(L.latLng(cli.lat, cli.lon)) / 1000).toFixed(1) : "...";
                                 contenedor.innerHTML += `<div class="pedido-card">
@@ -261,6 +267,13 @@
                             }
                         }
                     }
+
+                    // --- DETECTAR SI HAY UN NUEVO PEDIDO PARA SONAR ---
+                    if (conteoActual > ultimoConteoPedidos) {
+                        audioNotificacion.play().catch(e => console.log("Interacción requerida para sonido"));
+                    }
+                    ultimoConteoPedidos = conteoActual;
+
                     if (!hayPedidosActivos) contenedor.innerHTML = "Esperando solicitudes...";
                 }
             });
@@ -281,14 +294,12 @@
             reconectarViajeChofer(id);
         }
 
-        // --- FUNCION MODIFICADA CON BOTONES DE NAVEGACIÓN ---
         function reconectarViajeChofer(id) {
             idViajeActivo = id;
             database.ref('viajes/' + id + '/cliente').once('value', (snap) => {
                 var posC = snap.val();
                 if(!posC) return;
 
-                // Actualizamos la interfaz para mostrar botones de Waze y Maps
                 document.getElementById('interfaz').innerHTML = `
                     <div class="panel-pedidos">
                         <h3 style="margin:0 0 10px 0;">VIAJE ACTIVO #${id}</h3>
@@ -306,12 +317,11 @@
                 controlRuta = L.Routing.control({
                     waypoints: [markerChofer.getLatLng(), L.latLng(posC.lat, posC.lon)],
                     show: false, addWaypoints: false, createMarker: function() { return null; },
-                    lineOptions: { styles: [{ color: '#2478ff', weight: 6 }] }
+                    lineOptions: { styles: [{ color: '#b39ddb', weight: 6 }] }
                 }).addTo(map);
             });
         }
 
-        // --- FUNCIONES PARA LANZAR APPS EXTERNAS ---
         function abrirWaze(lat, lon) {
             window.open(`https://www.waze.com/ul?ll=${lat},${lon}&navigate=yes`, '_blank');
         }
