@@ -268,36 +268,45 @@
         function escucharPedidos() {
             database.ref('viajes').on('value', (snapshot) => {
                 var pedidos = snapshot.val();
-                var contenedor = document.getElementById('lista-pedidos');
-                if (!idViajeActivo && document.getElementById('checkTrabajo').checked) {
-                    contenedor.innerHTML = "";
-                    let conteoActual = 0;
-                    for (var id in pedidos) {
-                        if (pedidos[id].estado === 'esperando' && !viajesRechazados.includes(id)) {
-                            conteoActual++;
-                            var cli = pedidos[id].cliente;
-                            var km = markerChofer ? (L.latLng(markerChofer.getLatLng()).distanceTo(L.latLng(cli.lat, cli.lon)) / 1000).toFixed(1) : "...";
-                            
-                            // MODIFICACIÓN ÚNICA: LECTURA DE ID DE SEGURIDAD
-                            var idClienteSaneo = pedidos[id].cliente_id || "SIN ID";
-
-                            contenedor.innerHTML += `<div class="pedido-card">
-                                <span class="distancia-tag">📍 ${km} km</span>
-                                <b>PASAJERO:</b> ${pedidos[id].nombre_cliente || "Cliente"}<br>
-                                <small style="color:#b39ddb; font-size:10px; font-weight:bold;">ID SEGURIDAD: ${idClienteSaneo}</small><br>
-                                <button class="btn-aceptar" onclick="aceptarViaje('${id}')">ACEPTAR VIAJE</button>
-                                <button class="btn-rechazar" onclick="rechazarViajeLocal('${id}')">OCULTAR</button>
-                            </div>`;
-                        }
-                    }
-                    if (conteoActual > ultimoConteoPedidos) audioNotificacion.play().catch(e=>{});
-                    ultimoConteoPedidos = conteoActual;
-                    if (conteoActual === 0) contenedor.innerHTML = "Esperando solicitudes...";
-                }
+                window.ultimoSnapshotPedidos = pedidos; // Guardar para poder refrescar al ocultar
+                renderizarListaPedidos(pedidos);
             });
         }
 
-        function rechazarViajeLocal(id) { viajesRechazados.push(id); }
+        function renderizarListaPedidos(pedidos) {
+            var contenedor = document.getElementById('lista-pedidos');
+            if (!idViajeActivo && document.getElementById('checkTrabajo').checked) {
+                contenedor.innerHTML = "";
+                let conteoActual = 0;
+                for (var id in pedidos) {
+                    if (pedidos[id].estado === 'esperando' && !viajesRechazados.includes(id)) {
+                        conteoActual++;
+                        var cli = pedidos[id].cliente;
+                        var km = markerChofer ? (L.latLng(markerChofer.getLatLng()).distanceTo(L.latLng(cli.lat, cli.lon)) / 1000).toFixed(1) : "...";
+                        var idClienteSaneo = pedidos[id].cliente_id || "SIN ID";
+
+                        contenedor.innerHTML += `<div class="pedido-card">
+                            <span class="distancia-tag">📍 ${km} km</span>
+                            <b>PASAJERO:</b> ${pedidos[id].nombre_cliente || "Cliente"}<br>
+                            <small style="color:#b39ddb; font-size:10px; font-weight:bold;">ID SEGURIDAD: ${idClienteSaneo}</small><br>
+                            <button class="btn-aceptar" onclick="aceptarViaje('${id}')">ACEPTAR VIAJE</button>
+                            <button class="btn-rechazar" onclick="rechazarViajeLocal('${id}')">OCULTAR</button>
+                        </div>`;
+                    }
+                }
+                if (conteoActual > ultimoConteoPedidos) audioNotificacion.play().catch(e=>{});
+                ultimoConteoPedidos = conteoActual;
+                if (conteoActual === 0) contenedor.innerHTML = "Esperando solicitudes...";
+            }
+        }
+
+        function rechazarViajeLocal(id) { 
+            viajesRechazados.push(id); 
+            // Forzar el repintado de la lista inmediatamente
+            if(window.ultimoSnapshotPedidos) {
+                renderizarListaPedidos(window.ultimoSnapshotPedidos);
+            }
+        }
 
         function aceptarViaje(id) {
             idViajeActivo = id;
