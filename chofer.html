@@ -13,6 +13,7 @@
         .panel-pedidos { background: #2c2c2c; padding: 15px; border-radius: 12px; border: 1px solid #ffc107; margin-bottom: 10px; }
         .pedido-card { padding:15px; background:#444; margin:10px 0; border-radius:10px; border-left: 8px solid #ffc107; text-align: left; }
         .distancia-tag { color: #ffc107; font-weight: bold; float: right; }
+        .cliente-id-tag { color: #888; font-size: 11px; display: block; margin-top: 4px; }
         .btn-aceptar { background:#ffc107; border:none; padding:12px; border-radius:8px; font-weight:bold; width:100%; margin-top:10px; cursor: pointer; color: black; }
         .btn-rechazar { background:transparent; border:1px solid #ff4444; color: #ff4444; padding:8px; border-radius:8px; font-weight:bold; width:100%; margin-top:8px; cursor: pointer; font-size: 12px; }
         .btn-cancelar { background: #ff4444; color: white; border: none; padding: 15px; border-radius: 8px; font-weight: bold; width: 100%; margin-top: 10px; font-size: 16px; }
@@ -72,10 +73,9 @@
         var markerChofer, markerCliente, controlRuta, idViajeActivo, watchID;
         var viajesRechazados = [];
         var avisoLlegadaEnviado = false;
-        var vozLlegadaActivada = false; // Control de aviso de voz
+        var vozLlegadaActivada = false;
         let wakeLock = null;
 
-        // FUNCIÓN PARA QUE EL CELULAR HABLE
         function avisarConVoz(mensaje) {
             if ('speechSynthesis' in window) {
                 var msg = new SpeechSynthesisUtterance();
@@ -178,7 +178,6 @@
                         
                         var dist = miPos.distanceTo(markerCliente.getLatLng());
                         
-                        // LÓGICA DE AVISO DE VOZ AL CHOFER
                         if (dist < 100 && !vozLlegadaActivada) {
                             vozLlegadaActivada = true;
                             avisarConVoz("Atención: Estás llegando al punto de origen donde se pidió el taxi.");
@@ -209,6 +208,7 @@
                 contenedor.innerHTML = "";
                 var ahora = Date.now();
                 var limiteTiempo = 10 * 60 * 1000;
+
                 if (pedidos) {
                     for (var id in pedidos) {
                         if(viajesRechazados.includes(id)) continue;
@@ -225,9 +225,14 @@
                             var dist = L.latLng(markerChofer.getLatLng()).distanceTo(L.latLng(cli.lat, cli.lon));
                             km = (dist / 1000).toFixed(1);
                         }
+                        
+                        // OBTENEMOS EL ID DEL CLIENTE PARA SEGURIDAD
+                        var clienteID = pedidos[id].cliente_id || "ID-Desconocido";
+
                         contenedor.innerHTML += `<div class="pedido-card" id="card-${id}">
                             <span class="distancia-tag">📍 ${km} km</span>
                             <b>PASAJERO:</b> ${pedidos[id].nombre_cliente || "Cliente"}<br>
+                            <span class="cliente-id-tag">ID UNICO: ${clienteID}</span>
                             <button class="btn-aceptar" onclick="aceptarViaje('${id}')">ACEPTAR VIAJE</button>
                             <button class="btn-rechazar" onclick="rechazarViajeLocal('${id}')">OCULTAR</button>
                         </div>`;
@@ -243,7 +248,7 @@
 
         function aceptarViaje(id) {
             avisoLlegadaEnviado = false;
-            vozLlegadaActivada = false; // Reiniciar voz para el nuevo viaje
+            vozLlegadaActivada = false;
             var n = localStorage.getItem("choferNombre");
             var e = localStorage.getItem("choferEco");
             localStorage.setItem("idViajeChoferActivo", id);
