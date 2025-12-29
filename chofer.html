@@ -201,7 +201,6 @@
         }
 
         function escucharPedidos() {
-            // Escuchamos todos los viajes para poder limpiar los viejos
             database.ref('viajes').on('value', (snapshot) => {
                 var pedidos = snapshot.val();
                 var contenedor = document.getElementById('lista-pedidos');
@@ -214,7 +213,7 @@
 
                     if (pedidos) {
                         for (var id in pedidos) {
-                            // 1. LIMPIEZA AUTOMÁTICA: Si el viaje es viejo, lo borramos de Firebase
+                            // LIMPIEZA: Si el viaje es viejo o ya no debería estar, se borra de Firebase
                             if (pedidos[id].timestamp) {
                                 var tiempoTranscurrido = ahora - pedidos[id].timestamp;
                                 if (tiempoTranscurrido > limiteTiempo) {
@@ -223,7 +222,7 @@
                                 }
                             }
 
-                            // 2. MOSTRAR SOLO LOS QUE ESTÁN ESPERANDO
+                            // MOSTRAR SOLO LOS QUE ESTÁN ESPERANDO
                             if (pedidos[id].estado === 'esperando') {
                                 if(viajesRechazados.includes(id)) continue;
                                 
@@ -254,8 +253,9 @@
 
         function rechazarViajeLocal(id) {
             viajesRechazados.push(id);
-            // Forzamos una actualización visual
-            database.ref('viajes').once('value', () => {});
+            // Simplemente refrescamos la interfaz borrando la tarjeta localmente
+            var card = document.getElementById('card-' + id);
+            if(card) card.style.display = 'none';
         }
 
         function aceptarViaje(id) {
