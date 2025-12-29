@@ -37,7 +37,7 @@
             <div id="infoChofer" style="font-size: 18px;"></div>
         </div>
         <div id="status-viaje">Listo para pedir</div>
-        <button class="btn-pedido" id="btnPedir" onclick="pedirTaxi()">🚖 PEDIR TAXI AHORA</button>
+        <button class="btn-pedido" id="btnPedir" onclick="validarYPedir()">🚖 PEDIR TAXI AHORA</button>
         <button class="btn-cancelar" id="btnCancelar" onclick="cancelarPedido()" style="display:none;">❌ CANCELAR PEDIDO</button>
     </div>
 
@@ -52,6 +52,12 @@
         firebase.initializeApp(firebaseConfig);
         var database = firebase.database();
 
+        // GENERACIÓN DE ID ÚNICO (HUELLA DIGITAL)
+        if (!localStorage.getItem("otimac_uuid")) {
+            localStorage.setItem("otimac_uuid", "ID-" + Math.floor(100000 + Math.random() * 900000));
+        }
+        var miUUID = localStorage.getItem("otimac_uuid");
+
         var map = L.map('map').setView([23.6345, -102.5528], 5);
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
 
@@ -62,13 +68,11 @@
         var vozLlegadaActivada = false;
         let wakeLock = null;
 
-        // --- FUNCIÓN DE VOZ ---
         function avisarConVoz(mensaje) {
             if ('speechSynthesis' in window) {
                 var msg = new SpeechSynthesisUtterance();
                 msg.text = mensaje;
                 msg.lang = 'es-MX';
-                msg.rate = 1;
                 window.speechSynthesis.speak(msg);
             }
         }
@@ -98,6 +102,17 @@
             if(n) { localStorage.setItem("nombreCliente", n); location.reload(); }
         }
 
+        // NUEVA FUNCIÓN: VALIDA SI ESTÁ BANEADO ANTES DE PEDIR
+        function validarYPedir() {
+            database.ref('baneados/' + miUUID).once('value', (snapshot) => {
+                if (snapshot.exists()) {
+                    alert("⚠️ ACCESO DENEGADO: Tu dispositivo ha sido suspendido por mal uso del servicio.");
+                } else {
+                    pedirTaxi();
+                }
+            });
+        }
+
         function pedirTaxi() {
             mantenerPantalla();
             vozLlegadaActivada = false; 
@@ -112,8 +127,9 @@
                 database.ref('viajes/' + idViaje).set({
                     cliente: miPos,
                     nombre_cliente: localStorage.getItem("nombreCliente"),
+                    cliente_id: miUUID, // <--- ENVIAMOS EL ID ÚNICO AL CHOFER
                     estado: "esperando",
-                    timestamp: Date.now() // <--- AGREGADO: Marca de tiempo para la caducidad
+                    timestamp: Date.now()
                 }).then(() => reconectarViaje(idViaje));
             }, (err) => {
                 alert("Por favor activa el GPS");
@@ -133,12 +149,10 @@
                 if (viaje.estado === 'chofer_llego') {
                     document.getElementById('alertaLlegada').style.display = 'block';
                     document.getElementById('status-viaje').innerText = "🚩 EL CHOFER ESTÁ AFUERA";
-                    
                     if (!vozLlegadaActivada) {
                         avisarConVoz("Tu taxi ha llegado. Por favor, sal a su encuentro.");
                         vozLlegadaActivada = true;
                     }
-
                 } else if (viaje.estado === 'en_curso') {
                     document.getElementById('status-viaje').innerText = "🚕 TU TAXI VA EN CAMINO";
                 }
