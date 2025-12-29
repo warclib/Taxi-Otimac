@@ -4,10 +4,48 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Chofer - Otimac 🚖</title>
+    
     <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="theme-color" content="#ffc107">
+
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <link rel="stylesheet" href="https://unpkg.com/leaflet-routing-machine/dist/leaflet-routing-machine.css" />
+    
     <style>
+        /* --- ESTILOS DEL SPLASH SCREEN (Efecto Amarillo) --- */
+        #splash-screen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: #ffc107;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 10000;
+            transition: opacity 0.6s ease, visibility 0.6s;
+        }
+        .logo-animado {
+            font-size: 80px;
+            animation: latido 1.5s infinite;
+        }
+        @keyframes latido {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.2); }
+            100% { transform: scale(1); }
+        }
+        .texto-carga {
+            color: #1a1a1a;
+            font-weight: bold;
+            margin-top: 20px;
+            letter-spacing: 3px;
+            font-size: 14px;
+        }
+
+        /* --- ESTILOS ORIGINALES CENTRAL OTIMAC --- */
         body { font-family: 'Segoe UI', sans-serif; text-align: center; background: #1a1a1a; color: white; margin: 0; padding: 10px; }
         #map { height: 350px; width: 100%; border-radius: 15px; margin-top: 10px; border: 2px solid #333; }
         .panel-pedidos { background: #2c2c2c; padding: 15px; border-radius: 12px; border: 1px solid #ffc107; margin-bottom: 10px; }
@@ -29,7 +67,14 @@
         .leaflet-routing-container { display: none !important; }
     </style>
 </head>
-<body onload="verificarEstadoChofer()">
+<body onload="iniciarAppCentral()">
+
+    <div id="splash-screen">
+        <div class="logo-animado">🚖</div>
+        <div style="color: #1a1a1a; font-size: 28px; font-weight: 900; margin-top: 10px;">OTIMAC CENTRAL</div>
+        <div class="texto-carga">SISTEMA DE SEGURIDAD...</div>
+    </div>
+
     <h2>CENTRAL OTIMAC 🚖</h2>
 
     <div class="info-header" onclick="registrarChofer()">
@@ -63,6 +108,20 @@
         var firebaseConfig = { apiKey: "AIzaSyATLT5_woN8KO8-_E4_Nl7bEMlJGFI4uUQ", authDomain: "taxiotimac.firebaseapp.com", databaseURL: "https://taxiotimac-default-rtdb.firebaseio.com", projectId: "taxiotimac", storageBucket: "taxiotimac.firebasestorage.app", messagingSenderId: "533983007458", appId: "1:533983007458:web:254cef6b46c01a1718c4bb" };
         firebase.initializeApp(firebaseConfig);
         var database = firebase.database();
+
+        // --- FUNCIÓN DE INICIO CON SPLASH ---
+        function iniciarAppCentral() {
+            verificarEstadoChofer();
+            
+            // Retraso de 2.5 segundos para el splash
+            setTimeout(() => {
+                const splash = document.getElementById('splash-screen');
+                splash.style.opacity = '0';
+                setTimeout(() => {
+                    splash.style.visibility = 'hidden';
+                }, 600);
+            }, 2500);
+        }
 
         var map = L.map('map').setView([23.6345, -102.5528], 5);
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
@@ -205,7 +264,7 @@
                 var pedidos = snapshot.val();
                 var contenedor = document.getElementById('lista-pedidos');
                 var ahora = Date.now();
-                var limiteTiempo = 10 * 60 * 1000; // 10 MINUTOS
+                var limiteTiempo = 10 * 60 * 1000; 
 
                 if (!idViajeActivo && document.getElementById('checkTrabajo').checked) {
                     contenedor.innerHTML = "";
@@ -213,7 +272,6 @@
 
                     if (pedidos) {
                         for (var id in pedidos) {
-                            // LIMPIEZA: Si el viaje es viejo o ya no debería estar, se borra de Firebase
                             if (pedidos[id].timestamp) {
                                 var tiempoTranscurrido = ahora - pedidos[id].timestamp;
                                 if (tiempoTranscurrido > limiteTiempo) {
@@ -222,7 +280,6 @@
                                 }
                             }
 
-                            // MOSTRAR SOLO LOS QUE ESTÁN ESPERANDO
                             if (pedidos[id].estado === 'esperando') {
                                 if(viajesRechazados.includes(id)) continue;
                                 
@@ -253,7 +310,6 @@
 
         function rechazarViajeLocal(id) {
             viajesRechazados.push(id);
-            // Simplemente refrescamos la interfaz borrando la tarjeta localmente
             var card = document.getElementById('card-' + id);
             if(card) card.style.display = 'none';
         }
