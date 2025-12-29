@@ -130,18 +130,31 @@
         var vozLlegadaActivada = false;
         let wakeLock = null;
 
+        // --- FUNCIÓN PARA MANTENER PANTALLA ---
+        async function mantenerPantalla() {
+            if ('wakeLock' in navigator) {
+                try { 
+                    wakeLock = await navigator.wakeLock.request('screen');
+                    console.log("Pantalla bloqueada: No se apagará.");
+                } catch (err) {
+                    console.log("Error con WakeLock: " + err.message);
+                }
+            }
+        }
+
+        // --- LIBERAR PANTALLA CUANDO SE DESCONECTE ---
+        function liberarPantalla() {
+            if (wakeLock !== null) {
+                wakeLock.release().then(() => { wakeLock = null; });
+            }
+        }
+
         function avisarConVoz(mensaje) {
             if ('speechSynthesis' in window) {
                 var msg = new SpeechSynthesisUtterance();
                 msg.text = mensaje;
                 msg.lang = 'es-MX';
                 window.speechSynthesis.speak(msg);
-            }
-        }
-
-        async function mantenerPantalla() {
-            if ('wakeLock' in navigator) {
-                try { wakeLock = await navigator.wakeLock.request('screen'); } catch (err) {}
             }
         }
 
@@ -189,7 +202,7 @@
 
         function iniciarModoTrabajo() {
             localStorage.setItem("modoTrabajoActivo", true);
-            mantenerPantalla();
+            mantenerPantalla(); // <-- SE ACTIVA AQUÍ
             document.getElementById('txtModo').innerText = "MODO: TRABAJANDO";
             document.getElementById('txtModo').style.color = "#00ff00";
             iniciarGPS();
@@ -198,6 +211,7 @@
 
         function detenerModoTrabajo() {
             localStorage.setItem("modoTrabajoActivo", false);
+            liberarPantalla(); // <-- SE LIBERA AQUÍ
             document.getElementById('txtModo').innerText = "MODO: DESCONECTADO";
             document.getElementById('txtModo').style.color = "#ff4444";
             detenerGPS();
@@ -268,7 +282,6 @@
                         }
                     }
 
-                    // --- DETECTAR SI HAY UN NUEVO PEDIDO PARA SONAR ---
                     if (conteoActual > ultimoConteoPedidos) {
                         audioNotificacion.play().catch(e => console.log("Interacción requerida para sonido"));
                     }
@@ -322,13 +335,8 @@
             });
         }
 
-        function abrirWaze(lat, lon) {
-            window.open(`https://www.waze.com/ul?ll=${lat},${lon}&navigate=yes`, '_blank');
-        }
-
-        function abrirGoogleMaps(lat, lon) {
-            window.open(`https://www.google.com/maps/dir/?api=1&destination=${lat},${lon}&travelmode=driving`, '_blank');
-        }
+        function abrirWaze(lat, lon) { window.open(`https://www.waze.com/ul?ll=${lat},${lon}&navigate=yes`, '_blank'); }
+        function abrirGoogleMaps(lat, lon) { window.open(`https://www.google.com/maps/dir/?api=1&destination=${lat},${lon}&travelmode=driving`, '_blank'); }
 
         function terminarViaje(id) {
             if(confirm("¿Terminar servicio?")) {
