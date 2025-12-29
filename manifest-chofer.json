@@ -1,0 +1,21 @@
+{
+  "short_name": "Otimac Central",
+  "name": "Otimac Central Chofer",
+  "icons": [
+    {
+      "src": "logo.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "logo.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ],
+  "start_url": "chofer.html",
+  "background_color": "#1a1a1a",
+  "display": "standalone",
+  "scope": "/",
+  "theme_color": "#ffc107"
+}
