@@ -136,7 +136,6 @@
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
 
     <script>
-        // Configuración de Firebase
         var firebaseConfig = { apiKey: "AIzaSyATLT5_woN8KO8-_E4_Nl7bEMlJGFI4uUQ", authDomain: "taxiotimac.firebaseapp.com", databaseURL: "https://taxiotimac-default-rtdb.firebaseio.com", projectId: "taxiotimac", storageBucket: "taxiotimac.firebasestorage.app", messagingSenderId: "533983007458", appId: "1:533983007458:web:254cef6b46c01a1718c4bb" };
         firebase.initializeApp(firebaseConfig);
         var database = firebase.database();
@@ -148,11 +147,7 @@
 
         async function mantenerPantallaEncendida() {
             if ('wakeLock' in navigator) {
-                try {
-                    wakeLock = await navigator.wakeLock.request('screen');
-                } catch (err) {
-                    console.error("Error WakeLock: ", err);
-                }
+                try { wakeLock = await navigator.wakeLock.request('screen'); } catch (err) {}
             }
         }
 
@@ -190,9 +185,7 @@
             var n = localStorage.getItem("choferNombre"), e = localStorage.getItem("choferEco");
             if(!n) {
                 n = prompt("Nombre:"); e = prompt("Económico:");
-                if(n && e) {
-                    localStorage.setItem("choferNombre", n); localStorage.setItem("choferEco", e);
-                }
+                if(n && e) { localStorage.setItem("choferNombre", n); localStorage.setItem("choferEco", e); }
             }
             document.getElementById('displayNombre').innerText = n || "---";
             document.getElementById('displayEco').innerText = e || "---";
@@ -285,13 +278,14 @@
                             var cli = pedidos[id].cliente;
                             var km = markerChofer ? (L.latLng(markerChofer.getLatLng()).distanceTo(L.latLng(cli.lat, cli.lon)) / 1000).toFixed(1) : "...";
                             
-                            // LÓGICA DE ID DE SEGURIDAD CORREGIDA
-                            var idClienteSaneo = pedidos[id].id_cliente || pedidos[id].uid || "FOLIO: " + id;
+                            // --- INTEGRACIÓN CORRECTA DEL ID DE SEGURIDAD ---
+                            // Buscamos 'cliente_id' (que manda tu app cliente) o 'uid'
+                            var idClienteSaneo = pedidos[id].cliente_id || pedidos[id].uid || "FOLIO: " + id;
 
                             contenedor.innerHTML += `<div class="pedido-card">
                                 <span class="distancia-tag">📍 ${km} km</span>
                                 <b>PASAJERO:</b> ${pedidos[id].nombre_cliente || "Cliente"}<br>
-                                <small style="color:#b39ddb; font-size:10px;">ID SEGURIDAD: ${idClienteSaneo}</small><br>
+                                <small style="color:#b39ddb; font-size:10px; font-weight:bold;">ID SEGURIDAD: ${idClienteSaneo}</small><br>
                                 <button class="btn-aceptar" onclick="aceptarViaje('${id}')">ACEPTAR VIAJE</button>
                                 <button class="btn-rechazar" onclick="rechazarViajeLocal('${id}')">OCULTAR</button>
                             </div>`;
@@ -318,7 +312,6 @@
         function reconectarViajeChofer(id) {
             idViajeActivo = id;
             document.getElementById('app-body').classList.add('modo-enfocado');
-            
             database.ref('viajes/' + id + '/cliente').once('value', (snap) => {
                 var posC = snap.val();
                 if(posC) {
