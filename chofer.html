@@ -113,20 +113,42 @@
 
         function toggleTrabajo() {
             var activo = document.getElementById('checkTrabajo').checked;
-            localStorage.setItem("modoTrabajoActivo", activo);
+            var eco = localStorage.getItem("choferEco");
+
             if(activo) {
-                mantenerPantalla();
-                document.getElementById('txtModo').innerText = "MODO: TRABAJANDO";
-                document.getElementById('txtModo').style.color = "#00ff00";
-                iniciarGPS();
-                escucharPedidos(); 
+                // VALIDACIÓN DE SEGURIDAD WARCLIB
+                database.ref('autorizados/' + eco).once('value', (snapshot) => {
+                    if (snapshot.exists()) {
+                        // SI ESTÁ AUTORIZADO
+                        iniciarModoTrabajo();
+                    } else {
+                        // NO ESTÁ AUTORIZADO
+                        alert("ACCESO DENEGADO, CONTACTA AL ADMINISTRADOR");
+                        document.getElementById('checkTrabajo').checked = false;
+                        localStorage.setItem("modoTrabajoActivo", false);
+                    }
+                });
             } else {
-                document.getElementById('txtModo').innerText = "MODO: DESCONECTADO";
-                document.getElementById('txtModo').style.color = "#ff4444";
-                detenerGPS();
-                if(wakeLock) wakeLock.release();
-                database.ref('viajes').off(); 
+                detenerModoTrabajo();
             }
+        }
+
+        function iniciarModoTrabajo() {
+            localStorage.setItem("modoTrabajoActivo", true);
+            mantenerPantalla();
+            document.getElementById('txtModo').innerText = "MODO: TRABAJANDO";
+            document.getElementById('txtModo').style.color = "#00ff00";
+            iniciarGPS();
+            escucharPedidos(); 
+        }
+
+        function detenerModoTrabajo() {
+            localStorage.setItem("modoTrabajoActivo", false);
+            document.getElementById('txtModo').innerText = "MODO: DESCONECTADO";
+            document.getElementById('txtModo').style.color = "#ff4444";
+            detenerGPS();
+            if(wakeLock) wakeLock.release();
+            database.ref('viajes').off(); 
         }
 
         function iniciarGPS() {
@@ -143,7 +165,6 @@
                 if (idViajeActivo) {
                     database.ref('viajes/' + idViajeActivo + '/chofer').update({ lat: lat, lon: lon });
                     if (markerCliente) {
-                        // RE-DIBUJAR RUTA DINÁMICA
                         if(controlRuta) {
                             controlRuta.setWaypoints([miPos, markerCliente.getLatLng()]);
                         }
