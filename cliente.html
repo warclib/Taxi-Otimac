@@ -94,17 +94,14 @@
         firebase.initializeApp(firebaseConfig);
         var database = firebase.database();
 
-        // --- NUEVA FUNCIÓN DE INICIO ---
+        let enviandoPedido = false; // CONTROL DE BLOQUEO
+
         function iniciarAppCliente() {
             verificarNombreYViaje();
-            
-            // Ocultar Splash tras 2.5 segundos
             setTimeout(() => {
                 const splash = document.getElementById('splash-screen');
                 splash.style.opacity = '0';
-                setTimeout(() => {
-                    splash.style.visibility = 'hidden';
-                }, 600);
+                setTimeout(() => { splash.style.visibility = 'hidden'; }, 600);
             }, 2500);
         }
 
@@ -158,6 +155,8 @@
         }
 
         function validarYPedir() {
+            if (enviandoPedido) return; // Si ya se está procesando, ignorar clic
+
             database.ref('baneados/' + miUUID).once('value', (snapshot) => {
                 if (snapshot.exists()) {
                     alert("⚠️ ACCESO DENEGADO: Tu dispositivo ha sido suspendido por mal uso del servicio.");
@@ -168,14 +167,20 @@
         }
 
         function pedirTaxi() {
+            enviandoPedido = true; // Bloqueamos nuevas peticiones
+            const btn = document.getElementById('btnPedir');
+            btn.disabled = true;
+            btn.innerText = "PROCESANDO...";
+
             mantenerPantalla();
             vozLlegadaActivada = false; 
-            document.getElementById('btnPedir').disabled = true;
             document.getElementById('status-viaje').innerText = "Buscando ubicación...";
             
             navigator.geolocation.getCurrentPosition((pos) => {
                 var miPos = { lat: pos.coords.latitude, lon: pos.coords.longitude };
-                idViaje = Math.floor(1000 + Math.random() * 9000);
+                
+                // Usamos el UUID para el ID del viaje para evitar duplicados en la base de datos
+                idViaje = miUUID.replace("ID-", "V-"); 
                 localStorage.setItem("idViajeActivo", idViaje);
                 
                 database.ref('viajes/' + idViaje).set({
@@ -183,11 +188,22 @@
                     nombre_cliente: localStorage.getItem("nombreCliente"),
                     cliente_id: miUUID,
                     estado: "esperando",
-                    timestamp: Date.now()
-                }).then(() => reconectarViaje(idViaje));
+                    timestamp: firebase.database.ServerValue.TIMESTAMP // Hora exacta del servidor
+                }).then(() => {
+                    enviandoPedido = false;
+                    reconectarViaje(idViaje);
+                }).catch((error) => {
+                    enviandoPedido = false;
+                    btn.disabled = false;
+                    btn.innerText = "🚖 PEDIR TAXI AHORA";
+                    alert("Error de conexión. Intenta de nuevo.");
+                });
             }, (err) => {
                 alert("Por favor activa el GPS");
-                document.getElementById('btnPedir').disabled = false;
+                enviandoPedido = false;
+                btn.disabled = false;
+                btn.innerText = "🚖 PEDIR TAXI AHORA";
+                document.getElementById('status-viaje').innerText = "Error: GPS necesario";
             });
         }
 
@@ -198,7 +214,11 @@
 
             database.ref('viajes/' + id).on('value', (snap) => {
                 var viaje = snap.val();
-                if(!viaje) { localStorage.removeItem("idViajeActivo"); location.reload(); return; }
+                if(!viaje) { 
+                    localStorage.removeItem("idViajeActivo"); 
+                    location.reload(); 
+                    return; 
+                }
 
                 if (viaje.estado === 'chofer_llego') {
                     document.getElementById('alertaLlegada').style.display = 'block';
@@ -209,6 +229,7 @@
                     }
                 } else if (viaje.estado === 'en_curso') {
                     document.getElementById('status-viaje').innerText = "🚕 TU TAXI VA EN CAMINO";
+                    document.getElementById('btnCancelar').style.display = 'none'; // Ya no se puede cancelar si ya va en camino
                 }
 
                 if (viaje.cliente) {
