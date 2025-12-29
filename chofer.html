@@ -119,7 +119,11 @@
         }
 
         var map = L.map('map').setView([23.6345, -102.5528], 5);
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
+        
+        // --- CAMBIO A MAPA PROFESIONAL VOYAGER ---
+        L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
+            attribution: '&copy; OpenStreetMap &copy; CARTO'
+        }).addTo(map);
 
         var iconoTaxi = L.icon({ iconUrl: 'https://img.icons8.com/color/48/taxi.png', iconSize: [40, 40], iconAnchor: [20, 20] });
         var iconoPasajero = L.icon({ iconUrl: 'https://img.icons8.com/color/48/person-male.png', iconSize: [40, 40], iconAnchor: [20, 40] });
@@ -202,7 +206,7 @@
 
         function iniciarModoTrabajo() {
             localStorage.setItem("modoTrabajoActivo", true);
-            mantenerPantalla(); // <-- SE ACTIVA AQUÍ
+            mantenerPantalla(); 
             document.getElementById('txtModo').innerText = "MODO: TRABAJANDO";
             document.getElementById('txtModo').style.color = "#00ff00";
             iniciarGPS();
@@ -211,7 +215,7 @@
 
         function detenerModoTrabajo() {
             localStorage.setItem("modoTrabajoActivo", false);
-            liberarPantalla(); // <-- SE LIBERA AQUÍ
+            liberarPantalla(); 
             document.getElementById('txtModo').innerText = "MODO: DESCONECTADO";
             document.getElementById('txtModo').style.color = "#ff4444";
             detenerGPS();
@@ -283,7 +287,7 @@
                     }
 
                     if (conteoActual > ultimoConteoPedidos) {
-                        audioNotificacion.play().catch(e => console.log("Interacción requerida para sonido"));
+                        audioNotificacion.play().catch(e => console.log("Interacción requerida"));
                     }
                     ultimoConteoPedidos = conteoActual;
 
@@ -336,6 +340,7 @@
         }
 
         function abrirWaze(lat, lon) { window.open(`https://www.waze.com/ul?ll=${lat},${lon}&navigate=yes`, '_blank'); }
+        // CORRECCIÓN EN EL ENLACE DE GOOGLE MAPS
         function abrirGoogleMaps(lat, lon) { window.open(`https://www.google.com/maps/dir/?api=1&destination=${lat},${lon}&travelmode=driving`, '_blank'); }
 
         function terminarViaje(id) {
