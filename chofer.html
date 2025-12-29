@@ -15,7 +15,7 @@
     <link rel="stylesheet" href="https://unpkg.com/leaflet-routing-machine/dist/leaflet-routing-machine.css" />
     
     <style>
-        /* --- ESTILOS DEL SPLASH SCREEN (Morado Pastel) --- */
+        /* --- ESTILOS DEL SPLASH SCREEN --- */
         #splash-screen {
             position: fixed;
             top: 0; left: 0;
@@ -37,12 +37,16 @@
         .texto-carga { color: #1a1a1a; font-weight: bold; margin-top: 20px; letter-spacing: 3px; font-size: 14px; }
 
         /* --- ESTILOS ORIGINALES CENTRAL OTIMAC --- */
-        body { font-family: 'Segoe UI', sans-serif; text-align: center; background: #1a1a1a; color: white; margin: 0; padding: 10px; }
-        #map { height: 350px; width: 100%; border-radius: 15px; margin-top: 10px; border: 2px solid #333; }
+        body { font-family: 'Segoe UI', sans-serif; text-align: center; background: #1a1a1a; color: white; margin: 0; padding: 10px; transition: 0.3s; }
+        
+        /* Ajuste dinámico del mapa */
+        #map { height: 350px; width: 100%; border-radius: 15px; margin-top: 10px; border: 2px solid #333; transition: height 0.5s ease; }
+        
         .panel-pedidos { background: #2c2c2c; padding: 15px; border-radius: 12px; border: 1px solid #b39ddb; margin-bottom: 10px; }
         .pedido-card { padding:15px; background:#444; margin:10px 0; border-radius:10px; border-left: 8px solid #b39ddb; text-align: left; }
         .distancia-tag { color: #b39ddb; font-weight: bold; float: right; }
         .cliente-id-tag { color: #888; font-size: 11px; display: block; margin-top: 4px; }
+        
         .btn-aceptar { background:#b39ddb; border:none; padding:12px; border-radius:8px; font-weight:bold; width:100%; margin-top:10px; cursor: pointer; color: black; }
         .btn-rechazar { background:transparent; border:1px solid #ff4444; color: #ff4444; padding:8px; border-radius:8px; font-weight:bold; width:100%; margin-top:8px; cursor: pointer; font-size: 12px; }
         .btn-cancelar { background: #ff4444; color: white; border: none; padding: 15px; border-radius: 8px; font-weight: bold; width: 100%; margin-top: 10px; font-size: 16px; }
@@ -58,12 +62,26 @@
         .slider:before { position: absolute; content: ""; height: 26px; width: 26px; left: 4px; bottom: 4px; background-color: white; transition: .4s; border-radius: 50%; }
         input:checked + .slider { background-color: #00ff00; }
         input:checked + .slider:before { transform: translateX(26px); }
+        
         #status-gps { font-weight: bold; font-size: 14px; margin-bottom: 5px; }
         .info-header { font-size: 16px; color: #ccc; margin-bottom: 15px; cursor: pointer; padding: 10px; background: #222; border-radius: 10px; }
+        
+        /* --- CLASE PARA MODO VIAJE ACTIVO --- */
+        .modo-enfocado h2, 
+        .modo-enfocado .info-header, 
+        .modo-enfocado .switch-container, 
+        .modo-enfocado #status-gps { 
+            display: none !important; 
+        }
+
+        .modo-enfocado #map {
+            height: 70vh; /* Mapa ocupa el 70% de la pantalla */
+        }
+
         .leaflet-routing-container { display: none !important; }
     </style>
 </head>
-<body onload="iniciarAppCentral()">
+<body onload="iniciarAppCentral()" id="app-body">
 
     <div id="splash-screen">
         <div class="logo-animado">🚖</div>
@@ -73,7 +91,7 @@
 
     <h2>CENTRAL OTIMAC 🚖</h2>
 
-    <div class="info-header" onclick="registrarChofer()">
+    <div class="info-header" id="info-chofer" onclick="registrarChofer()">
         👤 <span id="displayNombre">Cargando...</span> | 🚕 <span id="displayEco">...</span> (Editar)
     </div>
 
@@ -105,7 +123,6 @@
         firebase.initializeApp(firebaseConfig);
         var database = firebase.database();
 
-        // --- SONIDO DE NOTIFICACIÓN ---
         var audioNotificacion = new Audio('https://assets.mixkit.co/active_storage/sfx/2358/2358-preview.mp3');
         var ultimoConteoPedidos = 0;
 
@@ -119,10 +136,8 @@
         }
 
         var map = L.map('map').setView([23.6345, -102.5528], 5);
-        
-        // --- CORRECCIÓN: MAPA CON CALLES Y EDIFICIOS ---
         L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}', {
-            attribution: 'Tiles &copy; Esri &mdash; Esri, DeLorme, NAVTEQ',
+            attribution: 'Tiles © Esri',
             maxZoom: 18
         }).addTo(map);
 
@@ -131,31 +146,22 @@
 
         var markerChofer, markerCliente, controlRuta, idViajeActivo, watchID;
         var viajesRechazados = [];
-        var avisoLlegadaEnviado = false;
-        var vozLlegadaActivada = false;
-        let wakeLock = null;
+        var avisoLlegadaEnviado = false, vozLlegadaActivada = false, wakeLock = null;
 
         async function mantenerPantalla() {
             if ('wakeLock' in navigator) {
-                try { 
-                    wakeLock = await navigator.wakeLock.request('screen');
-                } catch (err) {
-                    console.log("Error con WakeLock: " + err.message);
-                }
+                try { wakeLock = await navigator.wakeLock.request('screen'); } catch (err) {}
             }
         }
 
         function liberarPantalla() {
-            if (wakeLock !== null) {
-                wakeLock.release().then(() => { wakeLock = null; });
-            }
+            if (wakeLock !== null) { wakeLock.release().then(() => { wakeLock = null; }); }
         }
 
         function avisarConVoz(mensaje) {
             if ('speechSynthesis' in window) {
                 var msg = new SpeechSynthesisUtterance();
-                msg.text = mensaje;
-                msg.lang = 'es-MX';
+                msg.text = mensaje; msg.lang = 'es-MX';
                 window.speechSynthesis.speak(msg);
             }
         }
@@ -262,15 +268,12 @@
                 var contenedor = document.getElementById('lista-pedidos');
                 if (!idViajeActivo && document.getElementById('checkTrabajo').checked) {
                     contenedor.innerHTML = "";
-                    let hayPedidosActivos = false;
-                    let conteoActual = 0;
-
+                    let hayPedidosActivos = false, conteoActual = 0;
                     if (pedidos) {
                         for (var id in pedidos) {
                             if (pedidos[id].estado === 'esperando') {
                                 if(viajesRechazados.includes(id)) continue;
-                                hayPedidosActivos = true;
-                                conteoActual++;
+                                hayPedidosActivos = true; conteoActual++;
                                 var cli = pedidos[id].cliente;
                                 var km = markerChofer ? (L.latLng(markerChofer.getLatLng()).distanceTo(L.latLng(cli.lat, cli.lon)) / 1000).toFixed(1) : "...";
                                 contenedor.innerHTML += `<div class="pedido-card">
@@ -283,12 +286,8 @@
                             }
                         }
                     }
-
-                    if (conteoActual > ultimoConteoPedidos) {
-                        audioNotificacion.play().catch(e => console.log("Interacción requerida"));
-                    }
+                    if (conteoActual > ultimoConteoPedidos) audioNotificacion.play().catch(e => {});
                     ultimoConteoPedidos = conteoActual;
-
                     if (!hayPedidosActivos) contenedor.innerHTML = "Esperando solicitudes...";
                 }
             });
@@ -297,11 +296,13 @@
         function rechazarViajeLocal(id) { viajesRechazados.push(id); location.reload(); }
 
         function aceptarViaje(id) {
-            avisoLlegadaEnviado = false;
-            vozLlegadaActivada = false;
-            var n = localStorage.getItem("choferNombre");
-            var e = localStorage.getItem("choferEco");
+            avisoLlegadaEnviado = false; vozLlegadaActivada = false;
+            var n = localStorage.getItem("choferNombre"), e = localStorage.getItem("choferEco");
             localStorage.setItem("idViajeChoferActivo", id);
+            
+            // ACTIVA MODO ENFOCADO
+            document.getElementById('app-body').classList.add('modo-enfocado');
+
             database.ref('viajes/' + id).update({ 
                 estado: 'en_curso',
                 chofer: { nombre: n, economico: e, lat: markerChofer.getLatLng().lat, lon: markerChofer.getLatLng().lng }
@@ -311,13 +312,15 @@
 
         function reconectarViajeChofer(id) {
             idViajeActivo = id;
+            document.getElementById('app-body').classList.add('modo-enfocado');
+
             database.ref('viajes/' + id + '/cliente').once('value', (snap) => {
                 var posC = snap.val();
                 if(!posC) return;
 
                 document.getElementById('interfaz').innerHTML = `
                     <div class="panel-pedidos">
-                        <h3 style="margin:0 0 10px 0;">VIAJE ACTIVO #${id}</h3>
+                        <h3 style="margin:0 0 10px 0;">VIAJE ACTIVO</h3>
                         <div class="contenedor-navegacion">
                             <button class="btn-navegar-waze" onclick="abrirWaze(${posC.lat}, ${posC.lon})">🚙 ABRIR WAZE</button>
                             <button class="btn-navegar-maps" onclick="abrirGoogleMaps(${posC.lat}, ${posC.lon})">📍 GOOGLE MAPS</button>
@@ -334,17 +337,19 @@
                     show: false, addWaypoints: false, createMarker: function() { return null; },
                     lineOptions: { styles: [{ color: '#b39ddb', weight: 6 }] }
                 }).addTo(map);
+
+                setTimeout(() => { map.invalidateSize(); }, 400); // Ajusta mapa al nuevo tamaño
             });
         }
 
         function abrirWaze(lat, lon) { window.open(`https://www.waze.com/ul?ll=${lat},${lon}&navigate=yes`, '_blank'); }
-        
-        // --- CORRECCIÓN: URL DE GOOGLE MAPS ---
         function abrirGoogleMaps(lat, lon) { window.open(`https://www.google.com/maps/dir/?api=1&destination=${lat},${lon}&travelmode=driving`, '_blank'); }
 
         function terminarViaje(id) {
             if(confirm("¿Terminar servicio?")) {
                 localStorage.removeItem("idViajeChoferActivo");
+                // QUITA MODO ENFOCADO
+                document.getElementById('app-body').classList.remove('modo-enfocado');
                 database.ref('viajes/' + id).remove().then(() => { location.reload(); });
             }
         }
