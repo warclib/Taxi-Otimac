@@ -5,6 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Chofer - Otimac 🚖</title>
     
+    <link rel="manifest" href="manifest-chofer.json">
+    
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="theme-color" content="#ffc107">
@@ -109,11 +111,9 @@
         firebase.initializeApp(firebaseConfig);
         var database = firebase.database();
 
-        // --- FUNCIÓN DE INICIO CON SPLASH ---
         function iniciarAppCentral() {
             verificarEstadoChofer();
             
-            // Retraso de 2.5 segundos para el splash
             setTimeout(() => {
                 const splash = document.getElementById('splash-screen');
                 splash.style.opacity = '0';
