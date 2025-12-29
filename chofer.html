@@ -286,9 +286,14 @@
                             conteoActual++;
                             var cli = pedidos[id].cliente;
                             var km = markerChofer ? (L.latLng(markerChofer.getLatLng()).distanceTo(L.latLng(cli.lat, cli.lon)) / 1000).toFixed(1) : "...";
+                            
+                            // ID del Cliente para seguridad/saneo
+                            var idClienteSaneo = pedidos[id].id_cliente || "No disponible";
+
                             contenedor.innerHTML += `<div class="pedido-card">
                                 <span class="distancia-tag">📍 ${km} km</span>
                                 <b>PASAJERO:</b> ${pedidos[id].nombre_cliente || "Cliente"}<br>
+                                <small style="color:#b39ddb; font-size:10px;">ID SEGURIDAD: ${idClienteSaneo}</small><br>
                                 <button class="btn-aceptar" onclick="aceptarViaje('${id}')">ACEPTAR VIAJE</button>
                                 <button class="btn-rechazar" onclick="rechazarViajeLocal('${id}')">OCULTAR</button>
                             </div>`;
@@ -312,7 +317,6 @@
             reconectarViajeChofer(id);
         }
 
-        // --- FUNCIÓN MEJORADA: RECUPERA DATOS DE FIREBASE O LOCALSTORAGE ---
         function reconectarViajeChofer(id) {
             idViajeActivo = id;
             document.getElementById('app-body').classList.add('modo-enfocado');
@@ -320,12 +324,10 @@
             database.ref('viajes/' + id + '/cliente').once('value', (snap) => {
                 var posC = snap.val();
                 if(posC) {
-                    // Si hay internet, guardamos respaldo
                     localStorage.setItem("respaldoLat", posC.lat);
                     localStorage.setItem("respaldoLon", posC.lon);
                     dibujarInterfazYRuta(posC.lat, posC.lon, id);
                 } else {
-                    // Si no hay internet, usamos el respaldo
                     let rLat = localStorage.getItem("respaldoLat");
                     let rLon = localStorage.getItem("respaldoLon");
                     if(rLat && rLon) dibujarInterfazYRuta(rLat, rLon, id);
@@ -347,7 +349,6 @@
             if(markerCliente) map.removeLayer(markerCliente);
             markerCliente = L.marker([lat, lon], {icon: iconoPasajero}).addTo(map);
 
-            // Verificamos que el markerChofer exista antes de trazar la línea
             if(markerChofer && markerChofer.getLatLng()) {
                 if(controlRuta) map.removeControl(controlRuta);
                 controlRuta = L.Routing.control({
@@ -369,4 +370,3 @@
     </script>
 </body>
 </html>
-
