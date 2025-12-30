@@ -265,13 +265,33 @@
         }
 
         function escucharPedidos() {
-            database.ref('viajes').on('value', (snapshot) => {
-                var pedidos = snapshot.val();
-                window.ultimoSnapshotPedidos = pedidos;
-                renderizarListaPedidos(pedidos);
-            });
+    database.ref('viajes').on('value', (snapshot) => {
+        var pedidos = snapshot.val();
+        window.ultimoSnapshotPedidos = pedidos;
+
+        // --- LÓGICA DE LIMPIEZA AUTOMÁTICA ---
+        // Si no hay ningún viaje en Firebase, reseteamos los rechazados
+        // para que cuando alguien vuelva a pedir, aparezca de nuevo.
+        if (!pedidos) {
+            viajesRechazados = [];
+        } else {
+            // También revisamos si hay viajes 'esperando'
+            let hayEsperando = false;
+            for (var id in pedidos) {
+                if (pedidos[id].estado === 'esperando') {
+                    hayEsperando = true;
+                    break;
+                }
+            }
+            // Si ya no hay nadie esperando (porque se aceptaron o cancelaron), limpiamos
+            if (!hayEsperando) {
+                viajesRechazados = [];
+            }
         }
 
+        renderizarListaPedidos(pedidos);
+    });
+}
         function renderizarListaPedidos(pedidos) {
             var contenedor = document.getElementById('lista-pedidos');
             if (!idViajeActivo && document.getElementById('checkTrabajo').checked) {
@@ -367,3 +387,4 @@
     </script>
 </body>
 </html>
+
