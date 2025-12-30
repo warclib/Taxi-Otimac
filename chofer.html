@@ -290,6 +290,7 @@
             });
         }
 
+        // --- CORRECCIÓN DE ID REPETIDO ---
         function renderizarListaPedidos(pedidos) {
             var contenedor = document.getElementById('lista-pedidos');
             if (!idViajeActivo && document.getElementById('checkTrabajo').checked) {
@@ -313,7 +314,7 @@
                                 <span class="rating-estrella">⭐ ${estrellas}</span>
                                 <small style="color:#aaa; margin-left:10px;">Historial: ${totalV} viajes</small>
                             </div>
-                            <small style="color:#b39ddb; font-size:10px; font-weight:bold;">ID: ${pedidos[id].cliente_id || "OT-100"}</small><br>
+                            <small style="color:#b39ddb; font-size:10px; font-weight:bold;">${pedidos[id].cliente_uid || "OT-100"}</small><br>
                             <button class="btn-aceptar" onclick="aceptarViaje('${id}')">ACEPTAR VIAJE</button>
                             <button class="btn-rechazar" onclick="rechazarViajeLocal('${id}')">OCULTAR</button>
                         </div>`;
@@ -376,7 +377,6 @@
             }
         }
 
-        // --- CORRECCIÓN: CALCULO DE PROMEDIO INTEGRADO ---
         function terminarViaje(id) {
             let califInput = prompt("Califica al cliente (Escribe un número del 1 al 5):", "5");
             if (califInput === null) return;
@@ -395,7 +395,6 @@
                         if (perfil) {
                             perfil.total_viajes = (perfil.total_viajes || 0) + 1;
                             perfil.puntos_acumulados = (perfil.puntos_acumulados || 0) + estrellasDadas;
-                            // CALCULO DE PROMEDIO PARA EL CAMPO 'estrellas'
                             perfil.estrellas = parseFloat((perfil.puntos_acumulados / perfil.total_viajes).toFixed(1));
                         }
                         return perfil;
