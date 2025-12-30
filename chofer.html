@@ -156,8 +156,15 @@
 
         function avisarConVoz(mensaje) {
             if ('speechSynthesis' in window) {
-                var msg = new SpeechSynthesisUtterance(mensaje);
+                var nombreChofer = localStorage.getItem("choferNombre") || "Chofer";
+                var textoFinal = mensaje;
+                if (mensaje.toLowerCase().includes("viaje")) {
+                    textoFinal = nombreChofer + ", " + mensaje;
+                }
+                var msg = new SpeechSynthesisUtterance();
+                msg.text = textoFinal; 
                 msg.lang = 'es-MX';
+                msg.rate = 1.0;
                 window.speechSynthesis.speak(msg);
             }
         }
@@ -255,7 +262,7 @@
                         var dist = miPos.distanceTo(markerCliente.getLatLng());
                         if (dist < 150 && !avisoLlegadaEnviado) {
                             avisoLlegadaEnviado = true;
-                            avisarConVoz("Atención, estás llegando.");
+                            avisarConVoz("Atención, estás llegando a la ubicación del cliente.");
                             database.ref('viajes/' + idViajeActivo).update({ estado: 'chofer_llego' });
                         }
                     }
@@ -267,17 +274,17 @@
             database.ref('viajes').on('value', (snapshot) => {
                 var pedidos = snapshot.val();
                 window.ultimoSnapshotPedidos = pedidos;
-                
-                // --- LÓGICA DE 5 MINUTOS (300,000 ms) ---
-                var ahora = Date.now();
-                for (var id in pedidos) {
-                    if (pedidos[id].estado === 'esperando') {
-                        var tiempoTranscurrido = ahora - pedidos[id].timestamp;
-                        if (tiempoTranscurrido > 300000) { // Si pasaron más de 5 min
-                            database.ref('viajes/' + id).remove(); // Borrar de la DB
-                            continue;
+                if (!pedidos) {
+                    viajesRechazados = [];
+                } else {
+                    let hayEsperando = false;
+                    for (var id in pedidos) {
+                        if (pedidos[id].estado === 'esperando') {
+                            hayEsperando = true;
+                            break;
                         }
                     }
+                    if (!hayEsperando) { viajesRechazados = []; }
                 }
                 renderizarListaPedidos(pedidos);
             });
@@ -294,15 +301,19 @@
                         var cli = pedidos[id].cliente;
                         var km = markerChofer ? (L.latLng(markerChofer.getLatLng()).distanceTo(L.latLng(cli.lat, cli.lon)) / 1000).toFixed(1) : "...";
                         
+                        var estrellas = pedidos[id].cliente_estrellas || "4.8";
+                        var totalV = pedidos[id].cliente_historial || "1";
+
                         contenedor.innerHTML += `
                         <div class="pedido-card">
                             <span class="distancia-tag">📍 ${km} km</span>
                             <b>${pedidos[id].nombre_cliente || "Pasajero"}</b> 
                             <span class="badge-confianza">Verificado</span>
                             <div style="margin: 5px 0;">
-                                <span class="rating-estrella">⭐ ${pedidos[id].cliente_estrellas || "5.0"}</span>
-                                <small style="color:#aaa; margin-left:10px;">Historial: ${pedidos[id].cliente_historial || "0"} viajes</small>
+                                <span class="rating-estrella">⭐ ${estrellas}</span>
+                                <small style="color:#aaa; margin-left:10px;">Historial: ${totalV} viajes</small>
                             </div>
+                            <small style="color:#b39ddb; font-size:10px; font-weight:bold;">${pedidos[id].cliente_uid || "OT-100"}</small><br>
                             <button class="btn-aceptar" onclick="aceptarViaje('${id}')">ACEPTAR VIAJE</button>
                             <button class="btn-rechazar" onclick="rechazarViajeLocal('${id}')">OCULTAR</button>
                         </div>`;
@@ -310,7 +321,7 @@
                 }
                 if (conteoActual > ultimoConteoPedidos) {
                     audioNotificacion.play().catch(e=>{});
-                    avisarConVoz("Nuevo viaje disponible.");
+                    avisarConVoz("tienes un nuevo viaje disponible.");
                 }
                 ultimoConteoPedidos = conteoActual;
                 if (conteoActual === 0) contenedor.innerHTML = "Esperando solicitudes...";
