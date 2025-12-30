@@ -81,9 +81,6 @@
         input { padding: 15px; width: 85%; border-radius: 10px; margin-bottom: 10px; font-size: 16px; border: 2px solid #b39ddb; background: #333; color: white; box-sizing: border-box; }
         #nombre-usuario { color: #b39ddb; font-size: 20px; margin-bottom: 10px; display: block; font-weight: bold; }
         #info-historial { font-size: 12px; color: #aaa; margin-bottom: 10px; display: block; }
-
-        /* Estilo para el tiempo estimado */
-        #tiempo-estimado { color: #00ff00; font-weight: bold; font-size: 16px; margin-top: 5px; display: block; }
     </style>
 </head>
 <body onload="iniciarAppCliente()">
@@ -130,7 +127,6 @@
         <div id="cardChofer" class="card-chofer">
             <div id="status-senal">📶 ESTIMANDO POSICIÓN POR SEÑAL DÉBIL...</div>
             <div id="infoChofer" style="font-size: 18px;"></div>
-            <div id="tiempo-estimado">Calculando tiempo...</div>
         </div>
         <div id="status-viaje">Listo para pedir</div>
         <button class="btn-pedido" id="btnPedir" onclick="validarYPedir()">🚖 PEDIR TAXI AHORA</button>
@@ -216,28 +212,6 @@
             }
         }
 
-        // --- FUNCIÓN AGREGADA PARA CALCULAR DISTANCIA Y TIEMPO ---
-        function actualizarTiempoEstimado(lat1, lon1, lat2, lon2) {
-            const R = 6371; // Radio de la tierra en km
-            const dLat = (lat2 - lat1) * Math.PI / 180;
-            const dLon = (lon2 - lon1) * Math.PI / 180;
-            const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
-                      Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
-                      Math.sin(dLon/2) * Math.sin(dLon/2);
-            const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
-            const distancia = R * c; 
-            
-            // Estimamos 2.5 minutos por kilómetro (ajustable)
-            const tiempoMinutos = Math.round(distancia * 2.5);
-            
-            const txt = document.getElementById('tiempo-estimado');
-            if (tiempoMinutos < 1) {
-                txt.innerText = "⏱️ ¡LLEGANDO AHORA!";
-            } else {
-                txt.innerText = "⏱️ LLEGA EN APROX: " + tiempoMinutos + " MIN";
-            }
-        }
-
         function verificarNombreYViaje() {
             var n = localStorage.getItem("nombreCliente");
             if(!n) {
@@ -270,11 +244,7 @@
                     let pasoLon = (lonDestino - ultimaPosChoferReal.lon) * 0.005;
                     ultimaPosChoferReal.lat += pasoLat;
                     ultimaPosChoferReal.lon += pasoLon;
-                    if (markerChofer) {
-                        markerChofer.setLatLng([ultimaPosChoferReal.lat, ultimaPosChoferReal.lon]);
-                        // Actualizar tiempo durante simulación
-                        actualizarTiempoEstimado(ultimaPosChoferReal.lat, ultimaPosChoferReal.lon, latDestino, lonDestino);
-                    }
+                    if (markerChofer) markerChofer.setLatLng([ultimaPosChoferReal.lat, ultimaPosChoferReal.lon]);
                 } else {
                     document.getElementById('status-senal').style.display = 'none';
                 }
@@ -305,7 +275,6 @@
                 if (viaje.estado === 'chofer_llego') {
                     document.getElementById('alertaLlegada').style.display = 'block';
                     document.getElementById('status-viaje').innerText = "🚩 EL CHOFER ESTÁ AFUERA";
-                    document.getElementById('tiempo-estimado').innerText = "✅ CONDUCTOR EN SITIO";
                     if (!vozLlegadaActivada) { avisarConVoz("Tu taxi ha llegado."); vozLlegadaActivada = true; }
                 } else if (viaje.estado === 'en_curso') {
                     document.getElementById('status-viaje').innerText = "🚕 TU TAXI VA EN CAMINO";
@@ -323,13 +292,8 @@
                     ultimaPosChoferReal = { lat: viaje.chofer.lat, lon: viaje.chofer.lon };
                     document.getElementById('cardChofer').style.display = 'block';
                     document.getElementById('infoChofer').innerHTML = `<b>Chofer:</b> ${viaje.chofer.nombre} <br> <b>Unidad:</b> ${viaje.chofer.economico}`;
-                    
                     if (markerChofer) markerChofer.setLatLng([ultimaPosChoferReal.lat, ultimaPosChoferReal.lon]);
                     else markerChofer = L.marker([ultimaPosChoferReal.lat, ultimaPosChoferReal.lon], {icon: iconoTaxi}).addTo(map);
-                    
-                    // Calcular tiempo con posición real de Firebase
-                    actualizarTiempoEstimado(viaje.chofer.lat, viaje.chofer.lon, viaje.cliente.lat, viaje.cliente.lon);
-                    
                     simularMovimientoChofer(viaje.cliente.lat, viaje.cliente.lon);
                     if (!map.getBounds().contains(markerChofer.getLatLng())) {
                         var group = new L.featureGroup([markerCliente, markerChofer]);
