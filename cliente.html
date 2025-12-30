@@ -39,7 +39,6 @@
         .card-chofer { background: #222; padding: 15px; border-radius: 12px; border: 2px solid #b39ddb; margin-bottom: 10px; display: none; }
         .alerta-llegada { background: #00ff00; color: black; padding: 15px; border-radius: 10px; font-weight: bold; margin-bottom: 10px; display: none; animation: pulse 1s infinite; }
         
-        /* Etiqueta de señal débil - Movimiento Fantasma */
         #status-senal { display: none; font-size: 11px; color: #ffca28; margin-bottom: 8px; font-weight: bold; }
 
         @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.5; } 100% { opacity: 1; } }
@@ -103,7 +102,6 @@
         var totalViajesRealizados = 0; 
         var estrellasActuales = "5.0"; 
 
-        // --- VARIABLES DE SIMULACIÓN (MOVIMIENTO FANTASMA) ---
         var ultimaActChofer = Date.now();
         var intervaloSimulacion;
         var ultimaPosChoferReal = null;
@@ -117,9 +115,6 @@
             database.ref('baneados/' + miUUID).on('value', (snap) => {
                 if (snap.exists()) document.getElementById('pantalla-bloqueo').style.display = 'flex';
                 else document.getElementById('pantalla-bloqueo').style.display = 'none';
-            });
-            database.ref('usuarios/' + miUUID + '/perfil/acceso').on('value', (snap) => {
-                if (snap.val() === "denegado") document.getElementById('pantalla-bloqueo').style.display = 'flex';
             });
         }
 
@@ -176,7 +171,6 @@
             if(n) { localStorage.setItem("nombreCliente", n); location.reload(); }
         }
 
-        // --- LÓGICA DE MOVIMIENTO FANTASMA ---
         function simularMovimientoChofer(latDestino, lonDestino) {
             if (intervaloSimulacion) clearInterval(intervaloSimulacion);
             intervaloSimulacion = setInterval(() => {
@@ -195,12 +189,23 @@
         }
 
         function reconectarViaje(id) {
+            idViaje = id;
             document.getElementById('btnPedir').style.display = 'none';
             document.getElementById('btnCancelar').style.display = 'block';
 
             database.ref('viajes/' + id).on('value', (snap) => {
                 var viaje = snap.val();
-                if(!viaje) { localStorage.removeItem("idViajeActivo"); location.reload(); return; }
+                
+                // --- LÓGICA DE CIERRE DE VIAJE (CANCELACIÓN O TIEMPO EXOTADO) ---
+                if(!viaje) { 
+                    if(localStorage.getItem("idViajeActivo")){
+                        avisarConVoz("El viaje ha sido cancelado o ha finalizado.");
+                        localStorage.removeItem("idViajeActivo");
+                        alert("El viaje ya no está disponible.");
+                    }
+                    location.reload(); 
+                    return; 
+                }
 
                 if (viaje.estado === 'chofer_llego') {
                     document.getElementById('alertaLlegada').style.display = 'block';
@@ -220,7 +225,6 @@
                 if (viaje.chofer) {
                     ultimaActChofer = Date.now();
                     ultimaPosChoferReal = { lat: viaje.chofer.lat, lon: viaje.chofer.lon };
-
                     document.getElementById('cardChofer').style.display = 'block';
                     document.getElementById('infoChofer').innerHTML = `<b>Chofer:</b> ${viaje.chofer.nombre} <br> <b>Unidad:</b> ${viaje.chofer.economico}`;
                     
@@ -229,8 +233,6 @@
                     
                     simularMovimientoChofer(viaje.cliente.lat, viaje.cliente.lon);
 
-                    // --- AJUSTE INTELIGENTE DE CÁMARA ---
-                    // Solo ajusta la cámara si el chofer se sale del rango visible para no marear al usuario
                     if (!map.getBounds().contains(markerChofer.getLatLng())) {
                         var group = new L.featureGroup([markerCliente, markerChofer]);
                         map.fitBounds(group.getBounds().pad(0.3));
