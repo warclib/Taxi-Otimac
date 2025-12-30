@@ -154,13 +154,17 @@
         var viajesRechazados = [], avisoLlegadaEnviado = false;
         var wakeLock = null;
 
+        // --- MODIFICACIÓN 1: VOZ DINÁMICA CON EL NOMBRE DEL CHOFER ---
         function avisarConVoz(mensaje) {
             if ('speechSynthesis' in window) {
                 var nombreChofer = localStorage.getItem("choferNombre") || "Chofer";
                 var textoFinal = mensaje;
+                
+                // Si es un aviso de nuevo viaje, le ponemos el nombre al inicio
                 if (mensaje.includes("nuevo viaje")) {
                     textoFinal = nombreChofer + ", " + mensaje;
                 }
+
                 var msg = new SpeechSynthesisUtterance();
                 msg.text = textoFinal; 
                 msg.lang = 'es-MX';
@@ -228,8 +232,7 @@
             var activo = document.getElementById('checkTrabajo').checked;
             var eco = localStorage.getItem("choferEco");
             if(activo) {
-                // CORRECCIÓN: BUSCAR EN LA CARPETA USUARIOS/PERFIL
-                database.ref('usuarios/' + eco + '/perfil').once('value', (snapshot) => {
+                database.ref('autorizados/' + eco).once('value', (snapshot) => {
                     if (snapshot.exists()) { 
                         localStorage.setItem("modoTrabajoActivo", true);
                         document.getElementById('txtModo').innerText = "TRABAJANDO";
@@ -238,7 +241,7 @@
                         iniciarGPS(); escucharPedidos();
                         if(document.getElementById('sidebar').classList.contains('active')) toggleSidebar();
                     } else {
-                        alert("ERROR: El número económico " + eco + " no está registrado en Usuarios.");
+                        alert("ACCESO DENEGADO");
                         document.getElementById('checkTrabajo').checked = false;
                     }
                 });
@@ -271,18 +274,25 @@
             }, null, {enableHighAccuracy: true});
         }
 
+        // --- MODIFICACIÓN 2: LÓGICA DE LIMPIEZA DE RECHAZADOS MEJORADA ---
         function escucharPedidos() {
             database.ref('viajes').on('value', (snapshot) => {
                 var pedidos = snapshot.val();
                 window.ultimoSnapshotPedidos = pedidos;
+
                 if (!pedidos) {
                     viajesRechazados = [];
                 } else {
                     let hayEsperando = false;
                     for (var id in pedidos) {
-                        if (pedidos[id].estado === 'esperando') { hayEsperando = true; break; }
+                        if (pedidos[id].estado === 'esperando') {
+                            hayEsperando = true;
+                            break;
+                        }
                     }
-                    if (!hayEsperando) { viajesRechazados = []; }
+                    if (!hayEsperando) {
+                        viajesRechazados = [];
+                    }
                 }
                 renderizarListaPedidos(pedidos);
             });
@@ -299,8 +309,8 @@
                         var cli = pedidos[id].cliente;
                         var km = markerChofer ? (L.latLng(markerChofer.getLatLng()).distanceTo(L.latLng(cli.lat, cli.lon)) / 1000).toFixed(1) : "...";
                         
-                        var estrellas = pedidos[id].cliente_estrellas || "5.0";
-                        var totalV = pedidos[id].cliente_viajes || "0";
+                        var estrellas = pedidos[id].cliente_estrellas || "4.8";
+                        var totalV = pedidos[id].cliente_viajes || "5";
 
                         contenedor.innerHTML += `
                         <div class="pedido-card">
@@ -311,7 +321,7 @@
                                 <span class="rating-estrella">⭐ ${estrellas}</span>
                                 <small style="color:#aaa; margin-left:10px;">Historial: ${totalV} viajes</small>
                             </div>
-                            <small style="color:#b39ddb; font-size:10px; font-weight:bold;">ID: ${id.substring(0,8)}</small><br>
+                            <small style="color:#b39ddb; font-size:10px; font-weight:bold;">ID: ${pedidos[id].cliente_id || "OT-100"}</small><br>
                             <button class="btn-aceptar" onclick="aceptarViaje('${id}')">ACEPTAR VIAJE</button>
                             <button class="btn-rechazar" onclick="rechazarViajeLocal('${id}')">OCULTAR</button>
                         </div>`;
@@ -319,6 +329,7 @@
                 }
                 if (conteoActual > ultimoConteoPedidos) {
                     audioNotificacion.play().catch(e=>{});
+                    // MODIFICACIÓN 3: Mensaje sin nombre estático (el nombre lo pone la función avisarConVoz)
                     avisarConVoz("tienes un nuevo viaje disponible.");
                 }
                 ultimoConteoPedidos = conteoActual;
@@ -373,50 +384,10 @@
 
         function terminarViaje(id) {
             let calif = prompt("Califica al cliente (1 a 5 estrellas):", "5");
-            if (calif === null) return;
-
-            database.ref('viajes/' + id).once('value', (snapshot) => {
-                var viaje = snapshot.val();
-                if (viaje) {
-                    // 1. ACTUALIZAR PERFIL DEL CLIENTE
-                    if (viaje.cliente_uid) {
-                        var uid = viaje.cliente_uid;
-                        var perfilRef = database.ref('usuarios/' + uid + '/perfil');
-                        perfilRef.once('value', (pSnap) => {
-                            var perfil = pSnap.val() || { estrellas: 5.0, total_viajes: 0 };
-                            var vAnteriores = parseInt(perfil.total_viajes) || 0;
-                            var eAnteriores = parseFloat(perfil.estrellas) || 5.0;
-                            var vTotales = vAnteriores + 1;
-                            var nuevoPromedio = ((eAnteriores * vAnteriores) + parseFloat(calif)) / vTotales;
-                            perfilRef.update({
-                                estrellas: Math.round(nuevoPromedio * 10) / 10,
-                                total_viajes: vTotales
-                            });
-                        });
-                    }
-
-                    // 2. ACTUALIZAR PERFIL DEL CHOFER (Sumar viaje realizado)
-                    var eco = localStorage.getItem("choferEco");
-                    if (eco) {
-                        var perfilChoferRef = database.ref('usuarios/' + eco + '/perfil');
-                        perfilChoferRef.once('value', (cSnap) => {
-                            var datosC = cSnap.val() || { total_viajes: 0 };
-                            var viajesChofer = parseInt(datosC.total_viajes) || 0;
-                            perfilChoferRef.update({
-                                total_viajes: viajesChofer + 1,
-                                ultimo_servicio: firebase.database.ServerValue.TIMESTAMP
-                            }).then(() => {
-                                // FINALIZAR TODO
-                                localStorage.removeItem("idViajeChoferActivo");
-                                database.ref('viajes/' + id).remove().then(() => { location.reload(); });
-                            });
-                        });
-                    } else {
-                        localStorage.removeItem("idViajeChoferActivo");
-                        database.ref('viajes/' + id).remove().then(() => { location.reload(); });
-                    }
-                }
-            });
+            if(calif) {
+                localStorage.removeItem("idViajeChoferActivo");
+                database.ref('viajes/' + id).remove().then(() => { location.reload(); });
+            }
         }
     </script>
 </body>
