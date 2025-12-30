@@ -40,29 +40,28 @@
         #sidebar {
             position: fixed; top: 0; left: -320px;
             width: 260px; height: 100%;
-            background: rgba(0, 0, 0, 0.65);
+            background: rgba(0, 0, 0, 0.85);
             z-index: 4500; transition: 0.4s cubic-bezier(0.4, 0, 0.2, 1);
             padding: 70px 15px 20px 15px; text-align: left;
             backdrop-filter: blur(12px);
             -webkit-backdrop-filter: blur(12px);
-            border-right: 1px solid rgba(255, 255, 255, 0.1);
+            border-right: 2px solid #b39ddb;
         }
-        #sidebar.active { left: 0; box-shadow: 10px 0 30px rgba(0,0,0,0.5); border-right: 2px solid #b39ddb; }
+        #sidebar.active { left: 0; box-shadow: 10px 0 30px rgba(0,0,0,0.5); }
 
         #overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); display: none; z-index: 4000; }
         #map { height: 100vh; width: 100%; z-index: 1; }
         #interfaz { position: fixed; bottom: 0; left: 0; right: 0; z-index: 2000; padding: 10px; }
 
         .panel-pedidos { 
-            background: rgba(0, 0, 0, 0.65); 
+            background: rgba(0, 0, 0, 0.8); 
             backdrop-filter: blur(12px); 
             -webkit-backdrop-filter: blur(12px);
             padding: 12px 15px; 
             border-radius: 20px 20px 10px 10px; 
-            border: 1px solid rgba(255, 255, 255, 0.1);
             border-top: 2px solid #b39ddb;
             box-shadow: 0 -8px 30px rgba(0,0,0,0.5); 
-            max-height: 40vh;
+            max-height: 45vh;
             overflow-y: auto;
         }
 
@@ -76,24 +75,24 @@
         }
 
         .rating-estrella { color: #ffca28; font-weight: bold; font-size: 13px; }
-        .badge-confianza { font-size: 9px; padding: 2px 6px; border-radius: 4px; font-weight: bold; text-transform: uppercase; margin-left: 5px; vertical-align: middle; background: #2e7d32; color: white; }
+        .badge-confianza { font-size: 9px; padding: 2px 6px; border-radius: 4px; font-weight: bold; text-transform: uppercase; margin-left: 5px; background: #2e7d32; color: white; }
 
         .reloj-tag { color: #ffca28; font-weight: bold; margin-right: 15px; font-size: 12px; }
         .distancia-tag { color: #b39ddb; font-weight: bold; float: right; font-size: 12px; }
         
-        .tiempo-container { width: 100%; height: 4px; background: rgba(255,255,255,0.1); border-radius: 2px; margin: 8px 0; overflow: hidden; }
-        .barra-progreso { height: 100%; background: #00ff00; width: 100%; transition: width 1s linear; }
+        .tiempo-container { width: 100%; height: 6px; background: rgba(255,255,255,0.1); border-radius: 3px; margin: 8px 0; overflow: hidden; }
+        .barra-progreso { height: 100%; background: #00ff00; width: 100%; }
 
         .btn-aceptar { background:#b39ddb; border:none; padding:12px; border-radius:8px; font-weight:bold; width:100%; margin-top:8px; cursor: pointer; color: black; font-size: 14px; }
+        .btn-aceptar:disabled { background: #555; color: #888; }
         .btn-rechazar { background:transparent; border:none; color: #ff4444; padding:5px; width:100%; margin-top:5px; cursor: pointer; font-size: 11px; text-decoration: underline; }
         .btn-cancelar { background: #ff4444; color: white; border: none; padding: 15px; border-radius: 10px; font-weight: bold; width: 100%; margin-top: 10px; font-size: 16px; }
-        .btn-cancelar:disabled { background: #555 !important; cursor: not-allowed; }
 
         .contenedor-navegacion { display: flex; justify-content: space-between; gap: 10px; margin-bottom: 10px; }
         .btn-navegar-waze { background: #33ccff; color: white; border: none; padding: 12px; border-radius: 8px; font-weight: bold; width: 50%; cursor: pointer; }
         .btn-navegar-maps { background: #4285F4; color: white; border: none; padding: 12px; border-radius: 8px; font-weight: bold; width: 50%; cursor: pointer; }
 
-        .sidebar-item { background: rgba(255,255,255,0.08); padding: 15px; border-radius: 12px; margin-bottom: 15px; border-left: 4px solid #b39ddb; border: 1px solid rgba(255,255,255,0.05); }
+        .sidebar-item { background: rgba(255,255,255,0.08); padding: 15px; border-radius: 12px; margin-bottom: 15px; border-left: 4px solid #b39ddb; }
         .switch { position: relative; display: inline-block; width: 50px; height: 28px; }
         .switch input { opacity: 0; width: 0; height: 0; }
         .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #555; transition: .4s; border-radius: 34px; }
@@ -109,7 +108,7 @@
     <div id="splash-screen">
         <div class="logo-animado">🚖</div>
         <div style="color: #1a1a1a; font-size: 28px; font-weight: 900; margin-top: 10px;">OTIMAC</div>
-        <div class="texto-carga">REINICIANDO SISTEMA...</div>
+        <div class="texto-carga">SISTEMA LISTO</div>
     </div>
 
     <button id="btn-menu" onclick="toggleSidebar()">☰</button>
@@ -121,7 +120,7 @@
                 <span style="font-size: 11px; color: #aaa; text-transform: uppercase;">Estado</span>
                 <span id="status-gps" style="font-size: 10px; color: #ff4444; font-weight: bold;">🔴 GPS OFF</span>
             </div>
-            <div class="switch-container">
+            <div class="switch-container" style="display: flex; justify-content: space-between; align-items: center;">
                 <span id="txtModo" style="font-weight: bold; color: #ff4444; font-size: 13px;">DESCONECTADO</span>
                 <label class="switch">
                     <input type="checkbox" id="checkTrabajo" onchange="toggleTrabajo()">
@@ -131,7 +130,7 @@
         </div>
         <div class="sidebar-item" onclick="cambiarDatosChofer()" style="cursor:pointer;">
             <div style="font-size: 15px; font-weight: bold;">👤 <span id="displayNombre">...</span></div>
-            <div style="font-size: 15px; font-weight: bold;">🚕 Numero Economico: <span id="displayEco">...</span></div>
+            <div style="font-size: 15px; font-weight: bold;">🚕 ECO: <span id="displayEco">...</span></div>
             <small style="color: #b39ddb; font-size: 10px;">(Toca para editar)</small>
         </div>
     </div>
@@ -140,7 +139,7 @@
 
     <div id="interfaz">
         <div class="panel-pedidos">
-            <h3 id="titulo-panel">Viajes Disponibles</h3>
+            <h3 id="titulo-panel" style="margin-top:0; font-size:16px;">Viajes Disponibles</h3>
             <div id="lista-pedidos" style="color: #aaa;">Enciende el modo trabajo.</div>
         </div>
     </div>
@@ -162,15 +161,8 @@
 
         function avisarConVoz(mensaje) {
             if ('speechSynthesis' in window) {
-                var nombreChofer = localStorage.getItem("choferNombre") || "Chofer";
-                var textoFinal = mensaje;
-                if (mensaje.toLowerCase().includes("viaje")) {
-                    textoFinal = nombreChofer + ", " + mensaje;
-                }
-                var msg = new SpeechSynthesisUtterance();
-                msg.text = textoFinal; 
+                var msg = new SpeechSynthesisUtterance(mensaje);
                 msg.lang = 'es-MX';
-                msg.rate = 1.0;
                 window.speechSynthesis.speak(msg);
             }
         }
@@ -196,6 +188,7 @@
                 setTimeout(() => { splash.style.visibility = 'hidden'; }, 600);
             }, 2500);
             
+            // Renderizado optimizado: solo actualiza el UI cada segundo, no reconstruye todo si no es necesario
             setInterval(() => {
                 if (window.ultimoSnapshotPedidos && !idViajeActivo && document.getElementById('checkTrabajo').checked) {
                     renderizarListaPedidos(window.ultimoSnapshotPedidos);
@@ -212,7 +205,7 @@
         function verificarEstadoChofer() {
             var n = localStorage.getItem("choferNombre"), e = localStorage.getItem("choferEco");
             if(!n) {
-                n = prompt("Nombre:"); e = prompt("Económico:");
+                n = prompt("Tu Nombre:"); e = prompt("Número Económico:");
                 if(n && e) { localStorage.setItem("choferNombre", n); localStorage.setItem("choferEco", e); }
             }
             document.getElementById('displayNombre').innerText = n || "---";
@@ -249,7 +242,7 @@
                         iniciarGPS(); escucharPedidos();
                         if(document.getElementById('sidebar').classList.contains('active')) toggleSidebar();
                     } else {
-                        alert("ACCESO DENEGADO");
+                        alert("UNIDAD NO AUTORIZADA POR CENTRAL");
                         document.getElementById('checkTrabajo').checked = false;
                     }
                 });
@@ -265,6 +258,7 @@
                 var miPos = L.latLng(lat, lon);
                 document.getElementById('status-gps').innerText = "✅ GPS ON";
                 document.getElementById('status-gps').style.color = "#00ff00";
+                
                 if(markerChofer) markerChofer.setLatLng(miPos);
                 else { markerChofer = L.marker(miPos, {icon: iconoTaxi}).addTo(map); map.setView(miPos, 17); }
                 
@@ -274,7 +268,7 @@
                         var dist = miPos.distanceTo(markerCliente.getLatLng());
                         if (dist < 150 && !avisoLlegadaEnviado) {
                             avisoLlegadaEnviado = true;
-                            avisarConVoz("Atención, estás llegando a la ubicación del cliente.");
+                            avisarConVoz("Estás llegando al punto de recogida.");
                             database.ref('viajes/' + idViajeActivo).update({ estado: 'chofer_llego' });
                         }
                     }
@@ -284,121 +278,81 @@
 
         function escucharPedidos() {
             database.ref('viajes').on('value', (snapshot) => {
-                var pedidos = snapshot.val();
-                window.ultimoSnapshotPedidos = pedidos;
-                if (!pedidos) {
-                    viajesRechazados = [];
-                } else {
-                    let hayEsperando = false;
-                    for (var id in pedidos) {
-                        if (pedidos[id].estado === 'esperando') {
-                            hayEsperando = true;
-                            break;
-                        }
-                    }
-                    if (!hayEsperando) { viajesRechazados = []; }
-                }
-                renderizarListaPedidos(pedidos);
+                window.ultimoSnapshotPedidos = snapshot.val();
+                renderizarListaPedidos(window.ultimoSnapshotPedidos);
             });
         }
 
         function renderizarListaPedidos(pedidos) {
             var contenedor = document.getElementById('lista-pedidos');
-            if (!idViajeActivo && document.getElementById('checkTrabajo').checked) {
-                contenedor.innerHTML = "";
-                let conteoActual = 0;
-                let ahora = Date.now();
+            if (idViajeActivo) return; // No mostrar nada si ya hay un viaje
 
-                for (var id in pedidos) {
-                    if (pedidos[id].estado === 'esperando' && !viajesRechazados.includes(id)) {
-                        conteoActual++;
-                        var cli = pedidos[id].cliente;
-                        
-                        var timestampViaje = pedidos[id].timestamp || ahora;
-                        var transcurrido = ahora - timestampViaje;
-                        var restanteMs = 300000 - transcurrido;
-                        
-                        if (restanteMs <= 0) {
-                            database.ref('viajes/' + id).remove();
-                            continue;
-                        }
+            let html = "";
+            let conteoActual = 0;
+            let ahora = Date.now();
 
-                        var segundosRestantes = Math.max(0, Math.floor(restanteMs / 1000));
-                        var minutos = Math.floor(segundosRestantes / 60);
-                        var segundos = segundosRestantes % 60;
-                        var porcentajeBarra = (restanteMs / 300000) * 100;
+            for (var id in pedidos) {
+                if (pedidos[id].estado === 'esperando' && !viajesRechazados.includes(id)) {
+                    conteoActual++;
+                    var cli = pedidos[id].cliente;
+                    var transcurrido = ahora - (pedidos[id].timestamp || ahora);
+                    var restanteMs = 300000 - transcurrido;
 
-                        var km = markerChofer ? (L.latLng(markerChofer.getLatLng()).distanceTo(L.latLng(cli.lat, cli.lon)) / 1000).toFixed(1) : "...";
-                        var estrellas = pedidos[id].cliente_estrellas || "4.8";
-                        var totalV = pedidos[id].cliente_historial || "1";
-
-                        contenedor.innerHTML += `
-                        <div class="pedido-card">
-                            <div style="float: right;">
-                                <span class="reloj-tag">⏳ ${minutos}:${segundos < 10 ? '0' : ''}${segundos}</span>
-                                <span class="distancia-tag">📍 ${km} km</span>
-                            </div>
-                            <b>${pedidos[id].nombre_cliente || "Pasajero"}</b> 
-                            <span class="badge-confianza">Verificado</span>
-                            <div style="margin: 5px 0;">
-                                <span class="rating-estrella">⭐ ${estrellas}</span>
-                                <small style="color:#aaa; margin-left:10px;">Historial: ${totalV} viajes</small>
-                            </div>
-                            <small style="color:#b39ddb; font-size:10px; font-weight:bold;">${pedidos[id].cliente_uid || "OT-100"}</small>
-                            <div class="tiempo-container">
-                                <div class="barra-progreso" style="width: ${porcentajeBarra}%"></div>
-                            </div>
-                            <button class="btn-aceptar" onclick="aceptarViaje('${id}')">ACEPTAR VIAJE</button>
-                            <button class="btn-rechazar" onclick="rechazarViajeLocal('${id}')">OCULTAR</button>
-                        </div>`;
+                    if (restanteMs <= 0) {
+                        database.ref('viajes/' + id).remove();
+                        continue;
                     }
+
+                    var segTotal = Math.floor(restanteMs / 1000);
+                    var min = Math.floor(segTotal / 60);
+                    var seg = segTotal % 60;
+                    var porc = (restanteMs / 300000) * 100;
+                    var km = markerChofer ? (L.latLng(markerChofer.getLatLng()).distanceTo(L.latLng(cli.lat, cli.lon)) / 1000).toFixed(1) : "...";
+
+                    html += `
+                    <div class="pedido-card">
+                        <span class="distancia-tag">📍 ${km} km</span>
+                        <span class="reloj-tag">⏳ ${min}:${seg < 10 ? '0' : ''}${seg}</span>
+                        <div style="margin-top:10px;"><b>${pedidos[id].nombre_cliente || "Pasajero"}</b> <span class="badge-confianza">Verificado</span></div>
+                        <div style="margin: 5px 0;"><span class="rating-estrella">⭐ ${pedidos[id].cliente_estrellas || "4.8"}</span></div>
+                        <div class="tiempo-container"><div class="barra-progreso" style="width: ${porc}%"></div></div>
+                        <button class="btn-aceptar" onclick="aceptarViaje(event, '${id}')">ACEPTAR VIAJE</button>
+                        <button class="btn-rechazar" onclick="rechazarViajeLocal('${id}')">OCULTAR</button>
+                    </div>`;
                 }
-                if (conteoActual > ultimoConteoPedidos) {
-                    audioNotificacion.play().catch(e=>{});
-                    avisarConVoz("tienes un nuevo viaje disponible.");
-                }
-                ultimoConteoPedidos = conteoActual;
-                if (conteoActual === 0) contenedor.innerHTML = "Esperando solicitudes...";
             }
+
+            if (conteoActual > ultimoConteoPedidos) {
+                audioNotificacion.play().catch(()=>{});
+                avisarConVoz("Nuevo viaje disponible");
+            }
+            ultimoConteoPedidos = conteoActual;
+            contenedor.innerHTML = html || "Esperando solicitudes...";
         }
 
-        function rechazarViajeLocal(id) { 
-            viajesRechazados.push(id); 
-            if(window.ultimoSnapshotPedidos) { renderizarListaPedidos(window.ultimoSnapshotPedidos); }
-        }
-
-        // --- CORRECCIÓN INTEGRADA AQUÍ ---
-        function aceptarViaje(id) {
-            // VALIDACIÓN DE RED ANTES DE HACER NADA
-            if (!navigator.onLine) {
-                alert("❌ ERROR DE RED: No tienes internet para aceptar este viaje.");
-                return;
-            }
+        function aceptarViaje(e, id) {
+            if (!navigator.onLine) return alert("Sin internet.");
+            
+            // Bloqueo de botón para evitar doble clic
+            const btn = e.target;
+            btn.disabled = true;
+            btn.innerText = "CONFIRMANDO...";
 
             idViajeActivo = id;
-            localStorage.setItem("idViajeChoferActivo", id);
-            var n = localStorage.getItem("choferNombre"), e = localStorage.getItem("choferEco");
+            var n = localStorage.getItem("choferNombre"), eco = localStorage.getItem("choferEco");
             
-            document.getElementById('app-body').classList.add('modo-enfocado');
-            
-            // Intentar actualizar Firebase
             database.ref('viajes/' + id).update({ 
                 estado: 'en_curso', 
-                chofer: { 
-                    nombre: n, 
-                    economico: e, 
-                    lat: markerChofer.getLatLng().lat, 
-                    lon: markerChofer.getLatLng().lng 
-                } 
+                chofer: { nombre: n, economico: eco, lat: markerChofer.getLatLng().lat, lon: markerChofer.getLatLng().lng } 
             }).then(() => {
-                // Si la red responde bien, reconectamos la UI
+                localStorage.setItem("idViajeChoferActivo", id);
+                document.getElementById('app-body').classList.add('modo-enfocado');
                 reconectarViajeChofer(id);
-            }).catch((error) => {
-                // Si falla por internet o porque otro lo ganó
-                alert("❌ Error: No se pudo confirmar el viaje. Verifica tu señal.");
-                document.getElementById('app-body').classList.remove('modo-enfocado');
-                localStorage.removeItem("idViajeChoferActivo");
+            }).catch(() => {
+                alert("El viaje ya no está disponible.");
                 idViajeActivo = null;
+                btn.disabled = false;
+                btn.innerText = "ACEPTAR VIAJE";
             });
         }
 
@@ -414,7 +368,7 @@
         function dibujarInterfazYRuta(lat, lon, id) {
             document.getElementById('interfaz').innerHTML = `
                 <div class="panel-pedidos">
-                    <h3 style="margin:0 0 10px 0; font-size:14px; color:#b39ddb;">VIAJE ACTIVO</h3>
+                    <h3 style="margin:0 0 10px 0; font-size:14px; color:#b39ddb;">SERVICIO EN CURSO</h3>
                     <div class="contenedor-navegacion">
                         <button class="btn-navegar-waze" onclick="window.open('https://www.waze.com/ul?ll=${lat},${lon}&navigate=yes')">🚙 WAZE</button>
                         <button class="btn-navegar-maps" onclick="window.open('https://www.google.com/maps/dir/?api=1&destination=${lat},${lon}&travelmode=driving')">📍 MAPS</button>
@@ -436,49 +390,20 @@
         }
 
         function terminarViaje(id) {
-            if (!navigator.onLine) return alert("❌ SIN CONEXIÓN: No puedes finalizar el viaje sin internet.");
-
-            const btn = document.getElementById('btn-finalizar-viaje');
-            if (btn.disabled) return;
-
-            let califInput = prompt("Califica al cliente (1-5):", "5");
-            if (califInput === null) return;
-            let estrellasDadas = parseInt(califInput);
-
-            if (isNaN(estrellasDadas) || estrellasDadas < 1 || estrellasDadas > 5) {
-                alert("❌ ERROR: Solo números del 1 al 5.");
-                return terminarViaje(id);
-            }
-
-            btn.disabled = true;
-            btn.innerText = "PROCESANDO...";
-
-            database.ref('viajes/' + id).once('value', (snapshot) => {
-                var datos = snapshot.val();
-                if (datos && datos.cliente_uid) {
-                    let clienteRef = database.ref('usuarios/' + datos.cliente_uid + '/perfil');
-                    clienteRef.transaction((perfil) => {
-                        if (perfil) {
-                            perfil.total_viajes = (perfil.total_viajes || 0) + 1;
-                            perfil.puntos_acumulados = (perfil.puntos_acumulados || 0) + estrellasDadas;
-                            perfil.estrellas = parseFloat((perfil.puntos_acumulados / perfil.total_viajes).toFixed(1));
-                        }
-                        return perfil;
-                    });
-                }
-                
+            let calif = prompt("Califica al cliente (1-5):", "5");
+            if (calif === null) return;
+            
+            database.ref('viajes/' + id).remove().then(() => {
                 localStorage.removeItem("idViajeChoferActivo");
-                database.ref('viajes/' + id).remove().then(() => { 
-                    alert("Servicio finalizado.");
-                    location.reload(); 
-                }).catch(err => {
-                    btn.disabled = false;
-                    btn.innerText = "FINALIZAR SERVICIO";
-                    alert("Error al finalizar. Intenta de nuevo.");
-                });
+                alert("Viaje terminado exitosamente.");
+                location.reload();
             });
+        }
+
+        function rechazarViajeLocal(id) {
+            viajesRechazados.push(id);
+            renderizarListaPedidos(window.ultimoSnapshotPedidos);
         }
     </script>
 </body>
 </html>
-
