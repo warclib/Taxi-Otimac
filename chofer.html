@@ -72,8 +72,15 @@
             margin: 8px 0; 
             border-radius: 10px; 
             border-left: 4px solid #b39ddb; 
-            text-align: left; 
+            text-align: left;
+            position: relative; /* Necesario para la barra */
+            overflow: hidden;
         }
+
+        /* --- Estilos añadidos para el Temporizador --- */
+        .timer-bar-container { height: 3px; width: 100%; background: rgba(255,255,255,0.1); position: absolute; bottom: 0; left: 0; }
+        .timer-bar-fill { height: 100%; background: #00ff00; width: 100%; transition: width 1s linear; }
+        .timer-digital { font-size: 11px; font-weight: bold; color: #00ff00; float: right; margin-top: -2px; }
 
         .rating-estrella { color: #ffca28; font-weight: bold; font-size: 13px; }
         .badge-confianza { font-size: 9px; padding: 2px 6px; border-radius: 4px; font-weight: bold; text-transform: uppercase; margin-left: 5px; vertical-align: middle; background: #2e7d32; color: white; }
@@ -151,7 +158,7 @@
 
         var audioNotificacion = new Audio('https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3');
         var ultimoConteoPedidos = 0, markerChofer, markerCliente, controlRuta, idViajeActivo, watchID;
-        var viajesRechazados = [], avisoLlegadaEnviado = false;
+        var viajesRechazados = [], avisoLlegadaEnviado = false, timersIntervals = {};
         var wakeLock = null;
 
         function avisarConVoz(mensaje) {
@@ -267,18 +274,6 @@
             database.ref('viajes').on('value', (snapshot) => {
                 var pedidos = snapshot.val();
                 window.ultimoSnapshotPedidos = pedidos;
-                
-                // --- LÓGICA DE 5 MINUTOS (300,000 ms) ---
-                var ahora = Date.now();
-                for (var id in pedidos) {
-                    if (pedidos[id].estado === 'esperando') {
-                        var tiempoTranscurrido = ahora - pedidos[id].timestamp;
-                        if (tiempoTranscurrido > 300000) { // Si pasaron más de 5 min
-                            database.ref('viajes/' + id).remove(); // Borrar de la DB
-                            continue;
-                        }
-                    }
-                }
                 renderizarListaPedidos(pedidos);
             });
         }
@@ -288,14 +283,24 @@
             if (!idViajeActivo && document.getElementById('checkTrabajo').checked) {
                 contenedor.innerHTML = "";
                 let conteoActual = 0;
+                let ahora = Date.now();
+
                 for (var id in pedidos) {
                     if (pedidos[id].estado === 'esperando' && !viajesRechazados.includes(id)) {
+                        
+                        let tiempoRestanteMs = 300000 - (ahora - pedidos[id].timestamp);
+                        if (tiempoRestanteMs <= 0) {
+                            database.ref('viajes/' + id).remove();
+                            continue;
+                        }
+
                         conteoActual++;
                         var cli = pedidos[id].cliente;
                         var km = markerChofer ? (L.latLng(markerChofer.getLatLng()).distanceTo(L.latLng(cli.lat, cli.lon)) / 1000).toFixed(1) : "...";
                         
                         contenedor.innerHTML += `
-                        <div class="pedido-card">
+                        <div class="pedido-card" id="card-${id}">
+                            <span class="timer-digital" id="digital-${id}">5:00</span>
                             <span class="distancia-tag">📍 ${km} km</span>
                             <b>${pedidos[id].nombre_cliente || "Pasajero"}</b> 
                             <span class="badge-confianza">Verificado</span>
@@ -305,7 +310,10 @@
                             </div>
                             <button class="btn-aceptar" onclick="aceptarViaje('${id}')">ACEPTAR VIAJE</button>
                             <button class="btn-rechazar" onclick="rechazarViajeLocal('${id}')">OCULTAR</button>
+                            <div class="timer-bar-container"><div class="timer-bar-fill" id="bar-${id}"></div></div>
                         </div>`;
+
+                        actualizarRelojVisual(id, pedidos[id].timestamp);
                     }
                 }
                 if (conteoActual > ultimoConteoPedidos) {
@@ -317,6 +325,30 @@
             }
         }
 
+        function actualizarRelojVisual(id, timestamp) {
+            if (timersIntervals[id]) clearInterval(timersIntervals[id]);
+            timersIntervals[id] = setInterval(() => {
+                let ahora = Date.now();
+                let restante = 300000 - (ahora - timestamp);
+                if (restante <= 0) {
+                    clearInterval(timersIntervals[id]);
+                    document.getElementById('card-' + id)?.remove();
+                    return;
+                }
+                let pct = (restante / 300000) * 100;
+                let min = Math.floor(restante / 60000);
+                let seg = Math.floor((restante % 60000) / 1000);
+                
+                let bar = document.getElementById('bar-' + id);
+                let txt = document.getElementById('digital-' + id);
+                if (bar) bar.style.width = pct + "%";
+                if (txt) txt.innerText = min + ":" + (seg < 10 ? "0" : "") + seg;
+                
+                if (pct < 20 && bar) bar.style.background = "#ff4444";
+                else if (pct < 50 && bar) bar.style.background = "#ffca28";
+            }, 1000);
+        }
+
         function rechazarViajeLocal(id) { 
             viajesRechazados.push(id); 
             if(window.ultimoSnapshotPedidos) { renderizarListaPedidos(window.ultimoSnapshotPedidos); }
@@ -325,6 +357,8 @@
         function aceptarViaje(id) {
             idViajeActivo = id;
             localStorage.setItem("idViajeChoferActivo", id);
+            for(let key in timersIntervals) clearInterval(timersIntervals[key]);
+            
             var n = localStorage.getItem("choferNombre"), e = localStorage.getItem("choferEco");
             document.getElementById('app-body').classList.add('modo-enfocado');
             database.ref('viajes/' + id).update({ 
