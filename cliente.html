@@ -12,6 +12,13 @@
 
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
+        /* Estilo para la pantalla de bloqueo */
+        #pantalla-bloqueo {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: #000; color: white; display: none; flex-direction: column;
+            justify-content: center; align-items: center; z-index: 20000; text-align: center; padding: 20px;
+        }
+
         #splash-screen {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background: #b39ddb; display: flex; flex-direction: column;
@@ -40,6 +47,13 @@
     </style>
 </head>
 <body onload="iniciarAppCliente()">
+
+    <div id="pantalla-bloqueo">
+        <h1 style="font-size: 80px;">🚫</h1>
+        <h2 style="color: #ff4444;">ACCESO DENEGADO</h2>
+        <p>Tu ID ha sido suspendido por la administración de OTIMAC.</p>
+        <p style="font-size: 12px; color: #666;">Contacta a soporte para más información.</p>
+    </div>
 
     <div id="splash-screen">
         <div class="logo-animado">🚖</div>
@@ -81,16 +95,36 @@
 
         let enviandoPedido = false;
         var totalViajesRealizados = 0; 
-        var estrellasActuales = "5.0"; // Guardaremos las estrellas reales aquí
+        var estrellasActuales = "5.0"; 
 
         if (!localStorage.getItem("otimac_uuid")) {
             localStorage.setItem("otimac_uuid", "ID-" + Math.floor(100000 + Math.random() * 900000));
         }
         var miUUID = localStorage.getItem("otimac_uuid");
 
+        // --- FUNCIÓN DE SEGURIDAD (CANDADO) ---
+        function verificarEstadoCuenta() {
+            // Revisa si el ID está en la lista negra (baneados)
+            database.ref('baneados/' + miUUID).on('value', (snap) => {
+                if (snap.exists()) {
+                    document.getElementById('pantalla-bloqueo').style.display = 'flex';
+                } else {
+                    document.getElementById('pantalla-bloqueo').style.display = 'none';
+                }
+            });
+
+            // Revisa si en su perfil el acceso es denegado
+            database.ref('usuarios/' + miUUID + '/perfil/acceso').on('value', (snap) => {
+                if (snap.val() === "denegado") {
+                    document.getElementById('pantalla-bloqueo').style.display = 'flex';
+                }
+            });
+        }
+
         function iniciarAppCliente() {
+            verificarEstadoCuenta(); // ACTIVAMOS EL CANDADO
             verificarNombreYViaje();
-            cargarPerfilReal(); // Carga historial y estrellas
+            cargarPerfilReal();
             setTimeout(() => {
                 const splash = document.getElementById('splash-screen');
                 splash.style.opacity = '0';
@@ -98,7 +132,6 @@
             }, 2500);
         }
 
-        // --- MEJORADO: Obtener historial y estrellas de Firebase ---
         function cargarPerfilReal() {
             database.ref('usuarios/' + miUUID + '/perfil').on('value', (snap) => {
                 let perfil = snap.val() || {};
@@ -151,9 +184,11 @@
 
         function validarYPedir() {
             if (enviandoPedido) return;
+            // Doble validación antes de procesar el pedido
             database.ref('baneados/' + miUUID).once('value', (snapshot) => {
                 if (snapshot.exists()) {
-                    alert("⚠️ ACCESO DENEGADO");
+                    alert("⚠️ ACCESO DENEGADO: Tu cuenta está suspendida.");
+                    location.reload();
                 } else {
                     pedirTaxi();
                 }
@@ -175,14 +210,13 @@
                 idViaje = miUUID.replace("ID-", "V-"); 
                 localStorage.setItem("idViajeActivo", idViaje);
                 
-                // CRÍTICO: Aquí enviamos los datos que la App del Chofer necesita para el "Bateo"
                 database.ref('viajes/' + idViaje).set({
                     cliente: miPos,
                     nombre_cliente: localStorage.getItem("nombreCliente"),
                     cliente_id: miUUID.substring(0,8), 
-                    cliente_uid: miUUID,               // Identificador único para el promedio matemático
+                    cliente_uid: miUUID, 
                     cliente_historial: totalViajesRealizados, 
-                    cliente_estrellas: estrellasActuales,    // Envía sus estrellas reales actuales
+                    cliente_estrellas: estrellasActuales,
                     estado: "esperando",
                     timestamp: firebase.database.ServerValue.TIMESTAMP
                 }).then(() => {
@@ -205,7 +239,6 @@
             database.ref('viajes/' + id).on('value', (snap) => {
                 var viaje = snap.val();
                 if(!viaje) { 
-                    // Si el viaje ya no existe en la DB, limpiamos el estado local
                     localStorage.removeItem("idViajeActivo"); 
                     location.reload(); 
                     return; 
