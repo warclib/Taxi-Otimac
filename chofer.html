@@ -329,8 +329,6 @@
                         var porcentajeBarra = (restanteMs / 300000) * 100;
 
                         var km = markerChofer ? (L.latLng(markerChofer.getLatLng()).distanceTo(L.latLng(cli.lat, cli.lon)) / 1000).toFixed(1) : "...";
-                        
-                        // --- INTEGRACIÓN: DATOS DEL CLIENTE ---
                         var estrellas = pedidos[id].cliente_estrellas || "4.8";
                         var totalV = pedidos[id].cliente_historial || "1";
 
@@ -369,7 +367,9 @@
             if(window.ultimoSnapshotPedidos) { renderizarListaPedidos(window.ultimoSnapshotPedidos); }
         }
 
+        // --- CORRECCIÓN INTEGRADA AQUÍ ---
         function aceptarViaje(id) {
+            // VALIDACIÓN DE RED ANTES DE HACER NADA
             if (!navigator.onLine) {
                 alert("❌ ERROR DE RED: No tienes internet para aceptar este viaje.");
                 return;
@@ -381,6 +381,7 @@
             
             document.getElementById('app-body').classList.add('modo-enfocado');
             
+            // Intentar actualizar Firebase
             database.ref('viajes/' + id).update({ 
                 estado: 'en_curso', 
                 chofer: { 
@@ -390,8 +391,10 @@
                     lon: markerChofer.getLatLng().lng 
                 } 
             }).then(() => {
+                // Si la red responde bien, reconectamos la UI
                 reconectarViajeChofer(id);
             }).catch((error) => {
+                // Si falla por internet o porque otro lo ganó
                 alert("❌ Error: No se pudo confirmar el viaje. Verifica tu señal.");
                 document.getElementById('app-body').classList.remove('modo-enfocado');
                 localStorage.removeItem("idViajeChoferActivo");
@@ -432,7 +435,6 @@
             }
         }
 
-        // --- INTEGRACIÓN: FINALIZAR Y ACTUALIZAR ESTRELLAS ---
         function terminarViaje(id) {
             if (!navigator.onLine) return alert("❌ SIN CONEXIÓN: No puedes finalizar el viaje sin internet.");
 
@@ -455,8 +457,6 @@
                 var datos = snapshot.val();
                 if (datos && datos.cliente_uid) {
                     let clienteRef = database.ref('usuarios/' + datos.cliente_uid + '/perfil');
-                    
-                    // Transacción para actualizar historial y estrellas del usuario
                     clienteRef.transaction((perfil) => {
                         if (perfil) {
                             perfil.total_viajes = (perfil.total_viajes || 0) + 1;
