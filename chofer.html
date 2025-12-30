@@ -287,7 +287,6 @@
             });
         }
 
-        // MODIFICACIÓN: Mostrar datos reales del historial del cliente
         function renderizarListaPedidos(pedidos) {
             var contenedor = document.getElementById('lista-pedidos');
             if (!idViajeActivo && document.getElementById('checkTrabajo').checked) {
@@ -299,6 +298,7 @@
                         var cli = pedidos[id].cliente;
                         var km = markerChofer ? (L.latLng(markerChofer.getLatLng()).distanceTo(L.latLng(cli.lat, cli.lon)) / 1000).toFixed(1) : "...";
                         
+                        // Datos reales del historial enviados por el cliente
                         var estrellas = pedidos[id].cliente_estrellas || "5.0";
                         var totalV = pedidos[id].cliente_viajes || "0";
 
@@ -311,7 +311,7 @@
                                 <span class="rating-estrella">⭐ ${estrellas}</span>
                                 <small style="color:#aaa; margin-left:10px;">Historial: ${totalV} viajes</small>
                             </div>
-                            <small style="color:#b39ddb; font-size:10px; font-weight:bold;">ID: ${pedidos[id].cliente_id || "OT-100"}</small><br>
+                            <small style="color:#b39ddb; font-size:10px; font-weight:bold;">ID: ${id.substring(0,8)}</small><br>
                             <button class="btn-aceptar" onclick="aceptarViaje('${id}')">ACEPTAR VIAJE</button>
                             <button class="btn-rechazar" onclick="rechazarViajeLocal('${id}')">OCULTAR</button>
                         </div>`;
@@ -371,7 +371,6 @@
             }
         }
 
-        // MODIFICACIÓN: Sumar viaje y promediar estrellas en la base de datos del usuario
         function terminarViaje(id) {
             let calif = prompt("Califica al cliente (1 a 5 estrellas):", "5");
             if (calif === null) return;
