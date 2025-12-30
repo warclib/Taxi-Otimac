@@ -154,17 +154,13 @@
         var viajesRechazados = [], avisoLlegadaEnviado = false;
         var wakeLock = null;
 
-        // --- MODIFICACIÓN 1: VOZ DINÁMICA CON EL NOMBRE DEL CHOFER ---
         function avisarConVoz(mensaje) {
             if ('speechSynthesis' in window) {
                 var nombreChofer = localStorage.getItem("choferNombre") || "Chofer";
                 var textoFinal = mensaje;
-                
-                // Si es un aviso de nuevo viaje, le ponemos el nombre al inicio
                 if (mensaje.includes("nuevo viaje")) {
                     textoFinal = nombreChofer + ", " + mensaje;
                 }
-
                 var msg = new SpeechSynthesisUtterance();
                 msg.text = textoFinal; 
                 msg.lang = 'es-MX';
@@ -274,12 +270,10 @@
             }, null, {enableHighAccuracy: true});
         }
 
-        // --- MODIFICACIÓN 2: LÓGICA DE LIMPIEZA DE RECHAZADOS MEJORADA ---
         function escucharPedidos() {
             database.ref('viajes').on('value', (snapshot) => {
                 var pedidos = snapshot.val();
                 window.ultimoSnapshotPedidos = pedidos;
-
                 if (!pedidos) {
                     viajesRechazados = [];
                 } else {
@@ -290,14 +284,13 @@
                             break;
                         }
                     }
-                    if (!hayEsperando) {
-                        viajesRechazados = [];
-                    }
+                    if (!hayEsperando) { viajesRechazados = []; }
                 }
                 renderizarListaPedidos(pedidos);
             });
         }
 
+        // --- MODIFICADO: Historial dinámico ---
         function renderizarListaPedidos(pedidos) {
             var contenedor = document.getElementById('lista-pedidos');
             if (!idViajeActivo && document.getElementById('checkTrabajo').checked) {
@@ -310,7 +303,8 @@
                         var km = markerChofer ? (L.latLng(markerChofer.getLatLng()).distanceTo(L.latLng(cli.lat, cli.lon)) / 1000).toFixed(1) : "...";
                         
                         var estrellas = pedidos[id].cliente_estrellas || "4.8";
-                        var totalV = pedidos[id].cliente_viajes || "5";
+                        // Lee el historial real enviado por el cliente
+                        var totalV = pedidos[id].cliente_historial || "1";
 
                         contenedor.innerHTML += `
                         <div class="pedido-card">
@@ -329,7 +323,6 @@
                 }
                 if (conteoActual > ultimoConteoPedidos) {
                     audioNotificacion.play().catch(e=>{});
-                    // MODIFICACIÓN 3: Mensaje sin nombre estático (el nombre lo pone la función avisarConVoz)
                     avisarConVoz("tienes un nuevo viaje disponible.");
                 }
                 ultimoConteoPedidos = conteoActual;
@@ -347,7 +340,10 @@
             localStorage.setItem("idViajeChoferActivo", id);
             var n = localStorage.getItem("choferNombre"), e = localStorage.getItem("choferEco");
             document.getElementById('app-body').classList.add('modo-enfocado');
-            database.ref('viajes/' + id).update({ estado: 'en_curso', chofer: { nombre: n, economico: e, lat: markerChofer.getLatLng().lat, lon: markerChofer.getLatLng().lng } });
+            database.ref('viajes/' + id).update({ 
+                estado: 'en_curso', 
+                chofer: { nombre: n, economico: e, lat: markerChofer.getLatLng().lat, lon: markerChofer.getLatLng().lng } 
+            });
             reconectarViajeChofer(id);
         }
 
@@ -382,11 +378,27 @@
             }
         }
 
+        // --- MODIFICADO: Suma +1 al historial del cliente al finalizar ---
         function terminarViaje(id) {
             let calif = prompt("Califica al cliente (1 a 5 estrellas):", "5");
             if(calif) {
+                // Obtenemos los datos antes de borrar el viaje
+                database.ref('viajes/' + id).once('value', (snapshot) => {
+                    var datos = snapshot.val();
+                    if(datos && datos.cliente_uid) {
+                        // Buscamos el perfil del cliente y sumamos el viaje
+                        database.ref('usuarios/' + datos.cliente_uid + '/perfil/total_viajes').transaction((actual) => {
+                            return (actual || 0) + 1;
+                        });
+                    }
+                });
+
+                // Finalizamos el proceso
                 localStorage.removeItem("idViajeChoferActivo");
-                database.ref('viajes/' + id).remove().then(() => { location.reload(); });
+                database.ref('viajes/' + id).remove().then(() => { 
+                    alert("Servicio finalizado. Historial actualizado.");
+                    location.reload(); 
+                });
             }
         }
     </script>
