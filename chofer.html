@@ -14,7 +14,6 @@
     <link rel="stylesheet" href="https://unpkg.com/leaflet-routing-machine/dist/leaflet-routing-machine.css" />
     
     <style>
-        /* --- ESTILOS DEL SPLASH SCREEN --- */
         #splash-screen {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background: #b39ddb; display: flex; flex-direction: column;
@@ -25,12 +24,11 @@
         @keyframes latido { 0% { transform: scale(1); } 50% { transform: scale(1.2); } 100% { transform: scale(1); } }
         .texto-carga { color: #1a1a1a; font-weight: bold; margin-top: 20px; letter-spacing: 3px; font-size: 14px; }
 
-        /* --- ESTILOS BASE --- */
         body { font-family: 'Segoe UI', Roboto, Helvetica, sans-serif; text-align: center; background: #1a1a1a; color: white; margin: 0; padding: 0; overflow: hidden; }
         
         #btn-menu {
             position: fixed; top: 15px; left: 15px; z-index: 5000;
-            background: rgba(179, 157, 219, 0.2); 
+            background: rgba(179, 157, 219, 0.2);
             color: white; border: 1px solid rgba(255, 255, 255, 0.2);
             width: 45px; height: 45px; border-radius: 50%;
             font-size: 24px; cursor: pointer;
@@ -104,7 +102,10 @@
     
     <div id="sidebar">
         <div class="sidebar-item">
-            <span style="font-size: 11px; color: #aaa; text-transform: uppercase;">Estado</span>
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px;">
+                <span style="font-size: 11px; color: #aaa; text-transform: uppercase;">Estado</span>
+                <span id="status-gps" style="font-size: 10px; color: #ff4444; font-weight: bold;">🔴 GPS OFF</span>
+            </div>
             <div class="switch-container">
                 <span id="txtModo" style="font-weight: bold; color: #ff4444; font-size: 13px;">DESCONECTADO</span>
                 <label class="switch">
@@ -113,11 +114,11 @@
                 </label>
             </div>
         </div>
-        <div class="sidebar-item">
+        <div class="sidebar-item" onclick="cambiarDatosChofer()" style="cursor:pointer;">
             <div style="font-size: 15px; font-weight: bold;">👤 <span id="displayNombre">...</span></div>
             <div style="font-size: 15px; font-weight: bold;">🚕 Eco: <span id="displayEco">...</span></div>
+            <small style="color: #b39ddb; font-size: 10px;">(Toca para editar)</small>
         </div>
-        <div id="status-gps" style="color: #ff4444; font-size: 12px; padding-left: 5px;">🔴 GPS APAGADO</div>
     </div>
 
     <div id="map"></div>
@@ -139,23 +140,16 @@
         firebase.initializeApp(firebaseConfig);
         var database = firebase.database();
 
-        var audioNotificacion = new Audio('https://assets.mixkit.co/active_storage/sfx/2358/2358-preview.mp3');
+        var audioNotificacion = new Audio('https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3');
         var ultimoConteoPedidos = 0, markerChofer, markerCliente, controlRuta, idViajeActivo, watchID;
-        var viajesRechazados = [], avisoLlegadaEnviado = false, vozLlegadaActivada = false;
+        var viajesRechazados = [], avisoLlegadaEnviado = false;
+        var wakeLock = null;
 
-        // --- ICONOS DE PIN PROFESIONALES ---
-        var iconoTaxi = L.icon({ 
-            iconUrl: 'https://cdn-icons-png.flaticon.com/512/2855/2855555.png', 
-            iconSize: [50, 50], 
-            iconAnchor: [25, 50],
-            popupAnchor: [0, -50]
-        });
-
-        var iconoPasajero = L.icon({ 
-            iconUrl: 'https://cdn-icons-png.flaticon.com/512/2855/2855567.png', 
-            iconSize: [50, 50], 
-            iconAnchor: [25, 50] 
-        });
+        async function mantenerPantallaEncendida() {
+            if ('wakeLock' in navigator) {
+                try { wakeLock = await navigator.wakeLock.request('screen'); } catch (err) {}
+            }
+        }
 
         function toggleSidebar() {
             var side = document.getElementById('sidebar');
@@ -176,6 +170,9 @@
         var map = L.map('map', { zoomControl: false }).setView([23.6345, -102.5528], 5);
         L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}').addTo(map);
 
+        var iconoTaxi = L.icon({ iconUrl: 'https://img.icons8.com/color/48/taxi.png', iconSize: [40, 40], iconAnchor: [20, 20] });
+        var iconoPasajero = L.icon({ iconUrl: 'https://img.icons8.com/color/48/person-male.png', iconSize: [40, 40], iconAnchor: [20, 40] });
+
         function avisarConVoz(mensaje) {
             if ('speechSynthesis' in window) {
                 var msg = new SpeechSynthesisUtterance();
@@ -188,10 +185,10 @@
             var n = localStorage.getItem("choferNombre"), e = localStorage.getItem("choferEco");
             if(!n) {
                 n = prompt("Nombre:"); e = prompt("Económico:");
-                localStorage.setItem("choferNombre", n); localStorage.setItem("choferEco", e);
+                if(n && e) { localStorage.setItem("choferNombre", n); localStorage.setItem("choferEco", e); }
             }
-            document.getElementById('displayNombre').innerText = n;
-            document.getElementById('displayEco').innerText = e;
+            document.getElementById('displayNombre').innerText = n || "---";
+            document.getElementById('displayEco').innerText = e || "---";
             if(localStorage.getItem("modoTrabajoActivo") === "true") {
                 document.getElementById('checkTrabajo').checked = true;
                 toggleTrabajo();
@@ -200,19 +197,33 @@
             }
         }
 
+        function cambiarDatosChofer() {
+            if(idViajeActivo) return alert("No puedes cambiar datos durante un viaje.");
+            let n = prompt("Nuevo Nombre:", localStorage.getItem("choferNombre"));
+            let e = prompt("Nuevo Económico:", localStorage.getItem("choferEco"));
+            if(n && e) {
+                localStorage.setItem("choferNombre", n);
+                localStorage.setItem("choferEco", e);
+                location.reload();
+            }
+        }
+
         function toggleTrabajo() {
             var activo = document.getElementById('checkTrabajo').checked;
             var eco = localStorage.getItem("choferEco");
+            var contenedor = document.getElementById('lista-pedidos');
+
             if(activo) {
                 database.ref('autorizados/' + eco).once('value', (snapshot) => {
                     if (snapshot.exists()) { 
                         localStorage.setItem("modoTrabajoActivo", true);
                         document.getElementById('txtModo').innerText = "TRABAJANDO";
                         document.getElementById('txtModo').style.color = "#00ff00";
+                        mantenerPantallaEncendida();
                         iniciarGPS(); escucharPedidos();
                         if(document.getElementById('sidebar').classList.contains('active')) toggleSidebar();
                     } else {
-                        alert("ACCESO DENEGADO");
+                        alert("ACCESO DENEGADO - Económico no autorizado.");
                         document.getElementById('checkTrabajo').checked = false;
                     }
                 });
@@ -220,7 +231,12 @@
                 localStorage.setItem("modoTrabajoActivo", false);
                 document.getElementById('txtModo').innerText = "DESCONECTADO";
                 document.getElementById('txtModo').style.color = "#ff4444";
+                document.getElementById('status-gps').innerText = "🔴 GPS OFF";
+                document.getElementById('status-gps').style.color = "#ff4444";
+                if (wakeLock !== null) { wakeLock.release(); wakeLock = null; }
+                contenedor.innerHTML = "Enciende el modo trabajo.";
                 if(watchID) navigator.geolocation.clearWatch(watchID);
+                if(markerChofer) { map.removeLayer(markerChofer); markerChofer = null; }
                 database.ref('viajes').off();
             }
         }
@@ -229,8 +245,9 @@
             watchID = navigator.geolocation.watchPosition((pos) => {
                 var lat = pos.coords.latitude, lon = pos.coords.longitude;
                 var miPos = L.latLng(lat, lon);
-                document.getElementById('status-gps').innerText = "✅ GPS ACTIVO";
+                document.getElementById('status-gps').innerText = "✅ GPS ON";
                 document.getElementById('status-gps').style.color = "#00ff00";
+                
                 if(markerChofer) markerChofer.setLatLng(miPos);
                 else { markerChofer = L.marker(miPos, {icon: iconoTaxi}).addTo(map); map.setView(miPos, 17); }
                 
@@ -248,34 +265,63 @@
             }, null, {enableHighAccuracy: true});
         }
 
-        function escucharPedidos() {
-            database.ref('viajes').on('value', (snapshot) => {
-                var pedidos = snapshot.val();
-                var contenedor = document.getElementById('lista-pedidos');
-                if (!idViajeActivo && document.getElementById('checkTrabajo').checked) {
-                    contenedor.innerHTML = "";
-                    let conteoActual = 0;
-                    for (var id in pedidos) {
-                        if (pedidos[id].estado === 'esperando' && !viajesRechazados.includes(id)) {
-                            conteoActual++;
-                            var cli = pedidos[id].cliente;
-                            var km = markerChofer ? (L.latLng(markerChofer.getLatLng()).distanceTo(L.latLng(cli.lat, cli.lon)) / 1000).toFixed(1) : "...";
-                            contenedor.innerHTML += `<div class="pedido-card">
-                                <span class="distancia-tag">📍 ${km} km</span>
-                                <b>PASAJERO:</b> ${pedidos[id].nombre_cliente || "Cliente"}<br>
-                                <button class="btn-aceptar" onclick="aceptarViaje('${id}')">ACEPTAR VIAJE</button>
-                                <button class="btn-rechazar" onclick="rechazarViajeLocal('${id}')">OCULTAR</button>
-                            </div>`;
-                        }
-                    }
-                    if (conteoActual > ultimoConteoPedidos) audioNotificacion.play().catch(e=>{});
-                    ultimoConteoPedidos = conteoActual;
-                    if (conteoActual === 0) contenedor.innerHTML = "Esperando solicitudes...";
-                }
-            });
+       // --- SUSTITUYE ESTA FUNCIÓN EN TU CÓDIGO ---
+
+function escucharPedidos() {
+    database.ref('viajes').on('value', (snapshot) => {
+        var pedidos = snapshot.val();
+        window.ultimoSnapshotPedidos = pedidos;
+
+        // SI NO HAY PEDIDOS EN ESPERA, LIMPIAMOS LA LISTA DE RECHAZADOS
+        // Esto permite que si el cliente pide taxi más tarde, te vuelva a salir.
+        let hayEsperando = false;
+        for (var id in pedidos) {
+            if (pedidos[id].estado === 'esperando') { hayEsperando = true; break; }
+        }
+        
+        // Si la central se queda vacía, reseteamos los ocultos para la próxima tanda
+        if (!hayEsperando) {
+            viajesRechazados = [];
         }
 
-        function rechazarViajeLocal(id) { viajesRechazados.push(id); }
+        renderizarListaPedidos(pedidos);
+    });
+}
+
+        function renderizarListaPedidos(pedidos) {
+            var contenedor = document.getElementById('lista-pedidos');
+            if (!idViajeActivo && document.getElementById('checkTrabajo').checked) {
+                contenedor.innerHTML = "";
+                let conteoActual = 0;
+                for (var id in pedidos) {
+                    if (pedidos[id].estado === 'esperando' && !viajesRechazados.includes(id)) {
+                        conteoActual++;
+                        var cli = pedidos[id].cliente;
+                        var km = markerChofer ? (L.latLng(markerChofer.getLatLng()).distanceTo(L.latLng(cli.lat, cli.lon)) / 1000).toFixed(1) : "...";
+                        var idClienteSaneo = pedidos[id].cliente_id || "SIN ID";
+
+                        contenedor.innerHTML += `<div class="pedido-card">
+                            <span class="distancia-tag">📍 ${km} km</span>
+                            <b>PASAJERO:</b> ${pedidos[id].nombre_cliente || "Cliente"}<br>
+                            <small style="color:#b39ddb; font-size:10px; font-weight:bold;">ID SEGURIDAD: ${idClienteSaneo}</small><br>
+                            <button class="btn-aceptar" onclick="aceptarViaje('${id}')">ACEPTAR VIAJE</button>
+                            <button class="btn-rechazar" onclick="rechazarViajeLocal('${id}')">OCULTAR</button>
+                        </div>`;
+                    }
+                }
+                if (conteoActual > ultimoConteoPedidos) audioNotificacion.play().catch(e=>{});
+                ultimoConteoPedidos = conteoActual;
+                if (conteoActual === 0) contenedor.innerHTML = "Esperando solicitudes...";
+            }
+        }
+
+        function rechazarViajeLocal(id) { 
+            viajesRechazados.push(id); 
+            // Forzar el repintado de la lista inmediatamente
+            if(window.ultimoSnapshotPedidos) {
+                renderizarListaPedidos(window.ultimoSnapshotPedidos);
+            }
+        }
 
         function aceptarViaje(id) {
             idViajeActivo = id;
@@ -291,24 +337,36 @@
             document.getElementById('app-body').classList.add('modo-enfocado');
             database.ref('viajes/' + id + '/cliente').once('value', (snap) => {
                 var posC = snap.val();
-                document.getElementById('interfaz').innerHTML = `
-                    <div class="panel-pedidos">
-                        <h3 style="margin:0 0 10px 0; font-size:16px;">VIAJE ACTIVO</h3>
-                        <div class="contenedor-navegacion">
-                            <button class="btn-navegar-waze" onclick="window.open('https://www.waze.com/ul?ll=${posC.lat},${posC.lon}&navigate=yes')">🚙 WAZE</button>
-                            <button class="btn-navegar-maps" onclick="window.open('https://www.google.com/maps/dir/?api=1&destination=${posC.lat},${posC.lon}')">📍 MAPS</button>
-                        </div>
-                        <button class="btn-cancelar" onclick="terminarViaje('${id}')">FINALIZAR SERVICIO</button>
-                    </div>`;
-                if(markerCliente) map.removeLayer(markerCliente);
-                markerCliente = L.marker([posC.lat, posC.lon], {icon: iconoPasajero}).addTo(map);
+                if(posC) {
+                    localStorage.setItem("respaldoLat", posC.lat);
+                    localStorage.setItem("respaldoLon", posC.lon);
+                    dibujarInterfazYRuta(posC.lat, posC.lon, id);
+                }
+            });
+        }
+
+        function dibujarInterfazYRuta(lat, lon, id) {
+            document.getElementById('interfaz').innerHTML = `
+                <div class="panel-pedidos">
+                    <h3 style="margin:0 0 10px 0; font-size:16px;">VIAJE ACTIVO</h3>
+                    <div class="contenedor-navegacion">
+                        <button class="btn-navegar-waze" onclick="window.open('https://www.waze.com/ul?ll=${lat},${lon}&navigate=yes')">🚙 WAZE</button>
+                        <button class="btn-navegar-maps" onclick="window.open('https://www.google.com/maps/dir/?api=1&destination=${lat},${lon}&travelmode=driving')">📍 MAPS</button>
+                    </div>
+                    <button class="btn-cancelar" onclick="terminarViaje('${id}')">FINALIZAR SERVICIO</button>
+                </div>`;
+
+            if(markerCliente) map.removeLayer(markerCliente);
+            markerCliente = L.marker([lat, lon], {icon: iconoPasajero}).addTo(map);
+
+            if(markerChofer && markerChofer.getLatLng()) {
                 if(controlRuta) map.removeControl(controlRuta);
                 controlRuta = L.Routing.control({
-                    waypoints: [markerChofer.getLatLng(), L.latLng(posC.lat, posC.lon)],
+                    waypoints: [markerChofer.getLatLng(), L.latLng(lat, lon)],
                     show: false, createMarker: () => null,
                     lineOptions: { styles: [{ color: '#b39ddb', weight: 6 }] }
                 }).addTo(map);
-            });
+            }
         }
 
         function terminarViaje(id) {
@@ -320,3 +378,4 @@
     </script>
 </body>
 </html>
+
