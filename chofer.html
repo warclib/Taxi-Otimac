@@ -265,13 +265,28 @@
             }, null, {enableHighAccuracy: true});
         }
 
-        function escucharPedidos() {
-            database.ref('viajes').on('value', (snapshot) => {
-                var pedidos = snapshot.val();
-                window.ultimoSnapshotPedidos = pedidos; // Guardar para poder refrescar al ocultar
-                renderizarListaPedidos(pedidos);
-            });
+       // --- SUSTITUYE ESTA FUNCIÓN EN TU CÓDIGO ---
+
+function escucharPedidos() {
+    database.ref('viajes').on('value', (snapshot) => {
+        var pedidos = snapshot.val();
+        window.ultimoSnapshotPedidos = pedidos;
+
+        // SI NO HAY PEDIDOS EN ESPERA, LIMPIAMOS LA LISTA DE RECHAZADOS
+        // Esto permite que si el cliente pide taxi más tarde, te vuelva a salir.
+        let hayEsperando = false;
+        for (var id in pedidos) {
+            if (pedidos[id].estado === 'esperando') { hayEsperando = true; break; }
         }
+        
+        // Si la central se queda vacía, reseteamos los ocultos para la próxima tanda
+        if (!hayEsperando) {
+            viajesRechazados = [];
+        }
+
+        renderizarListaPedidos(pedidos);
+    });
+}
 
         function renderizarListaPedidos(pedidos) {
             var contenedor = document.getElementById('lista-pedidos');
@@ -363,3 +378,4 @@
     </script>
 </body>
 </html>
+
