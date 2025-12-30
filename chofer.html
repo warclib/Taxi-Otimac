@@ -125,7 +125,7 @@
         </div>
         <div class="sidebar-item" onclick="cambiarDatosChofer()" style="cursor:pointer;">
             <div style="font-size: 15px; font-weight: bold;">👤 <span id="displayNombre">...</span></div>
-            <div style="font-size: 15px; font-weight: bold;"> taxi Eco: <span id="displayEco">...</span></div>
+            <div style="font-size: 15px; font-weight: bold;">🚕 Eco: <span id="displayEco">...</span></div>
             <small style="color: #b39ddb; font-size: 10px;">(Toca para editar)</small>
         </div>
     </div>
@@ -268,12 +268,13 @@
                 var pedidos = snapshot.val();
                 window.ultimoSnapshotPedidos = pedidos;
                 
+                // --- LÓGICA DE 5 MINUTOS (300,000 ms) ---
                 var ahora = Date.now();
                 for (var id in pedidos) {
                     if (pedidos[id].estado === 'esperando') {
                         var tiempoTranscurrido = ahora - pedidos[id].timestamp;
-                        if (tiempoTranscurrido > 300000) { 
-                            database.ref('viajes/' + id).remove(); 
+                        if (tiempoTranscurrido > 300000) { // Si pasaron más de 5 min
+                            database.ref('viajes/' + id).remove(); // Borrar de la DB
                             continue;
                         }
                     }
@@ -376,7 +377,6 @@
                 return terminarViaje(id);
             }
 
-            // RECUPERAMOS EL CLIENTE_UID DE LA BASE DE DATOS ANTES DE BORRAR EL VIAJE
             database.ref('viajes/' + id).once('value', (snapshot) => {
                 var datos = snapshot.val();
                 if (datos && datos.cliente_uid) {
@@ -390,13 +390,12 @@
                         return perfil;
                     });
                 }
-                
-                // FINALMENTE BORRAMOS EL VIAJE
-                localStorage.removeItem("idViajeChoferActivo");
-                database.ref('viajes/' + id).remove().then(() => { 
-                    alert("Servicio finalizado.");
-                    location.reload(); 
-                });
+            });
+
+            localStorage.removeItem("idViajeChoferActivo");
+            database.ref('viajes/' + id).remove().then(() => { 
+                alert("Servicio finalizado.");
+                location.reload(); 
             });
         }
     </script>
