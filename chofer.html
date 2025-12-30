@@ -54,18 +54,32 @@
         #map { height: 100vh; width: 100%; z-index: 1; }
         
         #interfaz { position: fixed; bottom: 0; left: 0; right: 0; z-index: 2000; padding: 10px; }
-       /* BUSCA ESTO EN TU CÓDIGO */
-       .panel-pedidos { 
-         background: rgba(0, 0, 0, 0.7); 
-          backdrop-filter: blur(15px);
-          -webkit-backdrop-filter: blur(15px);
-           padding: 20px; 
-          border-radius: 25px 25px 15px 15px; 
-           border: 1px solid rgba(255, 255, 255, 0.1);
-           border-top: 3px solid #b39ddb;
-         box-shadow: 0 -10px 30px rgba(0,0,0,0.5); 
-       }
+     <style>
+    /* ... otros estilos que ya tengas ... */
 
+    .panel-pedidos { 
+        background: rgba(0, 0, 0, 0.8); 
+        backdrop-filter: blur(15px);
+        -webkit-backdrop-filter: blur(15px);
+        padding: 12px 15px; 
+        border-radius: 20px 20px 10px 10px; 
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-top: 2px solid #b39ddb; 
+        box-shadow: 0 -5px 20px rgba(0,0,0,0.4); 
+        max-height: 40vh; 
+        overflow-y: auto; 
+    }
+
+    .panel-pedidos h3 {
+        margin: 0 0 8px 0;
+        font-size: 14px;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        color: #eee;
+    }
+
+    /* ... el resto de tus estilos ... */
+</style>
         .pedido-card { padding: 15px; background: rgba(255,255,255,0.08); margin: 10px 0; border-radius: 12px; border-left: 6px solid #b39ddb; text-align: left; }
         .distancia-tag { color: #b39ddb; font-weight: bold; float: right; font-size: 14px; }
         
@@ -382,5 +396,6 @@
     </script>
 </body>
 </html>
+
 
 
