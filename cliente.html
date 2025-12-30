@@ -80,7 +80,8 @@
         var database = firebase.database();
 
         let enviandoPedido = false;
-        var totalViajesRealizados = 0; // Variable para el historial real
+        var totalViajesRealizados = 0; 
+        var estrellasActuales = "5.0"; // Guardaremos las estrellas reales aquí
 
         if (!localStorage.getItem("otimac_uuid")) {
             localStorage.setItem("otimac_uuid", "ID-" + Math.floor(100000 + Math.random() * 900000));
@@ -89,7 +90,7 @@
 
         function iniciarAppCliente() {
             verificarNombreYViaje();
-            cargarHistorialReal(); // Nueva función para leer de Firebase
+            cargarPerfilReal(); // Carga historial y estrellas
             setTimeout(() => {
                 const splash = document.getElementById('splash-screen');
                 splash.style.opacity = '0';
@@ -97,11 +98,15 @@
             }, 2500);
         }
 
-        // --- NUEVA FUNCIÓN: Obtener historial real de Firebase ---
-        function cargarHistorialReal() {
-            database.ref('usuarios/' + miUUID + '/perfil/total_viajes').on('value', (snap) => {
-                totalViajesRealizados = snap.val() || 0;
-                document.getElementById('info-historial').innerText = "Has realizado " + totalViajesRealizados + " viajes con nosotros.";
+        // --- MEJORADO: Obtener historial y estrellas de Firebase ---
+        function cargarPerfilReal() {
+            database.ref('usuarios/' + miUUID + '/perfil').on('value', (snap) => {
+                let perfil = snap.val() || {};
+                totalViajesRealizados = perfil.total_viajes || 0;
+                estrellasActuales = perfil.estrellas || "5.0";
+                
+                document.getElementById('info-historial').innerText = 
+                    "⭐ " + estrellasActuales + " | " + totalViajesRealizados + " viajes realizados";
             });
         }
 
@@ -170,14 +175,14 @@
                 idViaje = miUUID.replace("ID-", "V-"); 
                 localStorage.setItem("idViajeActivo", idViaje);
                 
-                // MODIFICACIÓN: Enviamos el cliente_uid y el historial real
+                // CRÍTICO: Aquí enviamos los datos que la App del Chofer necesita para el "Bateo"
                 database.ref('viajes/' + idViaje).set({
                     cliente: miPos,
                     nombre_cliente: localStorage.getItem("nombreCliente"),
-                    cliente_id: miUUID.substring(0,8), // ID corto para el chofer
-                    cliente_uid: miUUID,               // ID real para sumar el viaje
-                    cliente_historial: totalViajesRealizados, // Envía el conteo real
-                    cliente_estrellas: "5.0",
+                    cliente_id: miUUID.substring(0,8), 
+                    cliente_uid: miUUID,               // Identificador único para el promedio matemático
+                    cliente_historial: totalViajesRealizados, 
+                    cliente_estrellas: estrellasActuales,    // Envía sus estrellas reales actuales
                     estado: "esperando",
                     timestamp: firebase.database.ServerValue.TIMESTAMP
                 }).then(() => {
@@ -185,7 +190,7 @@
                     reconectarViaje(idViaje);
                 });
             }, (err) => {
-                alert("Activa el GPS");
+                alert("Por favor, activa el GPS para poder solicitar el servicio.");
                 enviandoPedido = false;
                 btn.disabled = false;
                 btn.innerText = "🚖 PEDIR TAXI AHORA";
@@ -199,7 +204,12 @@
 
             database.ref('viajes/' + id).on('value', (snap) => {
                 var viaje = snap.val();
-                if(!viaje) { localStorage.removeItem("idViajeActivo"); location.reload(); return; }
+                if(!viaje) { 
+                    // Si el viaje ya no existe en la DB, limpiamos el estado local
+                    localStorage.removeItem("idViajeActivo"); 
+                    location.reload(); 
+                    return; 
+                }
 
                 if (viaje.estado === 'chofer_llego') {
                     document.getElementById('alertaLlegada').style.display = 'block';
@@ -234,7 +244,7 @@
 
         function cancelarPedido() {
             var id = localStorage.getItem("idViajeActivo");
-            if(confirm("¿Cancelar viaje?")) {
+            if(confirm("¿Estás seguro de que deseas cancelar el pedido?")) {
                 database.ref('viajes/' + id).remove().then(() => {
                     localStorage.removeItem("idViajeActivo");
                     location.reload();
