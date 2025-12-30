@@ -55,16 +55,16 @@
         
         #interfaz { position: fixed; bottom: 0; left: 0; right: 0; z-index: 2000; padding: 10px; }
 
-        /* --- CAMBIO AQUÍ: PANEL MÁS PEQUEÑO Y ESTÉTICO --- */
+        /* --- PANEL CON TRANSPARENCIA MEJORADA (EFECTO CRISTAL) --- */
         .panel-pedidos { 
-            background: rgba(0, 0, 0, 0.85); 
-            backdrop-filter: blur(15px);
-            -webkit-backdrop-filter: blur(15px);
+            background: rgba(0, 0, 0, 0.4); /* Transparencia aumentada de 0.85 a 0.4 */
+            backdrop-filter: blur(10px);    /* Desenfoque suave del fondo */
+            -webkit-backdrop-filter: blur(10px);
             padding: 12px 15px; 
             border-radius: 20px 20px 10px 10px; 
-            border: 1px solid rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.15); /* Borde sutil para delimitar el cuadro */
             border-top: 2px solid #b39ddb;
-            box-shadow: 0 -5px 25px rgba(0,0,0,0.6); 
+            box-shadow: 0 -5px 25px rgba(0,0,0,0.4); 
             max-height: 40vh;
             overflow-y: auto;
         }
@@ -79,7 +79,7 @@
 
         .pedido-card { 
             padding: 12px; 
-            background: rgba(255,255,255,0.08); 
+            background: rgba(255,255,255,0.1); /* Ligeramente más claro para lectura */
             margin: 8px 0; 
             border-radius: 10px; 
             border-left: 4px solid #b39ddb; 
