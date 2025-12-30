@@ -78,7 +78,14 @@
         .rating-estrella { color: #ffca28; font-weight: bold; font-size: 13px; }
         .badge-confianza { font-size: 9px; padding: 2px 6px; border-radius: 4px; font-weight: bold; text-transform: uppercase; margin-left: 5px; vertical-align: middle; background: #2e7d32; color: white; }
 
+        /* AJUSTES PARA EL RELOJ Y DISTANCIA */
+        .reloj-tag { color: #ffca28; font-weight: bold; margin-right: 15px; font-size: 12px; }
         .distancia-tag { color: #b39ddb; font-weight: bold; float: right; font-size: 12px; }
+        
+        /* ESTILO PARA LA BARRA VERDE */
+        .tiempo-container { width: 100%; height: 4px; background: rgba(255,255,255,0.1); border-radius: 2px; margin: 8px 0; overflow: hidden; }
+        .barra-progreso { height: 100%; background: #00ff00; width: 100%; transition: width 1s linear; }
+
         .btn-aceptar { background:#b39ddb; border:none; padding:12px; border-radius:8px; font-weight:bold; width:100%; margin-top:8px; cursor: pointer; color: black; font-size: 14px; }
         .btn-rechazar { background:transparent; border:none; color: #ff4444; padding:5px; width:100%; margin-top:5px; cursor: pointer; font-size: 11px; text-decoration: underline; }
         .btn-cancelar { background: #ff4444; color: white; border: none; padding: 15px; border-radius: 10px; font-weight: bold; width: 100%; margin-top: 10px; font-size: 16px; }
@@ -189,6 +196,13 @@
                 splash.style.opacity = '0';
                 setTimeout(() => { splash.style.visibility = 'hidden'; }, 600);
             }, 2500);
+            
+            // Actualización visual de cronómetros cada segundo
+            setInterval(() => {
+                if (window.ultimoSnapshotPedidos && !idViajeActivo && document.getElementById('checkTrabajo').checked) {
+                    renderizarListaPedidos(window.ultimoSnapshotPedidos);
+                }
+            }, 1000);
         }
 
         var map = L.map('map', { zoomControl: false }).setView([23.6345, -102.5528], 5);
@@ -295,25 +309,49 @@
             if (!idViajeActivo && document.getElementById('checkTrabajo').checked) {
                 contenedor.innerHTML = "";
                 let conteoActual = 0;
+                let ahora = Date.now();
+
                 for (var id in pedidos) {
                     if (pedidos[id].estado === 'esperando' && !viajesRechazados.includes(id)) {
                         conteoActual++;
                         var cli = pedidos[id].cliente;
-                        var km = markerChofer ? (L.latLng(markerChofer.getLatLng()).distanceTo(L.latLng(cli.lat, cli.lon)) / 1000).toFixed(1) : "...";
                         
+                        // LÓGICA DE TIEMPO (5 MINUTOS = 300,000 MS)
+                        var timestampViaje = pedidos[id].timestamp || ahora;
+                        var transcurrido = ahora - timestampViaje;
+                        var restanteMs = 300000 - transcurrido;
+                        
+                        // Si expira, lo borramos
+                        if (restanteMs <= 0) {
+                            database.ref('viajes/' + id).remove();
+                            continue;
+                        }
+
+                        var segundosRestantes = Math.max(0, Math.floor(restanteMs / 1000));
+                        var minutos = Math.floor(segundosRestantes / 60);
+                        var segundos = segundosRestantes % 60;
+                        var porcentajeBarra = (restanteMs / 300000) * 100;
+
+                        var km = markerChofer ? (L.latLng(markerChofer.getLatLng()).distanceTo(L.latLng(cli.lat, cli.lon)) / 1000).toFixed(1) : "...";
                         var estrellas = pedidos[id].cliente_estrellas || "4.8";
                         var totalV = pedidos[id].cliente_historial || "1";
 
                         contenedor.innerHTML += `
                         <div class="pedido-card">
-                            <span class="distancia-tag">📍 ${km} km</span>
+                            <div style="float: right;">
+                                <span class="reloj-tag">⏳ ${minutos}:${segundos < 10 ? '0' : ''}${segundos}</span>
+                                <span class="distancia-tag">📍 ${km} km</span>
+                            </div>
                             <b>${pedidos[id].nombre_cliente || "Pasajero"}</b> 
                             <span class="badge-confianza">Verificado</span>
                             <div style="margin: 5px 0;">
                                 <span class="rating-estrella">⭐ ${estrellas}</span>
                                 <small style="color:#aaa; margin-left:10px;">Historial: ${totalV} viajes</small>
                             </div>
-                            <small style="color:#b39ddb; font-size:10px; font-weight:bold;">${pedidos[id].cliente_uid || "OT-100"}</small><br>
+                            <small style="color:#b39ddb; font-size:10px; font-weight:bold;">${pedidos[id].cliente_uid || "OT-100"}</small>
+                            <div class="tiempo-container">
+                                <div class="barra-progreso" style="width: ${porcentajeBarra}%"></div>
+                            </div>
                             <button class="btn-aceptar" onclick="aceptarViaje('${id}')">ACEPTAR VIAJE</button>
                             <button class="btn-rechazar" onclick="rechazarViajeLocal('${id}')">OCULTAR</button>
                         </div>`;
