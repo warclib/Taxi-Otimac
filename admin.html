@@ -61,11 +61,18 @@
         firebase.initializeApp(firebaseConfig);
         var database = firebase.database();
 
-        // Función para bloquear un ID
+        // Función para bloquear un ID (Actualizada para afectar el perfil)
         function bloquearCliente() {
             var id = document.getElementById('idBloquear').value.trim();
             if(id) {
+                // 1. Agregar a la lista de baneados
                 database.ref('baneados/' + id).set(true).then(() => {
+                    
+                    // 2. Sincronizar con el perfil del usuario (Campo acceso: denegado)
+                    database.ref('usuarios/' + id + '/perfil').update({
+                        acceso: "denegado"
+                    }).catch((e) => console.log("Perfil no existente, bloqueado solo en lista negra."));
+
                     alert("¡Listo! El ID " + id + " ha sido expulsado de Otimac.");
                     document.getElementById('idBloquear').value = "";
                 });
@@ -86,7 +93,6 @@
             }
 
             for(var id in datos) {
-                // No mostrar el marcador 'lista' que creamos manualmente
                 if(id === "lista") continue; 
 
                 contenedor.innerHTML += `
@@ -97,10 +103,19 @@
             }
         });
 
-        // Función para quitar el baneo
+        // Función para quitar el baneo (Actualizada para restaurar el perfil)
         function perdonarCliente(id) {
             if(confirm("¿Seguro que quieres desbloquear a " + id + "?")) {
-                database.ref('baneados/' + id).remove();
+                // 1. Quitar de la lista de baneados
+                database.ref('baneados/' + id).remove().then(() => {
+                    
+                    // 2. Restaurar el acceso en el perfil del usuario
+                    database.ref('usuarios/' + id + '/perfil').update({
+                        acceso: "permitido"
+                    });
+                    
+                    alert("ID " + id + " ha sido desbloqueado.");
+                });
             }
         }
     </script>
