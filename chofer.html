@@ -298,7 +298,7 @@
                         var cli = pedidos[id].cliente;
                         var km = markerChofer ? (L.latLng(markerChofer.getLatLng()).distanceTo(L.latLng(cli.lat, cli.lon)) / 1000).toFixed(1) : "...";
                         
-                        // Datos reales del historial enviados por el cliente
+                        // --- MEJORA: DATOS DEL HISTORIAL ---
                         var estrellas = pedidos[id].cliente_estrellas || "5.0";
                         var totalV = pedidos[id].cliente_viajes || "0";
 
