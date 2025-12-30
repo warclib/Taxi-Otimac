@@ -290,7 +290,6 @@
             });
         }
 
-        // --- MODIFICADO: Historial dinámico ---
         function renderizarListaPedidos(pedidos) {
             var contenedor = document.getElementById('lista-pedidos');
             if (!idViajeActivo && document.getElementById('checkTrabajo').checked) {
@@ -303,7 +302,6 @@
                         var km = markerChofer ? (L.latLng(markerChofer.getLatLng()).distanceTo(L.latLng(cli.lat, cli.lon)) / 1000).toFixed(1) : "...";
                         
                         var estrellas = pedidos[id].cliente_estrellas || "4.8";
-                        // Lee el historial real enviado por el cliente
                         var totalV = pedidos[id].cliente_historial || "1";
 
                         contenedor.innerHTML += `
@@ -378,28 +376,44 @@
             }
         }
 
-        // --- MODIFICADO: Suma +1 al historial del cliente al finalizar ---
+        // --- FUNCIÓN TERMINAR CORREGIDA Y VALIDADA ---
         function terminarViaje(id) {
-            let calif = prompt("Califica al cliente (1 a 5 estrellas):", "5");
-            if(calif) {
-                // Obtenemos los datos antes de borrar el viaje
-                database.ref('viajes/' + id).once('value', (snapshot) => {
-                    var datos = snapshot.val();
-                    if(datos && datos.cliente_uid) {
-                        // Buscamos el perfil del cliente y sumamos el viaje
-                        database.ref('usuarios/' + datos.cliente_uid + '/perfil/total_viajes').transaction((actual) => {
-                            return (actual || 0) + 1;
-                        });
-                    }
-                });
+            let calif;
+            let esValido = false;
 
-                // Finalizamos el proceso
-                localStorage.removeItem("idViajeChoferActivo");
-                database.ref('viajes/' + id).remove().then(() => { 
-                    alert("Servicio finalizado. Historial actualizado.");
-                    location.reload(); 
-                });
+            while (!esValido) {
+                calif = prompt("Califica al cliente (1 a 5 estrellas):", "5");
+                
+                // Si el chofer cancela el prompt, no hacemos nada y salimos de la función
+                if (calif === null) return; 
+
+                // Intentamos convertir a número
+                let num = parseInt(calif);
+
+                // Validamos que sea un número y esté entre 1 y 5
+                if (!isNaN(num) && num >= 1 && num <= 5) {
+                    esValido = true;
+                    calif = num;
+                } else {
+                    alert("⚠️ Error: Ingresa solo un número del 1 al 5.");
+                }
             }
+
+            // Una vez validado, procedemos con Firebase
+            database.ref('viajes/' + id).once('value', (snapshot) => {
+                var datos = snapshot.val();
+                if(datos && datos.cliente_uid) {
+                    database.ref('usuarios/' + datos.cliente_uid + '/perfil/total_viajes').transaction((actual) => {
+                        return (actual || 0) + 1;
+                    });
+                }
+            });
+
+            localStorage.removeItem("idViajeChoferActivo");
+            database.ref('viajes/' + id).remove().then(() => { 
+                alert("Servicio finalizado con " + calif + " estrellas. Historial actualizado.");
+                location.reload(); 
+            });
         }
     </script>
 </body>
