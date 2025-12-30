@@ -30,22 +30,33 @@
         @keyframes latido { 0% { transform: scale(1); } 50% { transform: scale(1.2); } 100% { transform: scale(1); } }
         .texto-carga { color: #1a1a1a; font-weight: bold; margin-top: 20px; letter-spacing: 3px; font-size: 14px; }
 
+        /* Estilos para el Reglamento Formal */
+        #modal-reglamento {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(10, 10, 10, 0.95); z-index: 25000;
+            display: none; justify-content: center; align-items: center; padding: 20px;
+        }
+        .reglamento-contenido {
+            background: #1e1e1e; border: 1px solid #b39ddb;
+            padding: 30px; border-radius: 15px; max-width: 450px; text-align: left;
+        }
+        .reglamento-contenido h2 { color: #b39ddb; font-size: 18px; text-align: center; border-bottom: 1px solid #333; padding-bottom: 15px; }
+        .reglamento-lista { list-style: none; padding: 0; margin: 20px 0; }
+        .reglamento-lista li { font-size: 13px; color: #eee; margin-bottom: 12px; padding-left: 20px; position: relative; }
+        .reglamento-lista li::before { content: "•"; color: #b39ddb; position: absolute; left: 0; }
+        .btn-entendido { background: #b39ddb; color: #1a1a1a; border: none; padding: 16px; width: 100%; border-radius: 8px; font-weight: 900; cursor: pointer; text-transform: uppercase; }
+
         body { font-family: 'Segoe UI', sans-serif; text-align: center; background: #1a1a1a; color: white; margin: 0; padding: 10px; }
         #map { height: 400px; width: 100%; border-radius: 15px; border: 2px solid #b39ddb; margin-top: 10px; }
         
         .btn-pedido { background: #b39ddb; color: black; border: none; padding: 20px; font-weight: bold; border-radius: 10px; width: 100%; font-size: 18px; margin-top: 10px; cursor: pointer; }
-        /* Estilo para botón deshabilitado */
         .btn-pedido:disabled { background: #555; color: #888; cursor: not-allowed; }
-
         .btn-cancelar { background: #ff4444; color: white; border: none; padding: 12px; border-radius: 8px; font-weight: bold; width: 100%; margin-top: 10px; cursor: pointer; }
         
         .card-chofer { background: #222; padding: 15px; border-radius: 12px; border: 2px solid #b39ddb; margin-bottom: 10px; display: none; }
         .alerta-llegada { background: #00ff00; color: black; padding: 15px; border-radius: 10px; font-weight: bold; margin-bottom: 10px; display: none; animation: pulse 1s infinite; }
-        
         #status-senal { display: none; font-size: 11px; color: #ffca28; margin-bottom: 8px; font-weight: bold; }
-
         @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.5; } 100% { opacity: 1; } }
-        
         #status-viaje { color: #b39ddb; font-weight: bold; margin: 10px 0; font-size: 18px; }
         input { padding: 15px; width: 80%; border-radius: 10px; margin-bottom: 10px; font-size: 16px; border: 2px solid #b39ddb; background: #333; color: white; }
         #nombre-usuario { color: #b39ddb; font-size: 20px; margin-bottom: 10px; display: block; font-weight: bold; }
@@ -53,6 +64,20 @@
     </style>
 </head>
 <body onload="iniciarAppCliente()">
+
+    <div id="modal-reglamento">
+        <div class="reglamento-contenido">
+            <h2>TÉRMINOS Y CONDICIONES</h2>
+            <p style="font-size: 13px;">Para garantizar su seguridad, el usuario se compromete a:</p>
+            <ul class="reglamento-lista">
+                <li><b>Capacidad:</b> Máximo 4 pasajeros por unidad.</li>
+                <li><b>Carga:</b> Prohibido traslado de leña, escombro u objetos pesados.</li>
+                <li><b>Higiene:</b> No se permite fumar o ingerir alcohol en la unidad.</li>
+                <li><b>Derecho de admisión:</b> El chofer puede cancelar si no se cumplen las reglas.</li>
+            </ul>
+            <button class="btn-entendido" onclick="aceptarReglamento()">He leído y acepto los términos</button>
+        </div>
+    </div>
 
     <div id="pantalla-bloqueo">
         <h1 style="font-size: 80px;">🚫</h1>
@@ -78,7 +103,6 @@
     <div id="areaPedido" style="display:none;">
         <span id="nombre-usuario"></span>
         <span id="info-historial">Cargando historial...</span>
-        
         <div id="alertaLlegada" class="alerta-llegada">🚨 ¡TU TAXI HA LLEGADO! POR FAVOR SAL A SU ENCUENTRO.</div>
         <div id="cardChofer" class="card-chofer">
             <div id="status-senal">📶 ESTIMANDO POSICIÓN POR SEÑAL DÉBIL...</div>
@@ -96,7 +120,6 @@
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
 
     <script>
-        // Configuración Firebase
         var firebaseConfig = { apiKey: "AIzaSyATLT5_woN8KO8-_E4_Nl7bEMlJGFI4uUQ", authDomain: "taxiotimac.firebaseapp.com", databaseURL: "https://taxiotimac-default-rtdb.firebaseio.com", projectId: "taxiotimac", storageBucket: "taxiotimac.firebasestorage.app", messagingSenderId: "533983007458", appId: "1:533983007458:web:254cef6b46c01a1718c4bb" };
         firebase.initializeApp(firebaseConfig);
         var database = firebase.database();
@@ -104,6 +127,7 @@
         let enviandoPedido = false;
         var totalViajesRealizados = 0; 
         var estrellasActuales = "5.0"; 
+        var temporizadorAutolimpieza;
 
         var ultimaActChofer = Date.now();
         var intervaloSimulacion;
@@ -123,13 +147,24 @@
 
         function iniciarAppCliente() {
             verificarEstadoCuenta();
-            verificarNombreYViaje();
+            // PRIMERO: Verificar si ya aceptó el reglamento
+            if (!localStorage.getItem("reglamentoAceptado")) {
+                document.getElementById('modal-reglamento').style.display = 'flex';
+            } else {
+                verificarNombreYViaje();
+            }
             cargarPerfilReal();
             setTimeout(() => {
                 const splash = document.getElementById('splash-screen');
                 splash.style.opacity = '0';
                 setTimeout(() => { splash.style.visibility = 'hidden'; }, 600);
             }, 2500);
+        }
+
+        function aceptarReglamento() {
+            localStorage.setItem("reglamentoAceptado", "true");
+            document.getElementById('modal-reglamento').style.display = 'none';
+            verificarNombreYViaje(); // Después de aceptar, ver si tiene nombre o viaje
         }
 
         function cargarPerfilReal() {
@@ -160,8 +195,11 @@
 
         function verificarNombreYViaje() {
             var n = localStorage.getItem("nombreCliente");
-            if(!n) document.getElementById('registro').style.display = 'block';
-            else {
+            if(!n) {
+                document.getElementById('registro').style.display = 'block';
+                document.getElementById('areaPedido').style.display = 'none';
+            } else {
+                document.getElementById('registro').style.display = 'none';
                 document.getElementById('areaPedido').style.display = 'block';
                 document.getElementById('nombre-usuario').innerText = "Hola, " + n + " 👋";
                 var vActivo = localStorage.getItem("idViajeActivo");
@@ -171,7 +209,10 @@
 
         function guardarNombre() {
             var n = document.getElementById('inputNombre').value;
-            if(n) { localStorage.setItem("nombreCliente", n); location.reload(); }
+            if(n) { 
+                localStorage.setItem("nombreCliente", n); 
+                verificarNombreYViaje(); 
+            }
         }
 
         function simularMovimientoChofer(latDestino, lonDestino) {
@@ -198,7 +239,6 @@
 
             database.ref('viajes/' + id).on('value', (snap) => {
                 var viaje = snap.val();
-                
                 if(!viaje) { 
                     if(localStorage.getItem("idViajeActivo")){
                         avisarConVoz("El viaje ha sido cancelado o ha finalizado.");
@@ -207,6 +247,11 @@
                     }
                     location.reload(); 
                     return; 
+                }
+
+                // SI UN CHOFER ACEPTA: Detenemos el reloj de autolimpieza de 5 min
+                if (viaje.estado === 'en_curso' || viaje.estado === 'chofer_llego') {
+                    if (temporizadorAutolimpieza) clearTimeout(temporizadorAutolimpieza);
                 }
 
                 if (viaje.estado === 'chofer_llego') {
@@ -229,12 +274,9 @@
                     ultimaPosChoferReal = { lat: viaje.chofer.lat, lon: viaje.chofer.lon };
                     document.getElementById('cardChofer').style.display = 'block';
                     document.getElementById('infoChofer').innerHTML = `<b>Chofer:</b> ${viaje.chofer.nombre} <br> <b>Unidad:</b> ${viaje.chofer.economico}`;
-                    
                     if (markerChofer) markerChofer.setLatLng([ultimaPosChoferReal.lat, ultimaPosChoferReal.lon]);
                     else markerChofer = L.marker([ultimaPosChoferReal.lat, ultimaPosChoferReal.lon], {icon: iconoTaxi}).addTo(map);
-                    
                     simularMovimientoChofer(viaje.cliente.lat, viaje.cliente.lon);
-
                     if (!map.getBounds().contains(markerChofer.getLatLng())) {
                         var group = new L.featureGroup([markerCliente, markerChofer]);
                         map.fitBounds(group.getBounds().pad(0.3));
@@ -243,29 +285,21 @@
             });
         }
 
-        // --- LÓGICA DE SEGURIDAD INTEGRADA ---
         function validarYPedir() {
-            // Bloqueo inmediato si no hay internet detectado por el navegador
             if (!navigator.onLine) {
-                alert("⚠️ No tienes conexión a internet. Intenta de nuevo cuando tengas señal.");
+                alert("⚠️ No tienes conexión a internet.");
                 return;
             }
-
             if (enviandoPedido) return;
 
-            // Verificación de baneo y conexión real al servidor
             database.ref('baneados/' + miUUID).once('value', (snapshot) => {
                 if (snapshot.exists()) { 
                     alert("⚠️ Cuenta suspendida."); 
                     location.reload(); 
                 } else {
-                    // Verificamos si Firebase está realmente conectado ahora mismo
                     database.ref('.info/connected').once('value', (connectedSnap) => {
-                        if (connectedSnap.val() === true) {
-                            pedirTaxi();
-                        } else {
-                            alert("📶 Señal inestable. Conectando al servidor...");
-                        }
+                        if (connectedSnap.val() === true) pedirTaxi();
+                        else alert("📶 Señal inestable. Conectando...");
                     });
                 }
             });
@@ -274,16 +308,11 @@
         function pedirTaxi() {
             enviandoPedido = true;
             let btn = document.getElementById('btnPedir');
-            btn.innerText = "PROCESANDO...";
-            btn.disabled = true; // Bloqueamos el botón para evitar doble clic
+            btn.innerText = "BUSCANDO CHOFER...";
+            btn.disabled = true;
 
             navigator.geolocation.getCurrentPosition((pos) => {
-                // Doble check de internet antes de escribir en la DB
-                if (!navigator.onLine) {
-                    resetearBoton();
-                    alert("Se perdió la conexión al obtener tu ubicación.");
-                    return;
-                }
+                if (!navigator.onLine) { resetearBoton(); return; }
 
                 var miPos = { lat: pos.coords.latitude, lon: pos.coords.longitude };
                 idViaje = miUUID.replace("ID-", "V-");
@@ -300,15 +329,28 @@
                     localStorage.setItem("idViajeActivo", idViaje);
                     enviandoPedido = false; 
                     reconectarViaje(idViaje); 
-                }).catch((err) => {
-                    resetearBoton();
-                    alert("Error al conectar con el servidor.");
-                });
+
+                    // --- LÓGICA DE AUTOLIMPIEZA CLIENTE (5 MINUTOS) ---
+                    if (temporizadorAutolimpieza) clearTimeout(temporizadorAutolimpieza);
+                    temporizadorAutolimpieza = setTimeout(() => {
+                        database.ref('viajes/' + idViaje).once('value', (snap) => {
+                            let v = snap.val();
+                            if (v && v.estado === 'esperando') {
+                                database.ref('viajes/' + idViaje).remove();
+                                localStorage.removeItem("idViajeActivo");
+                                alert("⏱️ TIEMPO AGOTADO: No se encontraron choferes disponibles. Intente de nuevo.");
+                                location.reload();
+                            }
+                        });
+                    }, 300000); // 5 minutos
+                    // --------------------------------------------------
+
+                }).catch(() => { resetearBoton(); alert("Error de servidor."); });
 
             }, () => { 
-                alert("Por favor activa tu GPS."); 
+                alert("Activa tu GPS."); 
                 resetearBoton();
-            }, { timeout: 8000 }); // Si el GPS no responde en 8 segundos, se detiene
+            }, { timeout: 8000 });
         }
 
         function resetearBoton() {
@@ -321,6 +363,7 @@
         function cancelarPedido() {
             var id = localStorage.getItem("idViajeActivo");
             if(confirm("¿Seguro que deseas cancelar el taxi?")) {
+                if (temporizadorAutolimpieza) clearTimeout(temporizadorAutolimpieza);
                 database.ref('viajes/' + id).remove().then(() => {
                     localStorage.removeItem("idViajeActivo");
                     location.reload();
