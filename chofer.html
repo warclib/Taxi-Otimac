@@ -87,7 +87,6 @@
         .btn-aceptar { background:#b39ddb; border:none; padding:12px; border-radius:8px; font-weight:bold; width:100%; margin-top:8px; cursor: pointer; color: black; font-size: 14px; }
         .btn-rechazar { background:transparent; border:none; color: #ff4444; padding:5px; width:100%; margin-top:5px; cursor: pointer; font-size: 11px; text-decoration: underline; }
         .btn-cancelar { background: #ff4444; color: white; border: none; padding: 15px; border-radius: 10px; font-weight: bold; width: 100%; margin-top: 10px; font-size: 16px; }
-        /* Estilo para botón deshabilitado */
         .btn-cancelar:disabled { background: #555 !important; cursor: not-allowed; }
 
         .contenedor-navegacion { display: flex; justify-content: space-between; gap: 10px; margin-bottom: 10px; }
@@ -368,16 +367,39 @@
             if(window.ultimoSnapshotPedidos) { renderizarListaPedidos(window.ultimoSnapshotPedidos); }
         }
 
+        // --- CORRECCIÓN INTEGRADA AQUÍ ---
         function aceptarViaje(id) {
+            // VALIDACIÓN DE RED ANTES DE HACER NADA
+            if (!navigator.onLine) {
+                alert("❌ ERROR DE RED: No tienes internet para aceptar este viaje.");
+                return;
+            }
+
             idViajeActivo = id;
             localStorage.setItem("idViajeChoferActivo", id);
             var n = localStorage.getItem("choferNombre"), e = localStorage.getItem("choferEco");
+            
             document.getElementById('app-body').classList.add('modo-enfocado');
+            
+            // Intentar actualizar Firebase
             database.ref('viajes/' + id).update({ 
                 estado: 'en_curso', 
-                chofer: { nombre: n, economico: e, lat: markerChofer.getLatLng().lat, lon: markerChofer.getLatLng().lng } 
+                chofer: { 
+                    nombre: n, 
+                    economico: e, 
+                    lat: markerChofer.getLatLng().lat, 
+                    lon: markerChofer.getLatLng().lng 
+                } 
+            }).then(() => {
+                // Si la red responde bien, reconectamos la UI
+                reconectarViajeChofer(id);
+            }).catch((error) => {
+                // Si falla por internet o porque otro lo ganó
+                alert("❌ Error: No se pudo confirmar el viaje. Verifica tu señal.");
+                document.getElementById('app-body').classList.remove('modo-enfocado');
+                localStorage.removeItem("idViajeChoferActivo");
+                idViajeActivo = null;
             });
-            reconectarViajeChofer(id);
         }
 
         function reconectarViajeChofer(id) {
@@ -414,7 +436,6 @@
         }
 
         function terminarViaje(id) {
-            // VERIFICACIÓN DE RED
             if (!navigator.onLine) return alert("❌ SIN CONEXIÓN: No puedes finalizar el viaje sin internet.");
 
             const btn = document.getElementById('btn-finalizar-viaje');
@@ -429,7 +450,6 @@
                 return terminarViaje(id);
             }
 
-            // BLOQUEO DE BOTÓN PARA EVITAR DOBLE ENVÍO
             btn.disabled = true;
             btn.innerText = "PROCESANDO...";
 
@@ -447,7 +467,6 @@
                     });
                 }
                 
-                // LIMPIEZA INMEDIATA
                 localStorage.removeItem("idViajeChoferActivo");
                 database.ref('viajes/' + id).remove().then(() => { 
                     alert("Servicio finalizado.");
