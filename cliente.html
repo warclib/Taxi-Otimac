@@ -30,24 +30,44 @@
         @keyframes latido { 0% { transform: scale(1); } 50% { transform: scale(1.2); } 100% { transform: scale(1); } }
         .texto-carga { color: #1a1a1a; font-weight: bold; margin-top: 20px; letter-spacing: 3px; font-size: 14px; }
 
-        /* Estilos para el Reglamento Formal */
+        /* --- ESTILOS CORREGIDOS PARA CENTRADO TOTAL DEL REGLAMENTO --- */
         #modal-reglamento {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(10, 10, 10, 0.95); z-index: 25000;
-            display: none; justify-content: center; align-items: center; padding: 20px;
+            position: fixed; 
+            top: 0; 
+            left: 0; 
+            width: 100vw; 
+            height: 100vh;
+            background: rgba(0, 0, 0, 0.97); 
+            z-index: 30000;
+            display: none; 
+            justify-content: center; 
+            align-items: center; 
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
         }
         .reglamento-contenido {
-            background: #1e1e1e; border: 1px solid #b39ddb;
-            padding: 30px; border-radius: 15px; max-width: 450px; text-align: left;
+            background: #1e1e1e; 
+            border: 2px solid #b39ddb;
+            padding: 25px; 
+            border-radius: 15px; 
+            width: 88%; 
+            max-width: 400px; 
+            text-align: left;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            box-sizing: border-box;
         }
-        .reglamento-contenido h2 { color: #b39ddb; font-size: 18px; text-align: center; border-bottom: 1px solid #333; padding-bottom: 15px; }
+        .reglamento-contenido h2 { 
+            color: #b39ddb; font-size: 18px; text-align: center; border-bottom: 1px solid #333; 
+            padding-bottom: 15px; margin-top: 0; text-transform: uppercase;
+        }
         .reglamento-lista { list-style: none; padding: 0; margin: 20px 0; }
-        .reglamento-lista li { font-size: 13px; color: #eee; margin-bottom: 12px; padding-left: 20px; position: relative; }
-        .reglamento-lista li::before { content: "•"; color: #b39ddb; position: absolute; left: 0; }
-        .btn-entendido { background: #b39ddb; color: #1a1a1a; border: none; padding: 16px; width: 100%; border-radius: 8px; font-weight: 900; cursor: pointer; text-transform: uppercase; }
+        .reglamento-lista li { font-size: 14px; color: #eee; margin-bottom: 15px; padding-left: 25px; position: relative; line-height: 1.4; }
+        .reglamento-lista li::before { content: "⚠️"; position: absolute; left: 0; font-size: 14px; }
+        .btn-entendido { background: #b39ddb; color: #1a1a1a; border: none; padding: 18px; width: 100%; border-radius: 10px; font-weight: 900; cursor: pointer; text-transform: uppercase; }
 
-        body { font-family: 'Segoe UI', sans-serif; text-align: center; background: #1a1a1a; color: white; margin: 0; padding: 10px; }
-        #map { height: 400px; width: 100%; border-radius: 15px; border: 2px solid #b39ddb; margin-top: 10px; }
+        body { font-family: 'Segoe UI', sans-serif; text-align: center; background: #1a1a1a; color: white; margin: 0; padding: 10px; overflow-x: hidden; }
+        #map { height: 400px; width: 100%; border-radius: 15px; border: 2px solid #b39ddb; margin-top: 10px; box-sizing: border-box; }
         
         .btn-pedido { background: #b39ddb; color: black; border: none; padding: 20px; font-weight: bold; border-radius: 10px; width: 100%; font-size: 18px; margin-top: 10px; cursor: pointer; }
         .btn-pedido:disabled { background: #555; color: #888; cursor: not-allowed; }
@@ -58,7 +78,7 @@
         #status-senal { display: none; font-size: 11px; color: #ffca28; margin-bottom: 8px; font-weight: bold; }
         @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.5; } 100% { opacity: 1; } }
         #status-viaje { color: #b39ddb; font-weight: bold; margin: 10px 0; font-size: 18px; }
-        input { padding: 15px; width: 80%; border-radius: 10px; margin-bottom: 10px; font-size: 16px; border: 2px solid #b39ddb; background: #333; color: white; }
+        input { padding: 15px; width: 85%; border-radius: 10px; margin-bottom: 10px; font-size: 16px; border: 2px solid #b39ddb; background: #333; color: white; box-sizing: border-box; }
         #nombre-usuario { color: #b39ddb; font-size: 20px; margin-bottom: 10px; display: block; font-weight: bold; }
         #info-historial { font-size: 12px; color: #aaa; margin-bottom: 10px; display: block; }
     </style>
@@ -67,15 +87,15 @@
 
     <div id="modal-reglamento">
         <div class="reglamento-contenido">
-            <h2>TÉRMINOS Y CONDICIONES</h2>
-            <p style="font-size: 13px;">Para garantizar su seguridad, el usuario se compromete a:</p>
+            <h2>REGLAS DE SERVICIO</h2>
+            <p style="font-size: 13px; color: #bbb; text-align: center;">Para su seguridad y la del conductor:</p>
             <ul class="reglamento-lista">
+                <li><b>Puntualidad:</b> Al llegar la unidad, el chofer solo podrá esperar un máximo de <b>3 minutos</b>.</li>
                 <li><b>Capacidad:</b> Máximo 4 pasajeros por unidad.</li>
-                <li><b>Carga:</b> Prohibido traslado de leña, escombro u objetos pesados.</li>
-                <li><b>Higiene:</b> No se permite fumar o ingerir alcohol en la unidad.</li>
-                <li><b>Derecho de admisión:</b> El chofer puede cancelar si no se cumplen las reglas.</li>
+                <li><b>Carga:</b> Prohibido traslado de leña, escombro u objetos pesados/sucios.</li>
+                <li><b>Higiene:</b> Prohibido fumar o ingerir bebidas alcohólicas en la unidad.</li>
             </ul>
-            <button class="btn-entendido" onclick="aceptarReglamento()">He leído y acepto los términos</button>
+            <button class="btn-entendido" onclick="aceptarReglamento()">ACEPTO LOS TÉRMINOS</button>
         </div>
     </div>
 
@@ -147,7 +167,6 @@
 
         function iniciarAppCliente() {
             verificarEstadoCuenta();
-            // PRIMERO: Verificar si ya aceptó el reglamento
             if (!localStorage.getItem("reglamentoAceptado")) {
                 document.getElementById('modal-reglamento').style.display = 'flex';
             } else {
@@ -164,7 +183,7 @@
         function aceptarReglamento() {
             localStorage.setItem("reglamentoAceptado", "true");
             document.getElementById('modal-reglamento').style.display = 'none';
-            verificarNombreYViaje(); // Después de aceptar, ver si tiene nombre o viaje
+            verificarNombreYViaje();
         }
 
         function cargarPerfilReal() {
@@ -249,7 +268,6 @@
                     return; 
                 }
 
-                // SI UN CHOFER ACEPTA: Detenemos el reloj de autolimpieza de 5 min
                 if (viaje.estado === 'en_curso' || viaje.estado === 'chofer_llego') {
                     if (temporizadorAutolimpieza) clearTimeout(temporizadorAutolimpieza);
                 }
@@ -330,7 +348,6 @@
                     enviandoPedido = false; 
                     reconectarViaje(idViaje); 
 
-                    // --- LÓGICA DE AUTOLIMPIEZA CLIENTE (5 MINUTOS) ---
                     if (temporizadorAutolimpieza) clearTimeout(temporizadorAutolimpieza);
                     temporizadorAutolimpieza = setTimeout(() => {
                         database.ref('viajes/' + idViaje).once('value', (snap) => {
@@ -342,8 +359,7 @@
                                 location.reload();
                             }
                         });
-                    }, 300000); // 5 minutos
-                    // --------------------------------------------------
+                    }, 300000); 
 
                 }).catch(() => { resetearBoton(); alert("Error de servidor."); });
 
