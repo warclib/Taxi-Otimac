@@ -14,6 +14,7 @@
     <link rel="stylesheet" href="https://unpkg.com/leaflet-routing-machine/dist/leaflet-routing-machine.css" />
     
     <style>
+        /* --- ESTILOS DEL SPLASH SCREEN --- */
         #splash-screen {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background: #b39ddb; display: flex; flex-direction: column;
@@ -24,31 +25,31 @@
         @keyframes latido { 0% { transform: scale(1); } 50% { transform: scale(1.2); } 100% { transform: scale(1); } }
         .texto-carga { color: #1a1a1a; font-weight: bold; margin-top: 20px; letter-spacing: 3px; font-size: 14px; }
 
+        /* --- ESTILOS BASE --- */
         body { font-family: 'Segoe UI', Roboto, Helvetica, sans-serif; text-align: center; background: #1a1a1a; color: white; margin: 0; padding: 0; overflow: hidden; }
         
+        /* Botón Menú Transparente */
         #btn-menu {
             position: fixed; top: 15px; left: 15px; z-index: 5000;
-            background: rgba(179, 157, 219, 0.2);
+            background: rgba(179, 157, 219, 0.2); /* Súper transparente */
             color: white; border: 1px solid rgba(255, 255, 255, 0.2);
             width: 45px; height: 45px; border-radius: 50%;
             font-size: 24px; cursor: pointer;
-            backdrop-filter: blur(5px);
+            backdrop-filter: blur(5px); /* Desenfoque sutil */
             display: flex; align-items: center; justify-content: center;
             transition: 0.3s;
         }
+        #btn-menu:active { background: rgba(179, 157, 219, 0.8); color: black; }
 
-        /* --- MENÚ LATERAL: MISMO EFECTO QUE EL PANEL DE ABAJO --- */
+        /* Sidebar mejorado */
         #sidebar {
             position: fixed; top: 0; left: -320px;
             width: 260px; height: 100%;
-            background: rgba(0, 0, 0, 0.65); /* MISMA OPACIDAD 0.65 */
-            z-index: 4500; transition: 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            background: rgba(17, 17, 17, 0.95); z-index: 4500; transition: 0.4s cubic-bezier(0.4, 0, 0.2, 1);
             padding: 70px 15px 20px 15px; text-align: left;
-            backdrop-filter: blur(12px);    /* MISMO DESENFOQUE */
-            -webkit-backdrop-filter: blur(12px);
-            border-right: 1px solid rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
         }
-        #sidebar.active { left: 0; box-shadow: 10px 0 30px rgba(0,0,0,0.5); border-right: 2px solid #b39ddb; }
+        #sidebar.active { left: 0; box-shadow: 10px 0 30px rgba(0,0,0,0.8); border-right: 2px solid #b39ddb; }
 
         #overlay {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
@@ -57,42 +58,24 @@
 
         #map { height: 100vh; width: 100%; z-index: 1; }
         
+        /* PANEL DE PEDIDOS: EFECTO VIDRIO NEGRO */
         #interfaz { position: fixed; bottom: 0; left: 0; right: 0; z-index: 2000; padding: 10px; }
-
-        /* --- PANEL DE ABAJO --- */
         .panel-pedidos { 
-            background: rgba(0, 0, 0, 0.65); /* OPACIDAD 0.65 */
-            backdrop-filter: blur(12px); 
-            -webkit-backdrop-filter: blur(12px);
-            padding: 12px 15px; 
-            border-radius: 20px 20px 10px 10px; 
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            border-top: 2px solid #b39ddb;
-            box-shadow: 0 -8px 30px rgba(0,0,0,0.5); 
-            max-height: 40vh;
-            overflow-y: auto;
+            background: rgba(0, 0, 0, 0.7); /* Negro transparente */
+            backdrop-filter: blur(15px); /* El efecto de vidrio */
+            -webkit-backdrop-filter: blur(15px);
+            padding: 20px; 
+            border-radius: 25px 25px 15px 15px; 
+            border: 1px solid rgba(255, 255, 255, 0.1); /* Borde fino */
+            border-top: 3px solid #b39ddb; /* Línea de acento */
+            box-shadow: 0 -10px 30px rgba(0,0,0,0.5); 
         }
 
-        .panel-pedidos h3 {
-            margin: 0 0 10px 0;
-            font-size: 14px;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            color: #b39ddb;
-        }
-
-        .pedido-card { 
-            padding: 12px; 
-            background: rgba(255, 255, 255, 0.07); 
-            margin: 8px 0; 
-            border-radius: 10px; 
-            border-left: 4px solid #b39ddb; 
-            text-align: left; 
-        }
-
-        .distancia-tag { color: #b39ddb; font-weight: bold; float: right; font-size: 12px; }
+        .pedido-card { padding: 15px; background: rgba(255,255,255,0.08); margin: 10px 0; border-radius: 12px; border-left: 6px solid #b39ddb; text-align: left; }
+        .distancia-tag { color: #b39ddb; font-weight: bold; float: right; font-size: 14px; }
         
-        .btn-aceptar { background:#b39ddb; border:none; padding:12px; border-radius:8px; font-weight:bold; width:100%; margin-top:8px; cursor: pointer; color: black; font-size: 14px; }
+        /* Botones */
+        .btn-aceptar { background:#b39ddb; border:none; padding:14px; border-radius:10px; font-weight:bold; width:100%; margin-top:10px; cursor: pointer; color: black; font-size: 15px; }
         .btn-rechazar { background:transparent; border:none; color: #ff4444; padding:5px; width:100%; margin-top:5px; cursor: pointer; font-size: 11px; text-decoration: underline; }
         .btn-cancelar { background: #ff4444; color: white; border: none; padding: 15px; border-radius: 10px; font-weight: bold; width: 100%; margin-top: 10px; font-size: 16px; }
 
@@ -100,8 +83,8 @@
         .btn-navegar-waze { background: #33ccff; color: white; border: none; padding: 12px; border-radius: 8px; font-weight: bold; width: 50%; cursor: pointer; }
         .btn-navegar-maps { background: #4285F4; color: white; border: none; padding: 12px; border-radius: 8px; font-weight: bold; width: 50%; cursor: pointer; }
 
-        /* Items dentro del sidebar para que resalten sobre el fondo transparente */
-        .sidebar-item { background: rgba(255,255,255,0.08); padding: 15px; border-radius: 12px; margin-bottom: 15px; border-left: 4px solid #b39ddb; border: 1px solid rgba(255,255,255,0.05); }
+        /* Switch y extras */
+        .sidebar-item { background: rgba(255,255,255,0.05); padding: 15px; border-radius: 12px; margin-bottom: 15px; border-left: 4px solid #b39ddb; }
         .switch-container { display: flex; align-items: center; justify-content: space-between; }
         .switch { position: relative; display: inline-block; width: 50px; height: 28px; }
         .switch input { opacity: 0; width: 0; height: 0; }
@@ -115,6 +98,7 @@
     </style>
 </head>
 <body onload="iniciarAppCentral()" id="app-body">
+
     <div id="splash-screen">
         <div class="logo-animado">🚖</div>
         <div style="color: #1a1a1a; font-size: 28px; font-weight: 900; margin-top: 10px;">OTIMAC CENTRAL</div>
@@ -126,10 +110,7 @@
     
     <div id="sidebar">
         <div class="sidebar-item">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px;">
-                <span style="font-size: 11px; color: #aaa; text-transform: uppercase;">Estado</span>
-                <span id="status-gps" style="font-size: 10px; color: #ff4444; font-weight: bold;">🔴 GPS OFF</span>
-            </div>
+            <span style="font-size: 11px; color: #aaa; text-transform: uppercase;">Estado</span>
             <div class="switch-container">
                 <span id="txtModo" style="font-weight: bold; color: #ff4444; font-size: 13px;">DESCONECTADO</span>
                 <label class="switch">
@@ -138,18 +119,18 @@
                 </label>
             </div>
         </div>
-        <div class="sidebar-item" onclick="cambiarDatosChofer()" style="cursor:pointer;">
+        <div class="sidebar-item">
             <div style="font-size: 15px; font-weight: bold;">👤 <span id="displayNombre">...</span></div>
             <div style="font-size: 15px; font-weight: bold;">🚕 Eco: <span id="displayEco">...</span></div>
-            <small style="color: #b39ddb; font-size: 10px;">(Toca para editar)</small>
         </div>
+        <div id="status-gps" style="color: #ff4444; font-size: 12px; padding-left: 5px;">🔴 GPS APAGADO</div>
     </div>
 
     <div id="map"></div>
 
     <div id="interfaz">
         <div class="panel-pedidos">
-            <h3 id="titulo-panel">Viajes Disponibles</h3>
+            <h3 style="margin-top:0; font-size: 16px;">Viajes Disponibles</h3>
             <div id="lista-pedidos" style="color: #aaa;">Enciende el modo trabajo.</div>
         </div>
     </div>
@@ -160,21 +141,14 @@
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
 
     <script>
-        // ... (El JavaScript sigue siendo el mismo que el anterior)
+        // Mantenemos toda tu lógica original de Firebase y GPS
         var firebaseConfig = { apiKey: "AIzaSyATLT5_woN8KO8-_E4_Nl7bEMlJGFI4uUQ", authDomain: "taxiotimac.firebaseapp.com", databaseURL: "https://taxiotimac-default-rtdb.firebaseio.com", projectId: "taxiotimac", storageBucket: "taxiotimac.firebasestorage.app", messagingSenderId: "533983007458", appId: "1:533983007458:web:254cef6b46c01a1718c4bb" };
         firebase.initializeApp(firebaseConfig);
         var database = firebase.database();
 
-        var audioNotificacion = new Audio('https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3');
+        var audioNotificacion = new Audio('https://assets.mixkit.co/active_storage/sfx/2358/2358-preview.mp3');
         var ultimoConteoPedidos = 0, markerChofer, markerCliente, controlRuta, idViajeActivo, watchID;
-        var viajesRechazados = [], avisoLlegadaEnviado = false;
-        var wakeLock = null;
-
-        async function mantenerPantallaEncendida() {
-            if ('wakeLock' in navigator) {
-                try { wakeLock = await navigator.wakeLock.request('screen'); } catch (err) {}
-            }
-        }
+        var viajesRechazados = [], avisoLlegadaEnviado = false, vozLlegadaActivada = false;
 
         function toggleSidebar() {
             var side = document.getElementById('sidebar');
@@ -210,10 +184,10 @@
             var n = localStorage.getItem("choferNombre"), e = localStorage.getItem("choferEco");
             if(!n) {
                 n = prompt("Nombre:"); e = prompt("Económico:");
-                if(n && e) { localStorage.setItem("choferNombre", n); localStorage.setItem("choferEco", e); }
+                localStorage.setItem("choferNombre", n); localStorage.setItem("choferEco", e);
             }
-            document.getElementById('displayNombre').innerText = n || "---";
-            document.getElementById('displayEco').innerText = e || "---";
+            document.getElementById('displayNombre').innerText = n;
+            document.getElementById('displayEco').innerText = e;
             if(localStorage.getItem("modoTrabajoActivo") === "true") {
                 document.getElementById('checkTrabajo').checked = true;
                 toggleTrabajo();
@@ -222,32 +196,19 @@
             }
         }
 
-        function cambiarDatosChofer() {
-            if(idViajeActivo) return alert("No puedes cambiar datos durante un viaje.");
-            let n = prompt("Nuevo Nombre:", localStorage.getItem("choferNombre"));
-            let e = prompt("Nuevo Económico:", localStorage.getItem("choferEco"));
-            if(n && e) {
-                localStorage.setItem("choferNombre", n);
-                localStorage.setItem("choferEco", e);
-                location.reload();
-            }
-        }
-
         function toggleTrabajo() {
             var activo = document.getElementById('checkTrabajo').checked;
             var eco = localStorage.getItem("choferEco");
-            var contenedor = document.getElementById('lista-pedidos');
             if(activo) {
                 database.ref('autorizados/' + eco).once('value', (snapshot) => {
                     if (snapshot.exists()) { 
                         localStorage.setItem("modoTrabajoActivo", true);
                         document.getElementById('txtModo').innerText = "TRABAJANDO";
                         document.getElementById('txtModo').style.color = "#00ff00";
-                        mantenerPantallaEncendida();
                         iniciarGPS(); escucharPedidos();
                         if(document.getElementById('sidebar').classList.contains('active')) toggleSidebar();
                     } else {
-                        alert("ACCESO DENEGADO - Económico no autorizado.");
+                        alert("ACCESO DENEGADO");
                         document.getElementById('checkTrabajo').checked = false;
                     }
                 });
@@ -255,12 +216,7 @@
                 localStorage.setItem("modoTrabajoActivo", false);
                 document.getElementById('txtModo').innerText = "DESCONECTADO";
                 document.getElementById('txtModo').style.color = "#ff4444";
-                document.getElementById('status-gps').innerText = "🔴 GPS OFF";
-                document.getElementById('status-gps').style.color = "#ff4444";
-                if (wakeLock !== null) { wakeLock.release(); wakeLock = null; }
-                contenedor.innerHTML = "Enciende el modo trabajo.";
                 if(watchID) navigator.geolocation.clearWatch(watchID);
-                if(markerChofer) { map.removeLayer(markerChofer); markerChofer = null; }
                 database.ref('viajes').off();
             }
         }
@@ -269,10 +225,11 @@
             watchID = navigator.geolocation.watchPosition((pos) => {
                 var lat = pos.coords.latitude, lon = pos.coords.longitude;
                 var miPos = L.latLng(lat, lon);
-                document.getElementById('status-gps').innerText = "✅ GPS ON";
+                document.getElementById('status-gps').innerText = "✅ GPS ACTIVO";
                 document.getElementById('status-gps').style.color = "#00ff00";
                 if(markerChofer) markerChofer.setLatLng(miPos);
                 else { markerChofer = L.marker(miPos, {icon: iconoTaxi}).addTo(map); map.setView(miPos, 17); }
+                
                 if (idViajeActivo) {
                     database.ref('viajes/' + idViajeActivo + '/chofer').update({ lat: lat, lon: lon });
                     if (markerCliente) {
@@ -290,48 +247,31 @@
         function escucharPedidos() {
             database.ref('viajes').on('value', (snapshot) => {
                 var pedidos = snapshot.val();
-                window.ultimoSnapshotPedidos = pedidos;
-                let hayEsperando = false;
-                if (pedidos) {
+                var contenedor = document.getElementById('lista-pedidos');
+                if (!idViajeActivo && document.getElementById('checkTrabajo').checked) {
+                    contenedor.innerHTML = "";
+                    let conteoActual = 0;
                     for (var id in pedidos) {
-                        if (pedidos[id].estado === 'esperando') { hayEsperando = true; break; }
+                        if (pedidos[id].estado === 'esperando' && !viajesRechazados.includes(id)) {
+                            conteoActual++;
+                            var cli = pedidos[id].cliente;
+                            var km = markerChofer ? (L.latLng(markerChofer.getLatLng()).distanceTo(L.latLng(cli.lat, cli.lon)) / 1000).toFixed(1) : "...";
+                            contenedor.innerHTML += `<div class="pedido-card">
+                                <span class="distancia-tag">📍 ${km} km</span>
+                                <b>PASAJERO:</b> ${pedidos[id].nombre_cliente || "Cliente"}<br>
+                                <button class="btn-aceptar" onclick="aceptarViaje('${id}')">ACEPTAR VIAJE</button>
+                                <button class="btn-rechazar" onclick="rechazarViajeLocal('${id}')">OCULTAR</button>
+                            </div>`;
+                        }
                     }
+                    if (conteoActual > ultimoConteoPedidos) audioNotificacion.play().catch(e=>{});
+                    ultimoConteoPedidos = conteoActual;
+                    if (conteoActual === 0) contenedor.innerHTML = "Esperando solicitudes...";
                 }
-                if (!hayEsperando) { viajesRechazados = []; }
-                renderizarListaPedidos(pedidos);
             });
         }
 
-        function renderizarListaPedidos(pedidos) {
-            var contenedor = document.getElementById('lista-pedidos');
-            if (!idViajeActivo && document.getElementById('checkTrabajo').checked) {
-                contenedor.innerHTML = "";
-                let conteoActual = 0;
-                for (var id in pedidos) {
-                    if (pedidos[id].estado === 'esperando' && !viajesRechazados.includes(id)) {
-                        conteoActual++;
-                        var cli = pedidos[id].cliente;
-                        var km = markerChofer ? (L.latLng(markerChofer.getLatLng()).distanceTo(L.latLng(cli.lat, cli.lon)) / 1000).toFixed(1) : "...";
-                        var idClienteSaneo = pedidos[id].cliente_id || "SIN ID";
-                        contenedor.innerHTML += `<div class="pedido-card">
-                            <span class="distancia-tag">📍 ${km} km</span>
-                            <b>PASAJERO:</b> ${pedidos[id].nombre_cliente || "Cliente"}<br>
-                            <small style="color:#b39ddb; font-size:10px; font-weight:bold;">ID SEGURIDAD: ${idClienteSaneo}</small><br>
-                            <button class="btn-aceptar" onclick="aceptarViaje('${id}')">ACEPTAR VIAJE</button>
-                            <button class="btn-rechazar" onclick="rechazarViajeLocal('${id}')">OCULTAR</button>
-                        </div>`;
-                    }
-                }
-                if (conteoActual > ultimoConteoPedidos) audioNotificacion.play().catch(e=>{});
-                ultimoConteoPedidos = conteoActual;
-                if (conteoActual === 0) contenedor.innerHTML = "Esperando solicitudes...";
-            }
-        }
-
-        function rechazarViajeLocal(id) { 
-            viajesRechazados.push(id); 
-            if(window.ultimoSnapshotPedidos) { renderizarListaPedidos(window.ultimoSnapshotPedidos); }
-        }
+        function rechazarViajeLocal(id) { viajesRechazados.push(id); }
 
         function aceptarViaje(id) {
             idViajeActivo = id;
@@ -347,34 +287,24 @@
             document.getElementById('app-body').classList.add('modo-enfocado');
             database.ref('viajes/' + id + '/cliente').once('value', (snap) => {
                 var posC = snap.val();
-                if(posC) {
-                    localStorage.setItem("respaldoLat", posC.lat);
-                    localStorage.setItem("respaldoLon", posC.lon);
-                    dibujarInterfazYRuta(posC.lat, posC.lon, id);
-                }
-            });
-        }
-
-        function dibujarInterfazYRuta(lat, lon, id) {
-            document.getElementById('interfaz').innerHTML = `
-                <div class="panel-pedidos">
-                    <h3 style="margin:0 0 10px 0; font-size:14px; color:#b39ddb;">VIAJE ACTIVO</h3>
-                    <div class="contenedor-navegacion">
-                        <button class="btn-navegar-waze" onclick="window.open('https://www.waze.com/ul?ll=${lat},${lon}&navigate=yes')">🚙 WAZE</button>
-                        <button class="btn-navegar-maps" onclick="window.open('https://www.google.com/maps/dir/?api=1&destination=${lat},${lon}&travelmode=driving')">📍 MAPS</button>
-                    </div>
-                    <button class="btn-cancelar" onclick="terminarViaje('${id}')">FINALIZAR SERVICIO</button>
-                </div>`;
-            if(markerCliente) map.removeLayer(markerCliente);
-            markerCliente = L.marker([lat, lon], {icon: iconoPasajero}).addTo(map);
-            if(markerChofer && markerChofer.getLatLng()) {
+                document.getElementById('interfaz').innerHTML = `
+                    <div class="panel-pedidos">
+                        <h3 style="margin:0 0 10px 0; font-size:16px;">VIAJE ACTIVO</h3>
+                        <div class="contenedor-navegacion">
+                            <button class="btn-navegar-waze" onclick="window.open('https://www.waze.com/ul?ll=${posC.lat},${posC.lon}&navigate=yes')">🚙 WAZE</button>
+                            <button class="btn-navegar-maps" onclick="window.open('https://www.google.com/maps/dir/?api=1&destination=${posC.lat},${posC.lon}')">📍 MAPS</button>
+                        </div>
+                        <button class="btn-cancelar" onclick="terminarViaje('${id}')">FINALIZAR SERVICIO</button>
+                    </div>`;
+                if(markerCliente) map.removeLayer(markerCliente);
+                markerCliente = L.marker([posC.lat, posC.lon], {icon: iconoPasajero}).addTo(map);
                 if(controlRuta) map.removeControl(controlRuta);
                 controlRuta = L.Routing.control({
-                    waypoints: [markerChofer.getLatLng(), L.latLng(lat, lon)],
+                    waypoints: [markerChofer.getLatLng(), L.latLng(posC.lat, posC.lon)],
                     show: false, createMarker: () => null,
                     lineOptions: { styles: [{ color: '#b39ddb', weight: 6 }] }
                 }).addTo(map);
-            }
+            });
         }
 
         function terminarViaje(id) {
