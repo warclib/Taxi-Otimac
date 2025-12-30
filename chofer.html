@@ -359,7 +359,7 @@
                     <h3 style="margin:0 0 10px 0; font-size:14px; color:#b39ddb;">VIAJE ACTIVO</h3>
                     <div class="contenedor-navegacion">
                         <button class="btn-navegar-waze" onclick="window.open('https://www.waze.com/ul?ll=${lat},${lon}&navigate=yes')">🚙 WAZE</button>
-                        <button class="btn-navegar-maps" onclick="window.open('http://maps.google.com/?q=${lat},${lon}')">📍 MAPS</button>
+                        <button class="btn-navegar-maps" onclick="window.open('https://www.google.com/maps/dir/?api=1&destination=${lat},${lon}')">📍 MAPS</button>
                     </div>
                     <button class="btn-cancelar" onclick="terminarViaje('${id}')">FINALIZAR SERVICIO</button>
                 </div>`;
@@ -375,35 +375,50 @@
             }
         }
 
-        // --- CORRECCIÓN APLICADA AQUÍ: Suma +1 al historial real del cliente ---
+        // --- FUNCIÓN ACTUALIZADA CON VALIDACIÓN Y PROMEDIO MATEMÁTICO ---
         function terminarViaje(id) {
-            let calif = prompt("Califica al cliente (1 a 5 estrellas):", "5");
-            if(calif) {
-                // 1. Buscamos los datos del viaje para obtener el cliente_uid
-                database.ref('viajes/' + id).once('value', (snapshot) => {
-                    var datos = snapshot.val();
-                    
-                    if(datos && datos.cliente_uid) {
-                        var uidPasajero = datos.cliente_uid;
-                        var historialRef = database.ref('usuarios/' + uidPasajero + '/perfil/total_viajes');
-                        
-                        // 2. Leemos el valor actual y sumamos 1 (asegura creación si no existe)
-                        historialRef.once('value').then((snap) => {
-                            let viajesActuales = snap.val() || 0;
-                            return historialRef.set(viajesActuales + 1);
-                        }).then(() => {
-                            console.log("Historial actualizado para: " + uidPasajero);
-                            // 3. Limpieza y cierre
-                            cerrarServicio(id);
-                        }).catch(err => {
-                            console.error("Error al sumar:", err);
-                            cerrarServicio(id);
-                        });
-                    } else {
-                        cerrarServicio(id);
-                    }
-                });
+            let calif = prompt("Califica al cliente (Escribe un número del 1 al 5):", "5");
+            
+            if (calif === null) return; 
+
+            let nuevaCalificacion = parseFloat(calif);
+
+            if (isNaN(nuevaCalificacion) || nuevaCalificacion < 1 || nuevaCalificacion > 5) {
+                alert("⚠️ ERROR: Debes ingresar un número válido entre 1 y 5 para finalizar.");
+                return;
             }
+
+            database.ref('viajes/' + id).once('value', (snapshot) => {
+                var datos = snapshot.val();
+                
+                if (datos && datos.cliente_uid) {
+                    var uidPasajero = datos.cliente_uid;
+                    var perfilRef = database.ref('usuarios/' + uidPasajero + '/perfil');
+                    
+                    perfilRef.once('value').then((snap) => {
+                        let perfil = snap.val() || {};
+                        let viajesAnteriores = perfil.total_viajes || 0;
+                        let estrellasAnteriores = perfil.estrellas || 5.0;
+
+                        let viajesTotales = viajesAnteriores + 1;
+                        let nuevoPromedio = ((estrellasAnteriores * viajesAnteriores) + nuevaCalificacion) / viajesTotales;
+                        
+                        nuevoPromedio = Math.round(nuevoPromedio * 10) / 10;
+
+                        return perfilRef.update({
+                            total_viajes: viajesTotales,
+                            estrellas: nuevoPromedio
+                        });
+                    }).then(() => {
+                        cerrarServicio(id);
+                    }).catch(err => {
+                        console.error("Error al actualizar perfil:", err);
+                        cerrarServicio(id);
+                    });
+                } else {
+                    cerrarServicio(id);
+                }
+            });
         }
 
         function cerrarServicio(id) {
