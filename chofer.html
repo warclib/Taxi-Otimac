@@ -158,7 +158,8 @@
             if ('speechSynthesis' in window) {
                 var nombreChofer = localStorage.getItem("choferNombre") || "Chofer";
                 var textoFinal = mensaje;
-                if (mensaje.includes("nuevo viaje")) {
+                // Si el mensaje es de nuevo viaje, le agregamos el nombre del chofer
+                if (mensaje.toLowerCase().includes("viaje")) {
                     textoFinal = nombreChofer + ", " + mensaje;
                 }
                 var msg = new SpeechSynthesisUtterance();
@@ -319,6 +320,8 @@
                         </div>`;
                     }
                 }
+                
+                // VOZ ACTIVA: Detecta incremento de pedidos y avisa
                 if (conteoActual > ultimoConteoPedidos) {
                     audioNotificacion.play().catch(e=>{});
                     avisarConVoz("tienes un nuevo viaje disponible.");
@@ -376,16 +379,20 @@
             }
         }
 
-        // --- MODIFICADO: Suma +1 al historial y ACUMULA ESTRELLAS ---
+        // --- VALIDACIÓN Y SUMA DE ESTRELLAS MEJORADA ---
         function terminarViaje(id) {
-            let califInput = prompt("Califica al cliente (1 a 5 estrellas):", "5");
+            let califInput = prompt("Califica al cliente (Escribe un número del 1 al 5):", "5");
             
+            // Si el chofer cancela el cuadro
             if (califInput === null) return;
 
+            // VALIDACIÓN: Intentamos convertir a número
             let estrellasDadas = parseInt(califInput);
+
+            // Si es una letra, está vacío o es un número fuera de 1-5
             if (isNaN(estrellasDadas) || estrellasDadas < 1 || estrellasDadas > 5) {
-                alert("Por favor, ingresa un número válido del 1 al 5.");
-                return terminarViaje(id); 
+                alert("❌ ERROR: Solo se permiten NÚMEROS del 1 al 5. No uses letras ni dejes vacío.");
+                return terminarViaje(id); // Vuelve a pedir
             }
 
             database.ref('viajes/' + id).once('value', (snapshot) => {
@@ -405,7 +412,7 @@
 
             localStorage.removeItem("idViajeChoferActivo");
             database.ref('viajes/' + id).remove().then(() => { 
-                alert("Servicio finalizado. Calificación de " + estrellasDadas + "⭐ enviada.");
+                alert("Servicio finalizado con " + estrellasDadas + " estrellas.");
                 location.reload(); 
             });
         }
