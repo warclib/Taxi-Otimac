@@ -102,8 +102,8 @@
 <body onload="iniciarAppCentral()" id="app-body">
     <div id="splash-screen">
         <div class="logo-animado">🚖</div>
-        <div style="color: #1a1a1a; font-size: 28px; font-weight: 900; margin-top: 10px;">OTIMAC</div>
-        <div class="texto-carga">INICIANDO SISTEMA...</div>
+        <div style="color: #1a1a1a; font-size: 28px; font-weight: 900; margin-top: 10px;">OTIMAC CENTRAL</div>
+        <div class="texto-carga">SISTEMA DE SEGURIDAD...</div>
     </div>
 
     <button id="btn-menu" onclick="toggleSidebar()">☰</button>
@@ -112,8 +112,8 @@
     <div id="sidebar">
         <div class="sidebar-item">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px;">
+                <span style="font-size: 11px; color: #aaa; text-transform: uppercase;">Estado</span>
                 <span id="status-gps" style="font-size: 10px; color: #ff4444; font-weight: bold;">🔴 GPS OFF</span>
-                <span id="status-red" style="font-size: 10px; color: #00ff00; font-weight: bold;">📶 EN LÍNEA</span>
             </div>
             <div class="switch-container">
                 <span id="txtModo" style="font-weight: bold; color: #ff4444; font-size: 13px;">DESCONECTADO</span>
@@ -125,7 +125,7 @@
         </div>
         <div class="sidebar-item" onclick="cambiarDatosChofer()" style="cursor:pointer;">
             <div style="font-size: 15px; font-weight: bold;">👤 <span id="displayNombre">...</span></div>
-            <div style="font-size: 15px; font-weight: bold;">🚕 Numero Economico: <span id="displayEco">...</span></div>
+            <div style="font-size: 15px; font-weight: bold;">🚕 Eco: <span id="displayEco">...</span></div>
             <small style="color: #b39ddb; font-size: 10px;">(Toca para editar)</small>
         </div>
     </div>
@@ -153,29 +153,6 @@
         var ultimoConteoPedidos = 0, markerChofer, markerCliente, controlRuta, idViajeActivo, watchID;
         var viajesRechazados = [], avisoLlegadaEnviado = false;
         var wakeLock = null;
-        var polilineaSeguridad = null; // Línea fija para zonas sin internet
-
-        // --- SISTEMA OFFLINE SERVICE WORKER ---
-        if ('serviceWorker' in navigator) {
-            window.addEventListener('load', () => {
-                navigator.serviceWorker.register('./sw.js').catch(err => console.log('SW fail'));
-            });
-        }
-
-        // Monitor de Red
-        function actualizarEstadoRed() {
-            const indicador = document.getElementById('status-red');
-            if (navigator.onLine) {
-                indicador.innerText = "📶 EN LÍNEA";
-                indicador.style.color = "#00ff00";
-            } else {
-                indicador.innerText = "📡 SIN RED (OFFLINE)";
-                indicador.style.color = "#ff4444";
-                avisarConVoz("Atención, has perdido la conexión a internet. Navegando con GPS local.");
-            }
-        }
-        window.addEventListener('online', actualizarEstadoRed);
-        window.addEventListener('offline', actualizarEstadoRed);
 
         function avisarConVoz(mensaje) {
             if ('speechSynthesis' in window) {
@@ -206,7 +183,6 @@
         }
 
         function iniciarAppCentral() {
-            actualizarEstadoRed();
             verificarEstadoChofer();
             setTimeout(() => {
                 const splash = document.getElementById('splash-screen');
@@ -215,12 +191,8 @@
             }, 2500);
         }
 
-        // Configuración de mapa optimizada para caché
-        var map = L.map('map', { zoomControl: false, preferCanvas: true }).setView([23.6345, -102.5528], 5);
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{y}/{x}.png', {
-            keepBuffer: 4,
-            updateWhenIdle: true
-        }).addTo(map);
+        var map = L.map('map', { zoomControl: false }).setView([23.6345, -102.5528], 5);
+        L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}').addTo(map);
 
         var iconoTaxi = L.icon({ iconUrl: 'https://img.icons8.com/color/48/taxi.png', iconSize: [40, 40], iconAnchor: [20, 20] });
         var iconoPasajero = L.icon({ iconUrl: 'https://img.icons8.com/color/48/person-male.png', iconSize: [40, 40], iconAnchor: [20, 40] });
@@ -281,18 +253,17 @@
                 var miPos = L.latLng(lat, lon);
                 document.getElementById('status-gps').innerText = "✅ GPS ON";
                 document.getElementById('status-gps').style.color = "#00ff00";
-                
                 if(markerChofer) markerChofer.setLatLng(miPos);
                 else { markerChofer = L.marker(miPos, {icon: iconoTaxi}).addTo(map); map.setView(miPos, 17); }
                 
                 if (idViajeActivo) {
-                    if(navigator.onLine) database.ref('viajes/' + idViajeActivo + '/chofer').update({ lat: lat, lon: lon });
+                    database.ref('viajes/' + idViajeActivo + '/chofer').update({ lat: lat, lon: lon });
                     if (markerCliente) {
                         var dist = miPos.distanceTo(markerCliente.getLatLng());
                         if (dist < 150 && !avisoLlegadaEnviado) {
                             avisoLlegadaEnviado = true;
                             avisarConVoz("Atención, estás llegando a la ubicación del cliente.");
-                            if(navigator.onLine) database.ref('viajes/' + idViajeActivo).update({ estado: 'chofer_llego' });
+                            database.ref('viajes/' + idViajeActivo).update({ estado: 'chofer_llego' });
                         }
                     }
                 }
@@ -303,10 +274,16 @@
             database.ref('viajes').on('value', (snapshot) => {
                 var pedidos = snapshot.val();
                 window.ultimoSnapshotPedidos = pedidos;
-                if (!pedidos) { viajesRechazados = []; } 
-                else {
+                if (!pedidos) {
+                    viajesRechazados = [];
+                } else {
                     let hayEsperando = false;
-                    for (var id in pedidos) { if (pedidos[id].estado === 'esperando') { hayEsperando = true; break; } }
+                    for (var id in pedidos) {
+                        if (pedidos[id].estado === 'esperando') {
+                            hayEsperando = true;
+                            break;
+                        }
+                    }
                     if (!hayEsperando) { viajesRechazados = []; }
                 }
                 renderizarListaPedidos(pedidos);
@@ -323,6 +300,7 @@
                         conteoActual++;
                         var cli = pedidos[id].cliente;
                         var km = markerChofer ? (L.latLng(markerChofer.getLatLng()).distanceTo(L.latLng(cli.lat, cli.lon)) / 1000).toFixed(1) : "...";
+                        
                         var estrellas = pedidos[id].cliente_estrellas || "4.8";
                         var totalV = pedidos[id].cliente_historial || "1";
 
@@ -389,36 +367,32 @@
             
             if(markerCliente) map.removeLayer(markerCliente);
             markerCliente = L.marker([lat, lon], {icon: iconoPasajero}).addTo(map);
-
+            
             if(markerChofer) {
-                var p1 = markerChofer.getLatLng();
-                var p2 = L.latLng(lat, lon);
-
-                // --- LÍNEA DE SEGURIDAD (No desaparece sin internet) ---
-                if(polilineaSeguridad) map.removeLayer(polilineaSeguridad);
-                polilineaSeguridad = L.polyline([p1, p2], { color: '#b39ddb', weight: 4, dashArray: '10, 10', opacity: 0.5 }).addTo(map);
-
-                // Trazado de ruta (Intenta internet)
                 if(controlRuta) map.removeControl(controlRuta);
                 controlRuta = L.Routing.control({
-                    waypoints: [p1, p2],
+                    waypoints: [markerChofer.getLatLng(), L.latLng(lat, lon)],
                     show: false, createMarker: () => null,
-                    lineOptions: { styles: [{ color: '#b39ddb', weight: 8 }] }
-                }).on('routesfound', () => { if(polilineaSeguridad) map.removeLayer(polilineaSeguridad); })
-                .addTo(map);
+                    lineOptions: { styles: [{ color: '#b39ddb', weight: 6 }] }
+                }).addTo(map);
             }
         }
 
         function terminarViaje(id) {
-            let califInput = prompt("Califica al cliente (1 al 5):", "5");
+            let califInput = prompt("Califica al cliente (1-5):", "5");
             if (califInput === null) return;
             let estrellasDadas = parseInt(califInput);
-            if (isNaN(estrellasDadas) || estrellasDadas < 1 || estrellasDadas > 5) return terminarViaje(id);
+
+            if (isNaN(estrellasDadas) || estrellasDadas < 1 || estrellasDadas > 5) {
+                alert("❌ ERROR: Solo números del 1 al 5.");
+                return terminarViaje(id);
+            }
 
             database.ref('viajes/' + id).once('value', (snapshot) => {
                 var datos = snapshot.val();
                 if (datos && datos.cliente_uid) {
-                    database.ref('usuarios/' + datos.cliente_uid + '/perfil').transaction((perfil) => {
+                    let clienteRef = database.ref('usuarios/' + datos.cliente_uid + '/perfil');
+                    clienteRef.transaction((perfil) => {
                         if (perfil) {
                             perfil.total_viajes = (perfil.total_viajes || 0) + 1;
                             perfil.puntos_acumulados = (perfil.puntos_acumulados || 0) + estrellasDadas;
