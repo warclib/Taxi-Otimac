@@ -378,11 +378,9 @@
         // --- FUNCIÓN ACTUALIZADA CON VALIDACIÓN Y PROMEDIO MATEMÁTICO ---
         function terminarViaje(id) {
             let calif = prompt("Califica al cliente (Escribe un número del 1 al 5):", "5");
-            
             if (calif === null) return; 
 
             let nuevaCalificacion = parseFloat(calif);
-
             if (isNaN(nuevaCalificacion) || nuevaCalificacion < 1 || nuevaCalificacion > 5) {
                 alert("⚠️ ERROR: Debes ingresar un número válido entre 1 y 5 para finalizar.");
                 return;
@@ -396,14 +394,18 @@
                     var perfilRef = database.ref('usuarios/' + uidPasajero + '/perfil');
                     
                     perfilRef.once('value').then((snap) => {
-                        let perfil = snap.val() || {};
-                        let viajesAnteriores = perfil.total_viajes || 0;
-                        let estrellasAnteriores = perfil.estrellas || 5.0;
+                        let perfil = snap.val() || { estrellas: 5.0, total_viajes: 0 };
+                        
+                        let viajesAnteriores = parseInt(perfil.total_viajes) || 0;
+                        let estrellasAnteriores = parseFloat(perfil.estrellas) || 5.0;
 
                         let viajesTotales = viajesAnteriores + 1;
-                        let nuevoPromedio = ((estrellasAnteriores * viajesAnteriores) + nuevaCalificacion) / viajesTotales;
                         
+                        // Cálculo exacto del promedio
+                        let nuevoPromedio = ((estrellasAnteriores * viajesAnteriores) + nuevaCalificacion) / viajesTotales;
                         nuevoPromedio = Math.round(nuevoPromedio * 10) / 10;
+
+                        console.log("Actualizando perfil de: " + uidPasajero + " con " + nuevoPromedio + " estrellas.");
 
                         return perfilRef.update({
                             total_viajes: viajesTotales,
@@ -416,6 +418,7 @@
                         cerrarServicio(id);
                     });
                 } else {
+                    alert("⚠️ Aviso: El viaje terminó pero no se encontró el ID del cliente para calificar.");
                     cerrarServicio(id);
                 }
             });
