@@ -313,7 +313,6 @@
                                 <span class="rating-estrella">⭐ ${estrellas}</span>
                                 <small style="color:#aaa; margin-left:10px;">Historial: ${totalV} viajes</small>
                             </div>
-                            <small style="color:#b39ddb; font-size:10px; font-weight:bold;">ID: ${pedidos[id].cliente_id || "OT-100"}</small><br>
                             <button class="btn-aceptar" onclick="aceptarViaje('${id}')">ACEPTAR VIAJE</button>
                             <button class="btn-rechazar" onclick="rechazarViajeLocal('${id}')">OCULTAR</button>
                         </div>`;
@@ -360,7 +359,7 @@
                     <h3 style="margin:0 0 10px 0; font-size:14px; color:#b39ddb;">VIAJE ACTIVO</h3>
                     <div class="contenedor-navegacion">
                         <button class="btn-navegar-waze" onclick="window.open('https://www.waze.com/ul?ll=${lat},${lon}&navigate=yes')">🚙 WAZE</button>
-                        <button class="btn-navegar-maps" onclick="window.open('https://www.google.com/maps/dir/?api=1&destination=${lat},${lon}&travelmode=driving')">📍 MAPS</button>
+                        <button class="btn-navegar-maps" onclick="window.open('http://maps.google.com/?q=${lat},${lon}')">📍 MAPS</button>
                     </div>
                     <button class="btn-cancelar" onclick="terminarViaje('${id}')">FINALIZAR SERVICIO</button>
                 </div>`;
@@ -376,42 +375,41 @@
             }
         }
 
-        // --- FUNCIÓN TERMINAR CORREGIDA Y VALIDADA ---
+        // --- CORRECCIÓN APLICADA AQUÍ: Suma +1 al historial real del cliente ---
         function terminarViaje(id) {
-            let calif;
-            let esValido = false;
-
-            while (!esValido) {
-                calif = prompt("Califica al cliente (1 a 5 estrellas):", "5");
-                
-                // Si el chofer cancela el prompt, no hacemos nada y salimos de la función
-                if (calif === null) return; 
-
-                // Intentamos convertir a número
-                let num = parseInt(calif);
-
-                // Validamos que sea un número y esté entre 1 y 5
-                if (!isNaN(num) && num >= 1 && num <= 5) {
-                    esValido = true;
-                    calif = num;
-                } else {
-                    alert("⚠️ Error: Ingresa solo un número del 1 al 5.");
-                }
+            let calif = prompt("Califica al cliente (1 a 5 estrellas):", "5");
+            if(calif) {
+                // 1. Buscamos los datos del viaje para obtener el cliente_uid
+                database.ref('viajes/' + id).once('value', (snapshot) => {
+                    var datos = snapshot.val();
+                    
+                    if(datos && datos.cliente_uid) {
+                        var uidPasajero = datos.cliente_uid;
+                        var historialRef = database.ref('usuarios/' + uidPasajero + '/perfil/total_viajes');
+                        
+                        // 2. Leemos el valor actual y sumamos 1 (asegura creación si no existe)
+                        historialRef.once('value').then((snap) => {
+                            let viajesActuales = snap.val() || 0;
+                            return historialRef.set(viajesActuales + 1);
+                        }).then(() => {
+                            console.log("Historial actualizado para: " + uidPasajero);
+                            // 3. Limpieza y cierre
+                            cerrarServicio(id);
+                        }).catch(err => {
+                            console.error("Error al sumar:", err);
+                            cerrarServicio(id);
+                        });
+                    } else {
+                        cerrarServicio(id);
+                    }
+                });
             }
+        }
 
-            // Una vez validado, procedemos con Firebase
-            database.ref('viajes/' + id).once('value', (snapshot) => {
-                var datos = snapshot.val();
-                if(datos && datos.cliente_uid) {
-                    database.ref('usuarios/' + datos.cliente_uid + '/perfil/total_viajes').transaction((actual) => {
-                        return (actual || 0) + 1;
-                    });
-                }
-            });
-
+        function cerrarServicio(id) {
             localStorage.removeItem("idViajeChoferActivo");
             database.ref('viajes/' + id).remove().then(() => { 
-                alert("Servicio finalizado con " + calif + " estrellas. Historial actualizado.");
+                alert("Servicio finalizado con éxito.");
                 location.reload(); 
             });
         }
