@@ -158,7 +158,6 @@
             if ('speechSynthesis' in window) {
                 var nombreChofer = localStorage.getItem("choferNombre") || "Chofer";
                 var textoFinal = mensaje;
-                // Si el mensaje es de nuevo viaje, le agregamos el nombre del chofer
                 if (mensaje.toLowerCase().includes("viaje")) {
                     textoFinal = nombreChofer + ", " + mensaje;
                 }
@@ -320,8 +319,6 @@
                         </div>`;
                     }
                 }
-                
-                // VOZ ACTIVA: Detecta incremento de pedidos y avisa
                 if (conteoActual > ultimoConteoPedidos) {
                     audioNotificacion.play().catch(e=>{});
                     avisarConVoz("tienes un nuevo viaje disponible.");
@@ -379,31 +376,27 @@
             }
         }
 
-        // --- VALIDACIÓN Y SUMA DE ESTRELLAS MEJORADA ---
+        // --- CORRECCIÓN: CALCULO DE PROMEDIO INTEGRADO ---
         function terminarViaje(id) {
             let califInput = prompt("Califica al cliente (Escribe un número del 1 al 5):", "5");
-            
-            // Si el chofer cancela el cuadro
             if (califInput === null) return;
-
-            // VALIDACIÓN: Intentamos convertir a número
             let estrellasDadas = parseInt(califInput);
 
-            // Si es una letra, está vacío o es un número fuera de 1-5
             if (isNaN(estrellasDadas) || estrellasDadas < 1 || estrellasDadas > 5) {
-                alert("❌ ERROR: Solo se permiten NÚMEROS del 1 al 5. No uses letras ni dejes vacío.");
-                return terminarViaje(id); // Vuelve a pedir
+                alert("❌ ERROR: Solo se permiten NÚMEROS del 1 al 5.");
+                return terminarViaje(id);
             }
 
             database.ref('viajes/' + id).once('value', (snapshot) => {
                 var datos = snapshot.val();
                 if (datos && datos.cliente_uid) {
                     let clienteRef = database.ref('usuarios/' + datos.cliente_uid + '/perfil');
-
                     clienteRef.transaction((perfil) => {
                         if (perfil) {
                             perfil.total_viajes = (perfil.total_viajes || 0) + 1;
                             perfil.puntos_acumulados = (perfil.puntos_acumulados || 0) + estrellasDadas;
+                            // CALCULO DE PROMEDIO PARA EL CAMPO 'estrellas'
+                            perfil.estrellas = parseFloat((perfil.puntos_acumulados / perfil.total_viajes).toFixed(1));
                         }
                         return perfil;
                     });
