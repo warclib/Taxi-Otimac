@@ -34,6 +34,9 @@
         #map { height: 400px; width: 100%; border-radius: 15px; border: 2px solid #b39ddb; margin-top: 10px; }
         
         .btn-pedido { background: #b39ddb; color: black; border: none; padding: 20px; font-weight: bold; border-radius: 10px; width: 100%; font-size: 18px; margin-top: 10px; cursor: pointer; }
+        /* Estilo para botón deshabilitado */
+        .btn-pedido:disabled { background: #555; color: #888; cursor: not-allowed; }
+
         .btn-cancelar { background: #ff4444; color: white; border: none; padding: 12px; border-radius: 8px; font-weight: bold; width: 100%; margin-top: 10px; cursor: pointer; }
         
         .card-chofer { background: #222; padding: 15px; border-radius: 12px; border: 2px solid #b39ddb; margin-bottom: 10px; display: none; }
@@ -196,7 +199,6 @@
             database.ref('viajes/' + id).on('value', (snap) => {
                 var viaje = snap.val();
                 
-                // --- LÓGICA DE CIERRE DE VIAJE (CANCELACIÓN O TIEMPO EXOTADO) ---
                 if(!viaje) { 
                     if(localStorage.getItem("idViajeActivo")){
                         avisarConVoz("El viaje ha sido cancelado o ha finalizado.");
@@ -241,21 +243,51 @@
             });
         }
 
+        // --- LÓGICA DE SEGURIDAD INTEGRADA ---
         function validarYPedir() {
+            // Bloqueo inmediato si no hay internet detectado por el navegador
+            if (!navigator.onLine) {
+                alert("⚠️ No tienes conexión a internet. Intenta de nuevo cuando tengas señal.");
+                return;
+            }
+
             if (enviandoPedido) return;
+
+            // Verificación de baneo y conexión real al servidor
             database.ref('baneados/' + miUUID).once('value', (snapshot) => {
-                if (snapshot.exists()) { alert("⚠️ Cuenta suspendida."); location.reload(); }
-                else pedirTaxi();
+                if (snapshot.exists()) { 
+                    alert("⚠️ Cuenta suspendida."); 
+                    location.reload(); 
+                } else {
+                    // Verificamos si Firebase está realmente conectado ahora mismo
+                    database.ref('.info/connected').once('value', (connectedSnap) => {
+                        if (connectedSnap.val() === true) {
+                            pedirTaxi();
+                        } else {
+                            alert("📶 Señal inestable. Conectando al servidor...");
+                        }
+                    });
+                }
             });
         }
 
         function pedirTaxi() {
             enviandoPedido = true;
-            document.getElementById('btnPedir').innerText = "PROCESANDO...";
+            let btn = document.getElementById('btnPedir');
+            btn.innerText = "PROCESANDO...";
+            btn.disabled = true; // Bloqueamos el botón para evitar doble clic
+
             navigator.geolocation.getCurrentPosition((pos) => {
+                // Doble check de internet antes de escribir en la DB
+                if (!navigator.onLine) {
+                    resetearBoton();
+                    alert("Se perdió la conexión al obtener tu ubicación.");
+                    return;
+                }
+
                 var miPos = { lat: pos.coords.latitude, lon: pos.coords.longitude };
                 idViaje = miUUID.replace("ID-", "V-");
-                localStorage.setItem("idViajeActivo", idViaje);
+                
                 database.ref('viajes/' + idViaje).set({
                     cliente: miPos,
                     nombre_cliente: localStorage.getItem("nombreCliente"),
@@ -264,8 +296,26 @@
                     cliente_estrellas: estrellasActuales,
                     estado: "esperando",
                     timestamp: firebase.database.ServerValue.TIMESTAMP
-                }).then(() => { enviandoPedido = false; reconectarViaje(idViaje); });
-            }, () => { alert("Por favor activa tu GPS."); enviandoPedido = false; });
+                }).then(() => { 
+                    localStorage.setItem("idViajeActivo", idViaje);
+                    enviandoPedido = false; 
+                    reconectarViaje(idViaje); 
+                }).catch((err) => {
+                    resetearBoton();
+                    alert("Error al conectar con el servidor.");
+                });
+
+            }, () => { 
+                alert("Por favor activa tu GPS."); 
+                resetearBoton();
+            }, { timeout: 8000 }); // Si el GPS no responde en 8 segundos, se detiene
+        }
+
+        function resetearBoton() {
+            enviandoPedido = false;
+            let btn = document.getElementById('btnPedir');
+            btn.innerText = "🚖 PEDIR TAXI AHORA";
+            btn.disabled = false;
         }
 
         function cancelarPedido() {
