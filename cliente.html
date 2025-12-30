@@ -9,36 +9,22 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="theme-color" content="#b39ddb">
     <link rel="manifest" href="manifest-cliente.json">
-    <link rel="apple-touch-icon" href="icon-192.png">
 
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
-        /* --- ESTILOS DEL SPLASH SCREEN (Morado Pastel) --- */
         #splash-screen {
-            position: fixed;
-            top: 0; left: 0;
-            width: 100%; height: 100%;
-            background: #b39ddb; /* Morado Pastel */
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            z-index: 10000;
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: #b39ddb; display: flex; flex-direction: column;
+            justify-content: center; align-items: center; z-index: 10000;
             transition: opacity 0.6s ease, visibility 0.6s;
         }
         .logo-animado { font-size: 80px; animation: latido 1.5s infinite; }
-        @keyframes latido {
-            0% { transform: scale(1); }
-            50% { transform: scale(1.2); }
-            100% { transform: scale(1); }
-        }
+        @keyframes latido { 0% { transform: scale(1); } 50% { transform: scale(1.2); } 100% { transform: scale(1); } }
         .texto-carga { color: #1a1a1a; font-weight: bold; margin-top: 20px; letter-spacing: 3px; font-size: 14px; }
 
-        /* --- ESTILOS ORIGINALES PERSONALIZADOS --- */
         body { font-family: 'Segoe UI', sans-serif; text-align: center; background: #1a1a1a; color: white; margin: 0; padding: 10px; }
         #map { height: 400px; width: 100%; border-radius: 15px; border: 2px solid #b39ddb; margin-top: 10px; }
         
-        /* Botones y Cards con el nuevo color Morado */
         .btn-pedido { background: #b39ddb; color: black; border: none; padding: 20px; font-weight: bold; border-radius: 10px; width: 100%; font-size: 18px; margin-top: 10px; cursor: pointer; }
         .btn-cancelar { background: #ff4444; color: white; border: none; padding: 12px; border-radius: 8px; font-weight: bold; width: 100%; margin-top: 10px; cursor: pointer; }
         
@@ -50,6 +36,7 @@
         #status-viaje { color: #b39ddb; font-weight: bold; margin: 10px 0; font-size: 18px; }
         input { padding: 15px; width: 80%; border-radius: 10px; margin-bottom: 10px; font-size: 16px; border: 2px solid #b39ddb; background: #333; color: white; }
         #nombre-usuario { color: #b39ddb; font-size: 20px; margin-bottom: 10px; display: block; font-weight: bold; }
+        #info-historial { font-size: 12px; color: #aaa; margin-bottom: 10px; display: block; }
     </style>
 </head>
 <body onload="iniciarAppCliente()">
@@ -70,6 +57,8 @@
 
     <div id="areaPedido" style="display:none;">
         <span id="nombre-usuario"></span>
+        <span id="info-historial">Cargando historial...</span>
+        
         <div id="alertaLlegada" class="alerta-llegada">🚨 ¡TU TAXI HA LLEGADO! POR FAVOR SAL A SU ENCUENTRO.</div>
         <div id="cardChofer" class="card-chofer">
             <div id="infoChofer" style="font-size: 18px;"></div>
@@ -91,9 +80,16 @@
         var database = firebase.database();
 
         let enviandoPedido = false;
+        var totalViajesRealizados = 0; // Variable para el historial real
+
+        if (!localStorage.getItem("otimac_uuid")) {
+            localStorage.setItem("otimac_uuid", "ID-" + Math.floor(100000 + Math.random() * 900000));
+        }
+        var miUUID = localStorage.getItem("otimac_uuid");
 
         function iniciarAppCliente() {
             verificarNombreYViaje();
+            cargarHistorialReal(); // Nueva función para leer de Firebase
             setTimeout(() => {
                 const splash = document.getElementById('splash-screen');
                 splash.style.opacity = '0';
@@ -101,17 +97,16 @@
             }, 2500);
         }
 
-        if (!localStorage.getItem("otimac_uuid")) {
-            localStorage.setItem("otimac_uuid", "ID-" + Math.floor(100000 + Math.random() * 900000));
+        // --- NUEVA FUNCIÓN: Obtener historial real de Firebase ---
+        function cargarHistorialReal() {
+            database.ref('usuarios/' + miUUID + '/perfil/total_viajes').on('value', (snap) => {
+                totalViajesRealizados = snap.val() || 0;
+                document.getElementById('info-historial').innerText = "Has realizado " + totalViajesRealizados + " viajes con nosotros.";
+            });
         }
-        var miUUID = localStorage.getItem("otimac_uuid");
 
-        // --- MAPA ELEGANTE (ESRI STREET MAP) ---
         var map = L.map('map').setView([23.6345, -102.5528], 5);
-        L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}', {
-            attribution: 'Tiles © Esri',
-            maxZoom: 18
-        }).addTo(map);
+        L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}', { attribution: 'Tiles © Esri' }).addTo(map);
 
         var iconoTaxi = L.icon({ iconUrl: 'https://img.icons8.com/color/48/taxi.png', iconSize: [40, 40], iconAnchor: [20, 20] });
         var iconoPasajero = L.icon({ iconUrl: 'https://img.icons8.com/color/48/person-male.png', iconSize: [40, 40], iconAnchor: [20, 40] });
@@ -122,8 +117,7 @@
 
         function avisarConVoz(mensaje) {
             if ('speechSynthesis' in window) {
-                var msg = new SpeechSynthesisUtterance();
-                msg.text = mensaje;
+                var msg = new SpeechSynthesisUtterance(mensaje);
                 msg.lang = 'es-MX';
                 window.speechSynthesis.speak(msg);
             }
@@ -141,10 +135,7 @@
                 document.getElementById('areaPedido').style.display = 'block';
                 document.getElementById('nombre-usuario').innerText = "Hola, " + n + " 👋";
                 var vActivo = localStorage.getItem("idViajeActivo");
-                if(vActivo) {
-                    mantenerPantalla();
-                    reconectarViaje(vActivo);
-                }
+                if(vActivo) { reconectarViaje(vActivo); }
             }
         }
 
@@ -157,7 +148,7 @@
             if (enviandoPedido) return;
             database.ref('baneados/' + miUUID).once('value', (snapshot) => {
                 if (snapshot.exists()) {
-                    alert("⚠️ ACCESO DENEGADO: Tu dispositivo ha sido suspendido.");
+                    alert("⚠️ ACCESO DENEGADO");
                 } else {
                     pedirTaxi();
                 }
@@ -179,23 +170,22 @@
                 idViaje = miUUID.replace("ID-", "V-"); 
                 localStorage.setItem("idViajeActivo", idViaje);
                 
+                // MODIFICACIÓN: Enviamos el cliente_uid y el historial real
                 database.ref('viajes/' + idViaje).set({
                     cliente: miPos,
                     nombre_cliente: localStorage.getItem("nombreCliente"),
-                    cliente_id: miUUID,
+                    cliente_id: miUUID.substring(0,8), // ID corto para el chofer
+                    cliente_uid: miUUID,               // ID real para sumar el viaje
+                    cliente_historial: totalViajesRealizados, // Envía el conteo real
+                    cliente_estrellas: "5.0",
                     estado: "esperando",
                     timestamp: firebase.database.ServerValue.TIMESTAMP
                 }).then(() => {
                     enviandoPedido = false;
                     reconectarViaje(idViaje);
-                }).catch((error) => {
-                    enviandoPedido = false;
-                    btn.disabled = false;
-                    btn.innerText = "🚖 PEDIR TAXI AHORA";
-                    alert("Error de conexión.");
                 });
             }, (err) => {
-                alert("Por favor activa el GPS");
+                alert("Activa el GPS");
                 enviandoPedido = false;
                 btn.disabled = false;
                 btn.innerText = "🚖 PEDIR TAXI AHORA";
@@ -209,17 +199,13 @@
 
             database.ref('viajes/' + id).on('value', (snap) => {
                 var viaje = snap.val();
-                if(!viaje) { 
-                    localStorage.removeItem("idViajeActivo"); 
-                    location.reload(); 
-                    return; 
-                }
+                if(!viaje) { localStorage.removeItem("idViajeActivo"); location.reload(); return; }
 
                 if (viaje.estado === 'chofer_llego') {
                     document.getElementById('alertaLlegada').style.display = 'block';
                     document.getElementById('status-viaje').innerText = "🚩 EL CHOFER ESTÁ AFUERA";
                     if (!vozLlegadaActivada) {
-                        avisarConVoz("Tu taxi ha llegado. Por favor, sal a su encuentro.");
+                        avisarConVoz("Tu taxi ha llegado.");
                         vozLlegadaActivada = true;
                     }
                 } else if (viaje.estado === 'en_curso') {
