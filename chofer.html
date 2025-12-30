@@ -37,14 +37,18 @@
             transition: 0.3s;
         }
 
+        /* --- MENÚ LATERAL: MISMO EFECTO QUE EL PANEL DE ABAJO --- */
         #sidebar {
             position: fixed; top: 0; left: -320px;
             width: 260px; height: 100%;
-            background: rgba(17, 17, 17, 0.95); z-index: 4500; transition: 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            background: rgba(0, 0, 0, 0.65); /* MISMA OPACIDAD 0.65 */
+            z-index: 4500; transition: 0.4s cubic-bezier(0.4, 0, 0.2, 1);
             padding: 70px 15px 20px 15px; text-align: left;
-            backdrop-filter: blur(10px);
+            backdrop-filter: blur(12px);    /* MISMO DESENFOQUE */
+            -webkit-backdrop-filter: blur(12px);
+            border-right: 1px solid rgba(255, 255, 255, 0.1);
         }
-        #sidebar.active { left: 0; box-shadow: 10px 0 30px rgba(0,0,0,0.8); border-right: 2px solid #b39ddb; }
+        #sidebar.active { left: 0; box-shadow: 10px 0 30px rgba(0,0,0,0.5); border-right: 2px solid #b39ddb; }
 
         #overlay {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
@@ -55,10 +59,10 @@
         
         #interfaz { position: fixed; bottom: 0; left: 0; right: 0; z-index: 2000; padding: 10px; }
 
-        /* --- PANEL INTERMEDIO: OSCURO PERO CON TRANSPARENCIA --- */
+        /* --- PANEL DE ABAJO --- */
         .panel-pedidos { 
-            background: rgba(0, 0, 0, 0.65); /* Punto medio: ni muy claro ni sólido */
-            backdrop-filter: blur(12px);    /* Desenfoque un poco más fuerte para elegancia */
+            background: rgba(0, 0, 0, 0.65); /* OPACIDAD 0.65 */
+            backdrop-filter: blur(12px); 
             -webkit-backdrop-filter: blur(12px);
             padding: 12px 15px; 
             border-radius: 20px 20px 10px 10px; 
@@ -96,7 +100,8 @@
         .btn-navegar-waze { background: #33ccff; color: white; border: none; padding: 12px; border-radius: 8px; font-weight: bold; width: 50%; cursor: pointer; }
         .btn-navegar-maps { background: #4285F4; color: white; border: none; padding: 12px; border-radius: 8px; font-weight: bold; width: 50%; cursor: pointer; }
 
-        .sidebar-item { background: rgba(255,255,255,0.05); padding: 15px; border-radius: 12px; margin-bottom: 15px; border-left: 4px solid #b39ddb; }
+        /* Items dentro del sidebar para que resalten sobre el fondo transparente */
+        .sidebar-item { background: rgba(255,255,255,0.08); padding: 15px; border-radius: 12px; margin-bottom: 15px; border-left: 4px solid #b39ddb; border: 1px solid rgba(255,255,255,0.05); }
         .switch-container { display: flex; align-items: center; justify-content: space-between; }
         .switch { position: relative; display: inline-block; width: 50px; height: 28px; }
         .switch input { opacity: 0; width: 0; height: 0; }
@@ -110,7 +115,6 @@
     </style>
 </head>
 <body onload="iniciarAppCentral()" id="app-body">
-
     <div id="splash-screen">
         <div class="logo-animado">🚖</div>
         <div style="color: #1a1a1a; font-size: 28px; font-weight: 900; margin-top: 10px;">OTIMAC CENTRAL</div>
@@ -156,7 +160,7 @@
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
 
     <script>
-        // Configuración Firebase
+        // ... (El JavaScript sigue siendo el mismo que el anterior)
         var firebaseConfig = { apiKey: "AIzaSyATLT5_woN8KO8-_E4_Nl7bEMlJGFI4uUQ", authDomain: "taxiotimac.firebaseapp.com", databaseURL: "https://taxiotimac-default-rtdb.firebaseio.com", projectId: "taxiotimac", storageBucket: "taxiotimac.firebasestorage.app", messagingSenderId: "533983007458", appId: "1:533983007458:web:254cef6b46c01a1718c4bb" };
         firebase.initializeApp(firebaseConfig);
         var database = firebase.database();
@@ -188,7 +192,6 @@
             }, 2500);
         }
 
-        // Mapa Base
         var map = L.map('map', { zoomControl: false }).setView([23.6345, -102.5528], 5);
         L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}').addTo(map);
 
@@ -234,7 +237,6 @@
             var activo = document.getElementById('checkTrabajo').checked;
             var eco = localStorage.getItem("choferEco");
             var contenedor = document.getElementById('lista-pedidos');
-
             if(activo) {
                 database.ref('autorizados/' + eco).once('value', (snapshot) => {
                     if (snapshot.exists()) { 
@@ -269,10 +271,8 @@
                 var miPos = L.latLng(lat, lon);
                 document.getElementById('status-gps').innerText = "✅ GPS ON";
                 document.getElementById('status-gps').style.color = "#00ff00";
-                
                 if(markerChofer) markerChofer.setLatLng(miPos);
                 else { markerChofer = L.marker(miPos, {icon: iconoTaxi}).addTo(map); map.setView(miPos, 17); }
-                
                 if (idViajeActivo) {
                     database.ref('viajes/' + idViajeActivo + '/chofer').update({ lat: lat, lon: lon });
                     if (markerCliente) {
@@ -291,7 +291,6 @@
             database.ref('viajes').on('value', (snapshot) => {
                 var pedidos = snapshot.val();
                 window.ultimoSnapshotPedidos = pedidos;
-
                 let hayEsperando = false;
                 if (pedidos) {
                     for (var id in pedidos) {
@@ -314,7 +313,6 @@
                         var cli = pedidos[id].cliente;
                         var km = markerChofer ? (L.latLng(markerChofer.getLatLng()).distanceTo(L.latLng(cli.lat, cli.lon)) / 1000).toFixed(1) : "...";
                         var idClienteSaneo = pedidos[id].cliente_id || "SIN ID";
-
                         contenedor.innerHTML += `<div class="pedido-card">
                             <span class="distancia-tag">📍 ${km} km</span>
                             <b>PASAJERO:</b> ${pedidos[id].nombre_cliente || "Cliente"}<br>
@@ -367,10 +365,8 @@
                     </div>
                     <button class="btn-cancelar" onclick="terminarViaje('${id}')">FINALIZAR SERVICIO</button>
                 </div>`;
-
             if(markerCliente) map.removeLayer(markerCliente);
             markerCliente = L.marker([lat, lon], {icon: iconoPasajero}).addTo(map);
-
             if(markerChofer && markerChofer.getLatLng()) {
                 if(controlRuta) map.removeControl(controlRuta);
                 controlRuta = L.Routing.control({
