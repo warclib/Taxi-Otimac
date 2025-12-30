@@ -228,7 +228,8 @@
             var activo = document.getElementById('checkTrabajo').checked;
             var eco = localStorage.getItem("choferEco");
             if(activo) {
-                database.ref('autorizados/' + eco).once('value', (snapshot) => {
+                // CORRECCIÓN: BUSCAR EN LA CARPETA USUARIOS/PERFIL
+                database.ref('usuarios/' + eco + '/perfil').once('value', (snapshot) => {
                     if (snapshot.exists()) { 
                         localStorage.setItem("modoTrabajoActivo", true);
                         document.getElementById('txtModo').innerText = "TRABAJANDO";
@@ -237,7 +238,7 @@
                         iniciarGPS(); escucharPedidos();
                         if(document.getElementById('sidebar').classList.contains('active')) toggleSidebar();
                     } else {
-                        alert("ACCESO DENEGADO");
+                        alert("ERROR: El número económico " + eco + " no está registrado en Usuarios.");
                         document.getElementById('checkTrabajo').checked = false;
                     }
                 });
@@ -298,7 +299,6 @@
                         var cli = pedidos[id].cliente;
                         var km = markerChofer ? (L.latLng(markerChofer.getLatLng()).distanceTo(L.latLng(cli.lat, cli.lon)) / 1000).toFixed(1) : "...";
                         
-                        // --- MEJORA: DATOS DEL HISTORIAL ---
                         var estrellas = pedidos[id].cliente_estrellas || "5.0";
                         var totalV = pedidos[id].cliente_viajes || "0";
 
@@ -377,30 +377,44 @@
 
             database.ref('viajes/' + id).once('value', (snapshot) => {
                 var viaje = snapshot.val();
-                if (viaje && viaje.cliente_uid) {
-                    var uid = viaje.cliente_uid;
-                    var perfilRef = database.ref('usuarios/' + uid + '/perfil');
-
-                    perfilRef.once('value', (pSnap) => {
-                        var perfil = pSnap.val() || { estrellas: 5.0, total_viajes: 0 };
-                        var vAnteriores = parseInt(perfil.total_viajes) || 0;
-                        var eAnteriores = parseFloat(perfil.estrellas) || 5.0;
-                        
-                        var vTotales = vAnteriores + 1;
-                        var nuevoPromedio = ((eAnteriores * vAnteriores) + parseFloat(calif)) / vTotales;
-                        nuevoPromedio = Math.round(nuevoPromedio * 10) / 10;
-
-                        perfilRef.update({
-                            estrellas: nuevoPromedio,
-                            total_viajes: vTotales
-                        }).then(() => {
-                            localStorage.removeItem("idViajeChoferActivo");
-                            database.ref('viajes/' + id).remove().then(() => { location.reload(); });
+                if (viaje) {
+                    // 1. ACTUALIZAR PERFIL DEL CLIENTE
+                    if (viaje.cliente_uid) {
+                        var uid = viaje.cliente_uid;
+                        var perfilRef = database.ref('usuarios/' + uid + '/perfil');
+                        perfilRef.once('value', (pSnap) => {
+                            var perfil = pSnap.val() || { estrellas: 5.0, total_viajes: 0 };
+                            var vAnteriores = parseInt(perfil.total_viajes) || 0;
+                            var eAnteriores = parseFloat(perfil.estrellas) || 5.0;
+                            var vTotales = vAnteriores + 1;
+                            var nuevoPromedio = ((eAnteriores * vAnteriores) + parseFloat(calif)) / vTotales;
+                            perfilRef.update({
+                                estrellas: Math.round(nuevoPromedio * 10) / 10,
+                                total_viajes: vTotales
+                            });
                         });
-                    });
-                } else {
-                    localStorage.removeItem("idViajeChoferActivo");
-                    database.ref('viajes/' + id).remove().then(() => { location.reload(); });
+                    }
+
+                    // 2. ACTUALIZAR PERFIL DEL CHOFER (Sumar viaje realizado)
+                    var eco = localStorage.getItem("choferEco");
+                    if (eco) {
+                        var perfilChoferRef = database.ref('usuarios/' + eco + '/perfil');
+                        perfilChoferRef.once('value', (cSnap) => {
+                            var datosC = cSnap.val() || { total_viajes: 0 };
+                            var viajesChofer = parseInt(datosC.total_viajes) || 0;
+                            perfilChoferRef.update({
+                                total_viajes: viajesChofer + 1,
+                                ultimo_servicio: firebase.database.ServerValue.TIMESTAMP
+                            }).then(() => {
+                                // FINALIZAR TODO
+                                localStorage.removeItem("idViajeChoferActivo");
+                                database.ref('viajes/' + id).remove().then(() => { location.reload(); });
+                            });
+                        });
+                    } else {
+                        localStorage.removeItem("idViajeChoferActivo");
+                        database.ref('viajes/' + id).remove().then(() => { location.reload(); });
+                    }
                 }
             });
         }
