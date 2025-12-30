@@ -265,13 +265,31 @@
             }, null, {enableHighAccuracy: true});
         }
 
-        function escucharPedidos() {
-            database.ref('viajes').on('value', (snapshot) => {
-                var pedidos = snapshot.val();
-                window.ultimoSnapshotPedidos = pedidos; // Guardar para poder refrescar al ocultar
-                renderizarListaPedidos(pedidos);
-            });
+   function escucharPedidos() {
+    database.ref('viajes').on('value', (snapshot) => {
+        var pedidos = snapshot.val();
+        window.ultimoSnapshotPedidos = pedidos; // Guardar para poder refrescar al ocultar
+
+        // --- NUEVA LÓGICA DE LIMPIEZA ---
+        let hayViajesEsperando = false;
+        if (pedidos) {
+            for (var id in pedidos) {
+                if (pedidos[id].estado === 'esperando') {
+                    hayViajesEsperando = true;
+                    break;
+                }
+            }
         }
+
+        // Si ya no hay viajes pendientes en la base de datos, limpiamos tus rechazos locales
+        if (!hayViajesEsperando) {
+            viajesRechazados = [];
+        }
+        // -------------------------------
+
+        renderizarListaPedidos(pedidos);
+    });
+}
 
         function renderizarListaPedidos(pedidos) {
             var contenedor = document.getElementById('lista-pedidos');
@@ -363,3 +381,4 @@
     </script>
 </body>
 </html>
+
