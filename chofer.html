@@ -500,8 +500,9 @@ function iniciarGPS() {
                     <i class="fas fa-arrow-right"></i>
                 </div>
             </div>
-        </div>
+      </div> ;`
         activarDeslizador(id);
+            }
             if(markerCliente) map.removeLayer(markerCliente);
             markerCliente = L.marker([lat, lon], {icon: iconoPasajero}).addTo(map);
             if(markerChofer) {
@@ -587,15 +588,3 @@ function activarDeslizador(viajeId) {
     </script>
 </body>
 </html>
-
-
-
-
-
-
-
-
-
-
-
-
