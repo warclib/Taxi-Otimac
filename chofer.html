@@ -72,7 +72,9 @@
             margin: 8px 0; 
             border-radius: 10px; 
             border-left: 4px solid #b39ddb; 
-            text-align: left; 
+            text-align: left;
+            user-select: none; /* Evita que se seleccione texto al mantener presionado */
+            -webkit-user-select: none;
         }
 
         .rating-estrella { color: #ffca28; font-weight: bold; font-size: 13px; }
@@ -159,6 +161,9 @@
         var ultimoConteoPedidos = 0, markerChofer, markerCliente, controlRuta, idViajeActivo, watchID;
         var viajesRechazados = [], avisoLlegadaEnviado = false;
         var wakeLock = null;
+
+        // NUEVA VARIABLE PARA EL CIRCULO MORADO
+        var circuloReferenciaCliente;
 
         function avisarConVoz(mensaje) {
             if ('speechSynthesis' in window) {
@@ -302,6 +307,28 @@
             });
         }
 
+        // --- NUEVAS FUNCIONES DE PREVISUALIZACIÓN ---
+        function verDondeEstaElCliente(lat, lon) {
+            if (circuloReferenciaCliente) map.removeLayer(circuloReferenciaCliente);
+            circuloReferenciaCliente = L.circle([lat, lon], {
+                color: '#b39ddb',
+                fillColor: '#b39ddb',
+                fillOpacity: 0.5,
+                radius: 40
+            }).addTo(map);
+            map.setView([lat, lon], 17);
+        }
+
+        function soltarVistaCliente() {
+            if (circuloReferenciaCliente) {
+                map.removeLayer(circuloReferenciaCliente);
+                circuloReferenciaCliente = null;
+            }
+            if (markerChofer) {
+                map.setView(markerChofer.getLatLng(), 17);
+            }
+        }
+
         function renderizarListaPedidos(pedidos) {
             var contenedor = document.getElementById('lista-pedidos');
             if (!idViajeActivo && document.getElementById('checkTrabajo').checked) {
@@ -332,8 +359,14 @@
                         var estrellas = pedidos[id].cliente_estrellas || "4.8";
                         var totalV = pedidos[id].cliente_historial || "1";
 
+                        // ACTUALIZACIÓN: Se agregan eventos mousedown/touchstart a la tarjeta
                         contenedor.innerHTML += `
-                        <div class="pedido-card">
+                        <div class="pedido-card" 
+                             onmousedown="verDondeEstaElCliente(${cli.lat}, ${cli.lon})" 
+                             onmouseup="soltarVistaCliente()" 
+                             onmouseleave="soltarVistaCliente()"
+                             ontouchstart="verDondeEstaElCliente(${cli.lat}, ${cli.lon})"
+                             ontouchend="soltarVistaCliente()">
                             <div style="float: right;">
                                 <span class="reloj-tag">⏳ ${minutos}:${segundos < 10 ? '0' : ''}${segundos}</span>
                                 <span class="distancia-tag">📍 ${km} km</span>
@@ -367,9 +400,7 @@
             if(window.ultimoSnapshotPedidos) { renderizarListaPedidos(window.ultimoSnapshotPedidos); }
         }
 
-        // --- CORRECCIÓN INTEGRADA AQUÍ ---
         function aceptarViaje(id) {
-            // VALIDACIÓN DE RED ANTES DE HACER NADA
             if (!navigator.onLine) {
                 alert("❌ ERROR DE RED: No tienes internet para aceptar este viaje.");
                 return;
@@ -381,7 +412,6 @@
             
             document.getElementById('app-body').classList.add('modo-enfocado');
             
-            // Intentar actualizar Firebase
             database.ref('viajes/' + id).update({ 
                 estado: 'en_curso', 
                 chofer: { 
@@ -391,10 +421,8 @@
                     lon: markerChofer.getLatLng().lng 
                 } 
             }).then(() => {
-                // Si la red responde bien, reconectamos la UI
                 reconectarViajeChofer(id);
             }).catch((error) => {
-                // Si falla por internet o porque otro lo ganó
                 alert("❌ Error: No se pudo confirmar el viaje. Verifica tu señal.");
                 document.getElementById('app-body').classList.remove('modo-enfocado');
                 localStorage.removeItem("idViajeChoferActivo");
@@ -481,4 +509,3 @@
     </script>
 </body>
 </html>
-
