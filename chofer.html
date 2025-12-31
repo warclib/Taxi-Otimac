@@ -262,7 +262,7 @@
             }, 1000);
         }
 
-        var map = L.map('map', { zoomControl: false }).setView([23.6345, -102.5528], 5);
+        var map = L.map('map', { zoomControl: false, rotate: true, touchRotate: true, rotateControl: false }).setView([23.6345, -102.5528], 5);
         L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}').addTo(map);
 
         function verificarEstadoChofer() {
@@ -499,6 +499,7 @@ function iniciarGPS() {
     </script>
 </body>
 </html>
+
 
 
 
