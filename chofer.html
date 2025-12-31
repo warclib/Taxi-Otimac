@@ -486,14 +486,21 @@ function iniciarGPS() {
 
         function dibujarInterfazYRuta(lat, lon, id) {
             document.getElementById('interfaz').innerHTML = `
-                <div class="panel-pedidos">
-                    <h3 style="margin:0 0 10px 0; font-size:14px; color:#b39ddb;">VIAJE ACTIVO</h3>
-                    <div class="contenedor-navegacion">
-                        <button class="btn-navegar-waze" onclick="window.open('https://www.waze.com/ul?ll=${lat},${lon}&navigate=yes')">🚙 WAZE</button>
-                        <button class="btn-navegar-maps" onclick="window.open('https://www.google.com/maps/dir/?api=1&destination=${lat},${lon}&travelmode=driving')">📍 MAPS</button>
-                    </div>
-                    <button class="btn-cancelar" id="btn-finalizar-viaje" onclick="terminarViaje('${id}')">FINALIZAR SERVICIO</button>
-                </div>`;
+            <div class="panel-pedidos" id="panel-viaje-activo">
+            <div class="titulo-viaje">VIAJE ACTIVO</div>
+            
+            <div class="contenedor-navegacion">
+                <button class="btn-navegar-waze" onclick="window.open('https://www.waze.com/ul?ll=${lat},${lon}&navigate=yes')">🚙 WAZE</button>
+                <button class="btn-navegar-maps" onclick="window.open('https://www.google.com/maps/dir/?api=1&destination=${lat},${lon}&travelmode=driving')">📍 MAPS</button>
+            </div>
+
+            <div class="slider-finalizar" id="sliderContainer">
+                <span id="textoSlider">DESLIZA PARA FINALIZAR</span>
+                <div class="slider-handle" id="sliderHandle">
+                    <i class="fas fa-arrow-right"></i>
+                </div>
+            </div>
+        </div>
             if(markerCliente) map.removeLayer(markerCliente);
             markerCliente = L.marker([lat, lon], {icon: iconoPasajero}).addTo(map);
             if(markerChofer) {
@@ -532,6 +539,7 @@ function iniciarGPS() {
     </script>
 </body>
 </html>
+
 
 
 
