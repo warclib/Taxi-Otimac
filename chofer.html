@@ -168,13 +168,15 @@
         var wakeLock = null;
         var circuloReferenciaCliente;
 
-        // --- ICONOS INTERNOS (SVG) PERSONALIZADOS ---
+        // --- ICONOS MEJORADOS (NO MÁS GLOBOS) ---
         var iconoTaxi = L.divIcon({
             html: `
                 <svg width="50" height="50" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                     <path d="M12 0C7.58 0 4 3.58 4 8c0 5.25 7 13 8 16 1-3 8-10.75 8-16 0-4.42-3.58-8-8-8z" fill="#b39ddb"/>
-                    <circle cx="12" cy="8" r="5" fill="white"/>
-                    <path d="M14.5 9.5H9.5L9 11H15L14.5 9.5ZM10.5 10C10.22 10 10 9.78 10 9.5C10 9.22 10.22 9 10.5 9C10.78 9 11 9.22 11 9.5C11 9.78 10.78 10 10.5 10ZM13.5 10C13.22 10 13 9.78 13 9.5C13 9.22 13.22 9 13.5 9C13.78 9 14 9.22 14 9.5C14 9.78 13.78 10 13.5 10Z" fill="#b39ddb"/>
+                    <circle cx="12" cy="8" r="6" fill="white"/>
+                    <path d="M17 11.5L16.5 9.5H7.5L7 11.5V13.5H17V11.5Z" fill="#b39ddb"/>
+                    <path d="M8.5 9.5L9 8H15L15.5 9.5H8.5Z" fill="#b39ddb"/>
+                    <rect x="11" y="7.5" width="2" height="1" fill="#b39ddb"/>
                 </svg>`,
             className: "custom-div-icon", iconSize: [50, 50], iconAnchor: [25, 50]
         });
@@ -188,7 +190,6 @@
                 </svg>`,
             className: "custom-div-icon", iconSize: [45, 45], iconAnchor: [22, 45]
         });
-        // --------------------------------------------
 
         function avisarConVoz(mensaje) {
             if ('speechSynthesis' in window) {
@@ -204,7 +205,6 @@
             if ('wakeLock' in navigator) {
                 try {
                     wakeLock = await navigator.wakeLock.request('screen');
-                    wakeLock.addEventListener('release', () => console.log('Wake Lock liberado'));
                 } catch (err) { console.error("Error Wake Lock:", err); }
             }
         }
@@ -365,10 +365,8 @@
                                 <span class="reloj-tag">⏳ ${min}:${s < 10 ? '0' : ''}${s}</span>
                                 <span class="distancia-tag">📍 ${km} km</span>
                             </div>
-                            
                             <div><span class="badge-confianza">Verificado</span></div>
                             <b style="font-size: 16px;">${pedidos[id].nombre_cliente || "Pasajero"}</b> 
-                            
                             <div style="margin: 5px 0;">
                                 <span class="rating-estrella">⭐ ${pedidos[id].cliente_estrellas || "4.8"}</span>
                                 <small style="color:#aaa; margin-left:10px;">Historial: ${pedidos[id].cliente_historial || "1"} v.</small>
@@ -433,7 +431,12 @@
                 controlRuta = L.Routing.control({
                     waypoints: [markerChofer.getLatLng(), L.latLng(lat, lon)],
                     show: false, createMarker: () => null,
-                    lineOptions: { styles: [{ color: '#b39ddb', weight: 6 }] }
+                    lineOptions: { 
+                        styles: [
+                            { color: 'white', opacity: 0.9, weight: 10 }, 
+                            { color: '#b39ddb', opacity: 1, weight: 6 }
+                        ] 
+                    }
                 }).addTo(map);
             }
         }
