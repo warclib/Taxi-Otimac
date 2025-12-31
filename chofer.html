@@ -175,9 +175,18 @@
 
         async function mantenerPantallaEncendida() {
             if ('wakeLock' in navigator) {
-                try { wakeLock = await navigator.wakeLock.request('screen'); } catch (err) {}
+                try { 
+                    wakeLock = await navigator.wakeLock.request('screen'); 
+                } catch (err) { console.log("Wake Lock error: " + err); }
             }
         }
+
+        // Re-activar Wake Lock si la app vuelve a primer plano
+        document.addEventListener('visibilitychange', async () => {
+            if (wakeLock !== null && document.visibilityState === 'visible') {
+                await mantenerPantallaEncendida();
+            }
+        });
 
         function toggleSidebar() {
             var side = document.getElementById('sidebar');
@@ -203,7 +212,6 @@
         var map = L.map('map', { zoomControl: false }).setView([23.6345, -102.5528], 5);
         L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}').addTo(map);
 
-        // --- ICONOS ACTUALIZADOS (GOTA PRO) ---
         var iconoTaxi = L.icon({ 
             iconUrl: 'https://img.icons8.com/fluency/96/taxi-location.png', 
             iconSize: [50, 50], 
@@ -285,7 +293,10 @@
                         }
                     }
                 }
-            }, null, {enableHighAccuracy: true});
+            }, (err) => {
+                document.getElementById('status-gps').innerText = "🔴 ERROR GPS";
+                document.getElementById('status-gps').style.color = "#ff4444";
+            }, {enableHighAccuracy: true});
         }
 
         function escucharPedidos() {
