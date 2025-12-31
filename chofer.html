@@ -111,6 +111,37 @@
 
         .leaflet-routing-container { display: none !important; }
         .modo-enfocado #btn-menu { display: none; }
+
+        /* --- NUEVO: ESTILOS PARA EL PULSO GPS MORADO --- */
+        .contenedor-pulso {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            width: 50px;
+            height: 50px;
+        }
+
+        .pulso-gps {
+            width: 20px;
+            height: 20px;
+            background: rgba(179, 157, 219, 0.7);
+            border-radius: 50%;
+            position: absolute;
+            z-index: 1;
+            animation: expandir-pulso 2s infinite;
+        }
+
+        @keyframes expandir-pulso {
+            0% { transform: scale(1); opacity: 0.8; }
+            100% { transform: scale(3.5); opacity: 0; }
+        }
+
+        .img-taxi-marker {
+            width: 50px;
+            height: 50px;
+            position: relative;
+            z-index: 5; /* Asegura que el taxi esté encima del pulso */
+        }
     </style>
 </head>
 <body onload="iniciarAppCentral()" id="app-body">
@@ -168,11 +199,16 @@
         var wakeLock = null;
         var circuloReferenciaCliente;
 
-        // --- USANDO TUS PROPIOS ARCHIVOS DE IMAGEN (PNG) ---
-        var iconoTaxi = L.icon({
-            iconUrl: 'taxi-chofer.png', 
-            iconSize: [50, 50],        
-            iconAnchor: [25, 50]       
+        // --- ICONOS CONFIGURADOS CON EFECTO DE PULSO ---
+        var iconoTaxi = L.divIcon({
+            html: `
+                <div class="contenedor-pulso">
+                    <div class="pulso-gps"></div>
+                    <img src="taxi-chofer.png" class="img-taxi-marker">
+                </div>`,
+            className: '', // Limpiamos clases por defecto
+            iconSize: [50, 50],
+            iconAnchor: [25, 25] // Centrado para que el pulso sea simétrico
         });
 
         var iconoPasajero = L.icon({
@@ -180,7 +216,6 @@
             iconSize: [45, 45],
             iconAnchor: [22, 45]
         });
-        // --------------------------------------------------
 
         function avisarConVoz(mensaje) {
             if ('speechSynthesis' in window) {
