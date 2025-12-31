@@ -61,46 +61,40 @@
             border-radius: 20px 20px 0 0; 
             border-top: 2px solid #b39ddb;
             box-shadow: 0 -10px 40px rgba(0,0,0,0.7); 
-            max-height: 35vh; /* REDUCIDO PARA VER MÁS MAPA */
+            max-height: 40vh;
             overflow-y: auto;
         }
 
         .pedido-card { 
-            padding: 10px; 
+            padding: 12px; 
             background: rgba(255, 255, 255, 0.05); 
             margin: 8px 0; 
             border-radius: 12px; 
             border: 1px solid rgba(255, 255, 255, 0.1);
             text-align: left;
-            user-select: none;
-            -webkit-user-select: none;
+            position: relative;
+            overflow: hidden;
         }
 
         .rating-estrella { color: #ffca28; font-weight: bold; font-size: 13px; }
         
-        /* ESTILO BADGE ARRIBA */
         .badge-confianza { 
             display: inline-block;
-            font-size: 8px; 
-            padding: 2px 6px; 
-            border-radius: 4px; 
-            font-weight: 900; 
-            text-transform: uppercase; 
-            background: #2e7d32; 
-            color: white; 
-            margin-bottom: 4px; /* Espacio antes del nombre */
+            font-size: 9px; padding: 2px 6px; border-radius: 4px; 
+            font-weight: 900; text-transform: uppercase; 
+            background: #2e7d32; color: white; margin-bottom: 4px;
         }
 
-        .reloj-tag { color: #ffca28; font-weight: bold; margin-right: 15px; font-size: 12px; }
-        .distancia-tag { color: #b39ddb; font-weight: bold; float: right; font-size: 12px; }
+        .reloj-tag { color: #ffca28; font-weight: bold; font-size: 13px; }
+        .distancia-tag { color: #b39ddb; font-weight: bold; font-size: 13px; }
         
-        .tiempo-container { width: 100%; height: 4px; background: rgba(255,255,255,0.1); border-radius: 2px; margin: 8px 0; overflow: hidden; }
-        .barra-progreso { height: 100%; background: #00ff00; width: 100%; transition: width 1s linear; }
+        /* Línea de tiempo verde al fondo de la tarjeta */
+        .tiempo-container { position: absolute; bottom: 0; left: 0; width: 100%; height: 4px; background: rgba(255,255,255,0.1); }
+        .barra-progreso { height: 100%; background: #00ff00; width: 100%; transition: width 1s linear; box-shadow: 0 0 8px #00ff00; }
 
-        .btn-aceptar { background:#b39ddb; border:none; padding:12px; border-radius:8px; font-weight:bold; width:100%; margin-top:8px; cursor: pointer; color: black; font-size: 14px; }
+        .btn-aceptar { background:#b39ddb; border:none; padding:12px; border-radius:8px; font-weight:bold; width:100%; margin-top:10px; cursor: pointer; color: black; font-size: 14px; text-transform: uppercase; }
         .btn-rechazar { background:transparent; border:none; color: #ff4444; padding:5px; width:100%; margin-top:5px; cursor: pointer; font-size: 11px; text-decoration: underline; }
         .btn-cancelar { background: #ff4444; color: white; border: none; padding: 15px; border-radius: 10px; font-weight: bold; width: 100%; margin-top: 10px; font-size: 16px; }
-        .btn-cancelar:disabled { background: #555 !important; cursor: not-allowed; }
 
         .contenedor-navegacion { display: flex; justify-content: space-between; gap: 10px; margin-bottom: 10px; }
         .btn-navegar-waze { background: #33ccff; color: white; border: none; padding: 12px; border-radius: 8px; font-weight: bold; width: 50%; cursor: pointer; }
@@ -153,7 +147,7 @@
 
     <div id="interfaz">
         <div class="panel-pedidos">
-            <h3 id="titulo-panel" style="margin: 5px 0; font-size: 14px;">Viajes Disponibles</h3>
+            <h3 id="titulo-panel" style="margin: 5px 0; font-size: 14px; text-transform: uppercase; letter-spacing: 1px;">Viajes Disponibles</h3>
             <div id="lista-pedidos" style="color: #aaa; font-size: 13px;">Enciende el modo trabajo.</div>
         </div>
     </div>
@@ -338,24 +332,31 @@
                         <div class="pedido-card" 
                              onmousedown="verDondeEstaElCliente(${cli.lat}, ${cli.lon})" onmouseup="soltarVistaCliente()" onmouseleave="soltarVistaCliente()"
                              ontouchstart="verDondeEstaElCliente(${cli.lat}, ${cli.lon})" ontouchend="soltarVistaCliente()">
-                            <div style="float: right;">
-                                <span class="reloj-tag">⏳ ${min}:${s < 10 ? '0' : ''}${s}</span>
-                                <span class="distancia-tag">📍 ${km} km</span>
+                            
+                            <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 5px;">
+                                <div>
+                                    <span class="badge-confianza">Verificado</span><br>
+                                    <small style="color:#b39ddb; font-size:10px; font-weight:bold;">ID: ${pedidos[id].cliente_uid || "OT-100"}</small>
+                                </div>
+                                <div style="text-align: right;">
+                                    <span class="reloj-tag">⏳ ${min}:${s < 10 ? '0' : ''}${s}</span><br>
+                                    <span class="distancia-tag">📍 ${km} km de distancia</span>
+                                </div>
                             </div>
                             
-                            <div><span class="badge-confianza">Verificado</span></div>
-                            <b style="font-size: 16px;">${pedidos[id].nombre_cliente || "Pasajero"}</b> 
+                            <b style="font-size: 19px; display: block; margin: 2px 0;">${pedidos[id].nombre_cliente || "Pasajero"}</b> 
                             
                             <div style="margin: 5px 0;">
                                 <span class="rating-estrella">⭐ ${pedidos[id].cliente_estrellas || "4.8"}</span>
                                 <small style="color:#aaa; margin-left:10px;">Historial: ${pedidos[id].cliente_historial || "1"} v.</small>
                             </div>
-                            <small style="color:#b39ddb; font-size:10px; font-weight:bold;">${pedidos[id].cliente_uid || "OT-100"}</small>
+                            
+                            <button class="btn-aceptar" onclick="aceptarViaje('${id}')">ACEPTAR VIAJE</button>
+                            <button class="btn-rechazar" onclick="rechazarViajeLocal('${id}')">OCULTAR</button>
+
                             <div class="tiempo-container">
                                 <div class="barra-progreso" style="width: ${(restanteMs/300000)*100}%"></div>
                             </div>
-                            <button class="btn-aceptar" onclick="aceptarViaje('${id}')">ACEPTAR VIAJE</button>
-                            <button class="btn-rechazar" onclick="rechazarViajeLocal('${id}')">OCULTAR</button>
                         </div>`;
                     }
                 }
@@ -396,7 +397,7 @@
         function dibujarInterfazYRuta(lat, lon, id) {
             document.getElementById('interfaz').innerHTML = `
                 <div class="panel-pedidos">
-                    <h3 style="margin:0 0 10px 0; font-size:14px; color:#b39ddb;">VIAJE ACTIVO</h3>
+                    <h3 style="margin:0 0 10px 0; font-size:14px; color:#b39ddb; text-align:center;">VIAJE ACTIVO</h3>
                     <div class="contenedor-navegacion">
                         <button class="btn-navegar-waze" onclick="window.open('https://www.waze.com/ul?ll=${lat},${lon}&navigate=yes')">🚙 WAZE</button>
                         <button class="btn-navegar-maps" onclick="window.open('https://www.google.com/maps/dir/?api=1&destination=${lat},${lon}&travelmode=driving')">📍 MAPS</button>
