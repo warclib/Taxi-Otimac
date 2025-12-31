@@ -323,7 +323,11 @@ function iniciarGPS() {
         document.getElementById('status-gps').style.color = "#00ff00";
         
         if(markerChofer) markerChofer.setLatLng(miPos);
-        else { markerChofer = L.marker(miPos, {icon: iconoTaxi}).addTo(map); map.setView(miPos, 17); }
+        else { 
+                    markerChofer = L.marker(miPos, {icon: iconoTaxi}).addTo(map); 
+                    map.setView(miPos, 17); 
+                }
+                map.panTo(miPos);
         
         if (idViajeActivo) {
             database.ref('viajes/' + idViajeActivo + '/chofer').update({ lat: lat, lon: lon });
@@ -493,5 +497,6 @@ function iniciarGPS() {
     </script>
 </body>
 </html>
+
 
 
