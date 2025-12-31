@@ -54,31 +54,42 @@
         #interfaz { position: fixed; bottom: 0; left: 0; right: 0; z-index: 2000; padding: 10px; }
 
         .panel-pedidos { 
-            background: rgba(0, 0, 0, 0.65); 
-            backdrop-filter: blur(12px); 
-            -webkit-backdrop-filter: blur(12px);
-            padding: 12px 15px; 
-            border-radius: 20px 20px 10px 10px; 
-            border: 1px solid rgba(255, 255, 255, 0.1);
+            background: rgba(20, 20, 20, 0.8); 
+            backdrop-filter: blur(15px); 
+            -webkit-backdrop-filter: blur(15px);
+            padding: 10px 15px; 
+            border-radius: 20px 20px 0 0; 
             border-top: 2px solid #b39ddb;
-            box-shadow: 0 -8px 30px rgba(0,0,0,0.5); 
-            max-height: 40vh;
+            box-shadow: 0 -10px 40px rgba(0,0,0,0.7); 
+            max-height: 35vh; /* REDUCIDO PARA VER MÁS MAPA */
             overflow-y: auto;
         }
 
         .pedido-card { 
-            padding: 12px; 
-            background: rgba(255, 255, 255, 0.07); 
+            padding: 10px; 
+            background: rgba(255, 255, 255, 0.05); 
             margin: 8px 0; 
-            border-radius: 10px; 
-            border-left: 4px solid #b39ddb; 
+            border-radius: 12px; 
+            border: 1px solid rgba(255, 255, 255, 0.1);
             text-align: left;
             user-select: none;
             -webkit-user-select: none;
         }
 
         .rating-estrella { color: #ffca28; font-weight: bold; font-size: 13px; }
-        .badge-confianza { font-size: 9px; padding: 2px 6px; border-radius: 4px; font-weight: bold; text-transform: uppercase; margin-left: 5px; vertical-align: middle; background: #2e7d32; color: white; }
+        
+        /* ESTILO BADGE ARRIBA */
+        .badge-confianza { 
+            display: inline-block;
+            font-size: 8px; 
+            padding: 2px 6px; 
+            border-radius: 4px; 
+            font-weight: 900; 
+            text-transform: uppercase; 
+            background: #2e7d32; 
+            color: white; 
+            margin-bottom: 4px; /* Espacio antes del nombre */
+        }
 
         .reloj-tag { color: #ffca28; font-weight: bold; margin-right: 15px; font-size: 12px; }
         .distancia-tag { color: #b39ddb; font-weight: bold; float: right; font-size: 12px; }
@@ -142,8 +153,8 @@
 
     <div id="interfaz">
         <div class="panel-pedidos">
-            <h3 id="titulo-panel">Viajes Disponibles</h3>
-            <div id="lista-pedidos" style="color: #aaa;">Enciende el modo trabajo.</div>
+            <h3 id="titulo-panel" style="margin: 5px 0; font-size: 14px;">Viajes Disponibles</h3>
+            <div id="lista-pedidos" style="color: #aaa; font-size: 13px;">Enciende el modo trabajo.</div>
         </div>
     </div>
 
@@ -175,18 +186,9 @@
 
         async function mantenerPantallaEncendida() {
             if ('wakeLock' in navigator) {
-                try { 
-                    wakeLock = await navigator.wakeLock.request('screen'); 
-                } catch (err) { console.log("Wake Lock error: " + err); }
+                try { wakeLock = await navigator.wakeLock.request('screen'); } catch (err) {}
             }
         }
-
-        // Re-activar Wake Lock si la app vuelve a primer plano
-        document.addEventListener('visibilitychange', async () => {
-            if (wakeLock !== null && document.visibilityState === 'visible') {
-                await mantenerPantallaEncendida();
-            }
-        });
 
         function toggleSidebar() {
             var side = document.getElementById('sidebar');
@@ -212,16 +214,8 @@
         var map = L.map('map', { zoomControl: false }).setView([23.6345, -102.5528], 5);
         L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}').addTo(map);
 
-        var iconoTaxi = L.icon({ 
-            iconUrl: 'https://img.icons8.com/fluency/96/taxi-location.png', 
-            iconSize: [50, 50], 
-            iconAnchor: [25, 50] 
-        });
-        var iconoPasajero = L.icon({ 
-            iconUrl: 'https://img.icons8.com/fluency/96/marker.png', 
-            iconSize: [45, 45], 
-            iconAnchor: [22, 45] 
-        });
+        var iconoTaxi = L.icon({ iconUrl: 'https://img.icons8.com/fluency/96/taxi-location.png', iconSize: [50, 50], iconAnchor: [25, 50] });
+        var iconoPasajero = L.icon({ iconUrl: 'https://img.icons8.com/fluency/96/marker.png', iconSize: [45, 45], iconAnchor: [22, 45] });
 
         function verificarEstadoChofer() {
             var n = localStorage.getItem("choferNombre"), e = localStorage.getItem("choferEco");
@@ -293,10 +287,7 @@
                         }
                     }
                 }
-            }, (err) => {
-                document.getElementById('status-gps').innerText = "🔴 ERROR GPS";
-                document.getElementById('status-gps').style.color = "#ff4444";
-            }, {enableHighAccuracy: true});
+            }, null, {enableHighAccuracy: true});
         }
 
         function escucharPedidos() {
@@ -351,8 +342,10 @@
                                 <span class="reloj-tag">⏳ ${min}:${s < 10 ? '0' : ''}${s}</span>
                                 <span class="distancia-tag">📍 ${km} km</span>
                             </div>
-                            <b>${pedidos[id].nombre_cliente || "Pasajero"}</b> 
-                            <span class="badge-confianza">Verificado</span>
+                            
+                            <div><span class="badge-confianza">Verificado</span></div>
+                            <b style="font-size: 16px;">${pedidos[id].nombre_cliente || "Pasajero"}</b> 
+                            
                             <div style="margin: 5px 0;">
                                 <span class="rating-estrella">⭐ ${pedidos[id].cliente_estrellas || "4.8"}</span>
                                 <small style="color:#aaa; margin-left:10px;">Historial: ${pedidos[id].cliente_historial || "1"} v.</small>
