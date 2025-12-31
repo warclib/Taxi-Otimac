@@ -2,113 +2,57 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Cliente - Otimac 🚖</title>
     
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <meta name="theme-color" content="#b39ddb">
-    <link rel="manifest" href="manifest-cliente.json">
-
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
-        /* ESTILOS GENERALES */
-        body { font-family: 'Segoe UI', Roboto, sans-serif; text-align: center; background: #1a1a1a; color: white; margin: 0; padding: 10px; overflow-x: hidden; user-select: none; }
+        body { font-family: sans-serif; text-align: center; background: #1a1a1a; color: white; margin: 0; padding: 10px; }
         
-        /* PANTALLAS MODALES */
-        #pantalla-bloqueo { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #000; color: white; display: none; flex-direction: column; justify-content: center; align-items: center; z-index: 20000; text-align: center; padding: 20px; }
+        #splash-screen { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #b39ddb; display: flex; flex-direction: column; justify-content: center; align-items: center; z-index: 99999; }
         
-        #splash-screen { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #b39ddb; display: flex; flex-direction: column; justify-content: center; align-items: center; z-index: 10000; transition: opacity 0.6s ease, visibility 0.6s; }
-        .logo-animado { font-size: 80px; animation: latido 1.5s infinite; }
-        @keyframes latido { 0% { transform: scale(1); } 50% { transform: scale(1.2); } 100% { transform: scale(1); } }
-        .texto-carga { color: #1a1a1a; font-weight: bold; margin-top: 20px; letter-spacing: 3px; font-size: 14px; }
+        #map { height: 400px; width: 100%; border-radius: 15px; border: 2px solid #b39ddb; margin-top: 10px; }
         
-        #modal-reglamento { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0, 0, 0, 0.97); z-index: 30000; display: none; justify-content: center; align-items: center; margin: 0; padding: 0; box-sizing: border-box; }
-        .reglamento-contenido { background: #1e1e1e; border: 2px solid #b39ddb; padding: 25px; border-radius: 15px; width: 88%; max-width: 400px; text-align: left; box-shadow: 0 10px 30px rgba(0,0,0,0.5); box-sizing: border-box; }
-        .reglamento-contenido h2 { color: #b39ddb; font-size: 18px; text-align: center; border-bottom: 1px solid #333; padding-bottom: 15px; margin-top: 0; text-transform: uppercase; }
-        .reglamento-lista { list-style: none; padding: 0; margin: 20px 0; }
-        .reglamento-lista li { font-size: 14px; color: #eee; margin-bottom: 15px; padding-left: 25px; position: relative; line-height: 1.4; }
-        .reglamento-lista li::before { content: "⚠️"; position: absolute; left: 0; font-size: 14px; }
-        .btn-entendido { background: #b39ddb; color: #1a1a1a; border: none; padding: 18px; width: 100%; border-radius: 10px; font-weight: 900; cursor: pointer; text-transform: uppercase; }
-
-        /* INTERFAZ PRINCIPAL */
-        #map { height: 400px; width: 100%; border-radius: 15px; border: 2px solid #b39ddb; margin-top: 10px; box-sizing: border-box; }
-        
-        .btn-pedido { background: #b39ddb; color: black; border: none; padding: 20px; font-weight: bold; border-radius: 10px; width: 100%; font-size: 18px; margin-top: 10px; cursor: pointer; transition: 0.3s; }
-        .btn-pedido:disabled { background: #555; color: #888; cursor: not-allowed; }
-        .btn-cancelar { background: #ff4444; color: white; border: none; padding: 12px; border-radius: 8px; font-weight: bold; width: 100%; margin-top: 10px; cursor: pointer; }
+        .btn-pedido { background: #b39ddb; color: black; border: none; padding: 20px; font-weight: bold; border-radius: 10px; width: 100%; font-size: 18px; margin-top: 10px; cursor: pointer; }
+        .btn-cancelar { background: #ff4444; color: white; border: none; padding: 10px; border-radius: 8px; font-weight: bold; width: 100%; margin-top: 10px; }
         
         .card-chofer { background: #222; padding: 15px; border-radius: 12px; border: 2px solid #b39ddb; margin-bottom: 10px; display: none; text-align: left; }
-        .alerta-llegada { background: #00ff00; color: black; padding: 15px; border-radius: 10px; font-weight: bold; margin-bottom: 10px; display: none; animation: pulse 1s infinite; }
-        @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.5; } 100% { opacity: 1; } }
         
-        #status-viaje { color: #b39ddb; font-weight: bold; margin: 10px 0; font-size: 18px; }
-        input { padding: 15px; width: 85%; border-radius: 10px; margin-bottom: 10px; font-size: 16px; border: 2px solid #b39ddb; background: #333; color: white; box-sizing: border-box; }
-        #nombre-usuario { color: #b39ddb; font-size: 20px; margin-bottom: 10px; display: block; font-weight: bold; }
-        #info-historial { font-size: 12px; color: #aaa; margin-bottom: 10px; display: block; }
+        input { padding: 15px; width: 90%; margin-bottom: 10px; border-radius: 5px; border: none; }
         
-        /* BARRA DE TIEMPO (5 MINUTOS) */
-        #barra-tiempo-wrapper { width: 100%; background: #333; height: 6px; margin-top: 15px; border-radius: 3px; display: none; overflow: hidden; }
-        #barra-tiempo-fill { height: 100%; background: #ffca28; width: 100%; transition: width 1s linear; box-shadow: 0 0 10px #ffca28; }
-        #texto-tiempo { font-size: 11px; color: #ffca28; margin-top: 5px; display: none; }
+        /* BARRA TIEMPO */
+        #barra-wrapper { width: 100%; background: #333; height: 5px; margin-top: 10px; display: none; }
+        #barra-fill { height: 100%; background: #ffca28; width: 100%; transition: width 1s linear; }
     </style>
 </head>
-<body onload="iniciarAppCliente()">
-
-    <div id="modal-reglamento">
-        <div class="reglamento-contenido">
-            <h2>REGLAS DE SERVICIO</h2>
-            <p style="font-size: 13px; color: #bbb; text-align: center;">Para su seguridad y la del conductor:</p>
-            <ul class="reglamento-lista">
-                <li><b>Puntualidad:</b> Al llegar la unidad, el chofer solo podrá esperar un máximo de <b>3 minutos</b>.</li>
-                <li><b>Capacidad:</b> Máximo 4 pasajeros por unidad.</li>
-                <li><b>Carga:</b> Prohibido traslado de leña, escombro u objetos pesados/sucios.</li>
-                <li><b>Higiene:</b> Prohibido fumar o ingerir bebidas alcohólicas en la unidad.</li>
-            </ul>
-            <button class="btn-entendido" onclick="aceptarReglamento()">ACEPTO LOS TÉRMINOS</button>
-        </div>
-    </div>
-
-    <div id="pantalla-bloqueo">
-        <h1 style="font-size: 80px;">🚫</h1>
-        <h2 style="color: #ff4444;">ACCESO DENEGADO</h2>
-        <p>Tu ID ha sido suspendido por la administración.</p>
-        <p style="font-size: 12px; color: #666;">Contacta a soporte para más información Whatsapp 6122135428.</p>
-    </div>
+<body>
 
     <div id="splash-screen">
-        <div class="logo-animado">🚖</div>
-        <div style="color: #1a1a1a; font-size: 28px; font-weight: 900; margin-top: 10px;">OTIMAC</div>
-        <div class="texto-carga">CONECTANDO...</div>
+        <div style="font-size: 80px;">🚖</div>
+        <h2 style="color:black;">OTIMAC</h2>
     </div>
 
-    <h2>TAXI PLUS 🚖</h2>
-    
-    <div id="registro" style="display:none; padding: 20px;">
-        <p>¿Cuál es tu nombre?</p>
-        <input type="text" id="inputNombre" placeholder="Tu nombre">
-        <button class="btn-pedido" onclick="guardarNombre()">EMPEZAR</button>
+    <div id="registro" style="display:none; padding-top: 50px;">
+        <h3>Bienvenido</h3>
+        <input type="text" id="inputNombre" placeholder="Tu nombre aquí">
+        <button class="btn-pedido" onclick="guardarNombre()">ENTRAR</button>
     </div>
 
-    <div id="areaPedido" style="display:none;">
-        <span id="nombre-usuario"></span>
-        <span id="info-historial">Cargando perfil...</span>
-        
-        <div id="alertaLlegada" class="alerta-llegada">🚨 ¡TU TAXI HA LLEGADO! POR FAVOR SAL A SU ENCUENTRO.</div>
+    <div id="app" style="display:none;">
+        <h3 id="saludo">Hola</h3>
         
         <div id="cardChofer" class="card-chofer">
-            <div id="infoChofer" style="font-size: 16px; color: #fff;"></div>
+            <div style="color:#aaa; font-size:12px;">TU CHOFER:</div>
+            <div id="infoChofer" style="font-size:18px; font-weight:bold;"></div>
+            <div id="infoEco" style="font-size:24px; color:#b39ddb; font-weight:bold; float:right;"></div>
         </div>
-        
-        <div id="status-viaje">Listo para pedir</div>
-        
-        <div id="barra-tiempo-wrapper">
-            <div id="barra-tiempo-fill"></div>
-        </div>
-        <div id="texto-tiempo">Buscando choferes cercanos...</div>
 
-        <button class="btn-pedido" id="btnPedir" onclick="validarYPedir()">🚖 PEDIR TAXI AHORA</button>
-        <button class="btn-cancelar" id="btnCancelar" onclick="cancelarPedido()" style="display:none;">❌ CANCELAR PEDIDO</button>
+        <div id="status-viaje" style="color: #b39ddb; font-weight: bold; margin: 10px;">Listo para pedir</div>
+        
+        <div id="barra-wrapper"><div id="barra-fill"></div></div>
+        
+        <button id="btnPedir" class="btn-pedido" onclick="pedirTaxi()">PEDIR TAXI</button>
+        <button id="btnCancelar" class="btn-cancelar" onclick="cancelar()" style="display:none;">CANCELAR</button>
     </div>
 
     <div id="map"></div>
@@ -118,44 +62,151 @@
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
 
     <script>
-        // CONFIGURACIÓN FIREBASE
+        // --- 1. SEGURIDAD: QUITAR PANTALLA DE CARGA ---
+        setTimeout(function() {
+            document.getElementById('splash-screen').style.display = 'none';
+        }, 2500);
+
+        // --- 2. FIREBASE ---
         var firebaseConfig = { apiKey: "AIzaSyATLT5_woN8KO8-_E4_Nl7bEMlJGFI4uUQ", authDomain: "taxiotimac.firebaseapp.com", databaseURL: "https://taxiotimac-default-rtdb.firebaseio.com", projectId: "taxiotimac", storageBucket: "taxiotimac.firebasestorage.app", messagingSenderId: "533983007458", appId: "1:533983007458:web:254cef6b46c01a1718c4bb" };
         firebase.initializeApp(firebaseConfig);
         var database = firebase.database();
 
-        let enviandoPedido = false;
-        var totalViajesRealizados = 0; 
-        var estrellasActuales = "5.0"; 
-        var timerExpiracionLocal = null;
+        // --- 3. LÓGICA ---
+        var map = L.map('map').setView([23.6345, -102.5528], 5);
+        L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}').addTo(map);
 
-        // Generar ID único si no existe
-        if (!localStorage.getItem("otimac_uuid")) {
-            localStorage.setItem("otimac_uuid", "ID-" + Math.floor(100000 + Math.random() * 900000));
-        }
+        var iconoTaxi = L.icon({ iconUrl: 'https://img.icons8.com/fluency/96/taxi-location.png', iconSize: [40, 40] });
+        var iconoPasajero = L.icon({ iconUrl: 'https://img.icons8.com/fluency/96/marker.png', iconSize: [40, 40] });
+        
+        var markerCliente, markerChofer;
         var miUUID = localStorage.getItem("otimac_uuid");
+        if(!miUUID) {
+            miUUID = "ID-" + Math.floor(Math.random()*999999);
+            localStorage.setItem("otimac_uuid", miUUID);
+        }
 
-        function verificarEstadoCuenta() {
-            database.ref('baneados/' + miUUID).on('value', (snap) => {
-                if (snap.exists()) document.getElementById('pantalla-bloqueo').style.display = 'flex';
-                else document.getElementById('pantalla-bloqueo').style.display = 'none';
+        // VERIFICAR USUARIO
+        var nombre = localStorage.getItem("nombreCliente");
+        if(nombre) {
+            iniciarSesion();
+        } else {
+            document.getElementById('registro').style.display = 'block';
+        }
+
+        function guardarNombre() {
+            var n = document.getElementById('inputNombre').value;
+            if(n) {
+                localStorage.setItem("nombreCliente", n);
+                iniciarSesion();
+            }
+        }
+
+        function iniciarSesion() {
+            document.getElementById('registro').style.display = 'none';
+            document.getElementById('app').style.display = 'block';
+            document.getElementById('saludo').innerText = "Hola, " + localStorage.getItem("nombreCliente");
+            
+            var idActivo = localStorage.getItem("idViajeActivo");
+            if(idActivo) monitorearViaje(idActivo);
+        }
+
+        function pedirTaxi() {
+            var btn = document.getElementById('btnPedir');
+            btn.innerText = "BUSCANDO...";
+            btn.disabled = true;
+
+            if(navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(function(pos) {
+                    var lat = pos.coords.latitude;
+                    var lon = pos.coords.longitude;
+                    var idViaje = miUUID.replace("ID-", "V-");
+
+                    database.ref('viajes/' + idViaje).set({
+                        cliente: { lat: lat, lon: lon },
+                        nombre_cliente: localStorage.getItem("nombreCliente"),
+                        cliente_uid: miUUID,
+                        estado: "esperando",
+                        timestamp: firebase.database.ServerValue.TIMESTAMP
+                    }).then(function() {
+                        localStorage.setItem("idViajeActivo", idViaje);
+                        monitorearViaje(idViaje);
+                    });
+
+                }, function(err) {
+                    alert("Error GPS: Activa tu ubicación");
+                    btn.disabled = false;
+                    btn.innerText = "PEDIR TAXI";
+                }, {enableHighAccuracy: true});
+            } else {
+                alert("Tu celular no soporta GPS");
+            }
+        }
+
+        function monitorearViaje(id) {
+            document.getElementById('btnPedir').style.display = 'none';
+            document.getElementById('btnCancelar').style.display = 'block';
+
+            database.ref('viajes/' + id).on('value', function(snapshot) {
+                var v = snapshot.val();
+                if(!v) {
+                    localStorage.removeItem("idViajeActivo");
+                    alert("Viaje finalizado o cancelado");
+                    location.reload();
+                    return;
+                }
+
+                // 5 MINUTOS TEMPORIZADOR
+                if(v.estado === 'esperando') {
+                    var ahora = Date.now();
+                    var creado = v.timestamp || ahora;
+                    var resta = 300000 - (ahora - creado); // 5 min
+                    
+                    document.getElementById('barra-wrapper').style.display = 'block';
+                    document.getElementById('barra-fill').style.width = ((resta/300000)*100) + "%";
+
+                    if(resta <= 0) {
+                        database.ref('viajes/' + id).remove();
+                        alert("Tiempo agotado, intenta de nuevo");
+                    }
+                } else {
+                    document.getElementById('barra-wrapper').style.display = 'none';
+                }
+
+                // ESTADOS
+                if(v.estado === 'chofer_llego') {
+                    document.getElementById('status-viaje').innerText = "🚩 CHOFER HA LLEGADO";
+                    if('vibrate' in navigator) navigator.vibrate(500);
+                } else if(v.estado === 'en_curso') {
+                    document.getElementById('status-viaje').innerText = "🚕 EN CAMINO";
+                    document.getElementById('btnCancelar').style.display = 'none';
+                }
+
+                // MAPA
+                if(v.cliente) {
+                    var posC = [v.cliente.lat, v.cliente.lon];
+                    if(markerCliente) markerCliente.setLatLng(posC);
+                    else { markerCliente = L.marker(posC, {icon: iconoPasajero}).addTo(map); map.setView(posC, 16); }
+                }
+
+                if(v.chofer) {
+                    document.getElementById('cardChofer').style.display = 'block';
+                    document.getElementById('infoChofer').innerText = v.chofer.nombre;
+                    document.getElementById('infoEco').innerText = v.chofer.economico;
+
+                    var posCh = [v.chofer.lat, v.chofer.lon];
+                    if(markerChofer) markerChofer.setLatLng(posCh);
+                    else markerChofer = L.marker(posCh, {icon: iconoTaxi}).addTo(map);
+                }
             });
         }
 
-        function iniciarAppCliente() {
-            verificarEstadoCuenta();
-            if (!localStorage.getItem("reglamentoAceptado")) {
-                document.getElementById('modal-reglamento').style.display = 'flex';
-            } else {
-                verificarNombreYViaje();
+        function cancelar() {
+            var id = localStorage.getItem("idViajeActivo");
+            if(confirm("¿Cancelar?")) {
+                database.ref('viajes/' + id).remove();
             }
-            cargarPerfilReal();
-            setTimeout(() => {
-                const splash = document.getElementById('splash-screen');
-                splash.style.opacity = '0';
-                setTimeout(() => { splash.style.visibility = 'hidden'; }, 600);
-            }, 2500);
         }
-
-        function aceptarReglamento() {
-            localStorage.setItem("reglamentoAceptado", "true");
-            document.getElementById('modal-reglamento').style.display = 'none';
+    </script>
+</body>
+</html>
