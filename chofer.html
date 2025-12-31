@@ -53,7 +53,6 @@
         #map { height: 100vh; width: 100%; z-index: 1; }
         #interfaz { position: fixed; bottom: 0; left: 0; right: 0; z-index: 2000; padding: 10px; }
 
-        /* Panel con opacidad media corregida */
         .panel-pedidos { 
             background: rgba(0, 0, 0, 0.55); 
             backdrop-filter: blur(15px); 
@@ -170,6 +169,16 @@
         var ultimoConteoPedidos = 0, markerChofer, markerCliente, controlRuta, idViajeActivo, watchID;
         var viajesRechazados = [], avisoLlegadaEnviado = false;
         var marcadorRevision = null;
+        var wakeLock = null; // Para mantener pantalla encendida
+
+        // MANTENER PANTALLA ENCENDIDA
+        async function solicitarWakeLock() {
+            try {
+                if ('wakeLock' in navigator) {
+                    wakeLock = await navigator.wakeLock.request('screen');
+                }
+            } catch (err) { console.error("WakeLock error:", err); }
+        }
 
         // VOZ PERSONALIZADA CON NOMBRE DEL CHOFER
         function avisarConVoz(mensaje) {
@@ -247,7 +256,9 @@
                         localStorage.setItem("modoTrabajoActivo", true);
                         document.getElementById('txtModo').innerText = "TRABAJANDO";
                         document.getElementById('txtModo').style.color = "#00ff00";
-                        iniciarGPS(); escucharPedidos();
+                        solicitarWakeLock(); // Activa pantalla encendida
+                        iniciarGPS(); 
+                        escucharPedidos();
                         if(document.getElementById('sidebar').classList.contains('active')) toggleSidebar();
                     } else {
                         alert("ACCESO DENEGADO");
@@ -255,17 +266,26 @@
                     }
                 });
             } else {
+                if(wakeLock !== null) wakeLock.release();
                 localStorage.setItem("modoTrabajoActivo", false);
                 location.reload();
             }
         }
 
         function iniciarGPS() {
+            // Opciones de alta precisión optimizadas
+            const opcionesGps = {
+                enableHighAccuracy: true,
+                timeout: 5000,
+                maximumAge: 0 // Fuerza a no usar caché
+            };
+
             watchID = navigator.geolocation.watchPosition((pos) => {
                 var lat = pos.coords.latitude, lon = pos.coords.longitude;
                 var miPos = L.latLng(lat, lon);
                 document.getElementById('status-gps').innerText = "✅ GPS ON";
                 document.getElementById('status-gps').style.color = "#00ff00";
+                
                 if(markerChofer) markerChofer.setLatLng(miPos);
                 else { markerChofer = L.marker(miPos, {icon: iconoTaxi}).addTo(map); map.setView(miPos, 17); }
                 
@@ -279,7 +299,7 @@
                         }
                     }
                 }
-            }, null, {enableHighAccuracy: true});
+            }, (err) => { console.error("Error GPS:", err); }, opcionesGps);
         }
 
         function escucharPedidos() {
@@ -290,7 +310,6 @@
             });
         }
 
-        // VISTA PREVIA QUE DESAPARECE AL SOLTAR EL DEDO
         function mostrarVistaPrevia(lat, lon) {
             if (marcadorRevision) map.removeLayer(marcadorRevision);
             marcadorRevision = L.circleMarker([lat, lon], {
@@ -435,6 +454,13 @@
                 database.ref('viajes/' + id).remove().then(() => { location.reload(); });
             });
         }
+
+        // Re-activar Wake Lock si el chofer sale y vuelve a la app
+        document.addEventListener('visibilitychange', async () => {
+            if (wakeLock !== null && document.visibilityState === 'visible') {
+                solicitarWakeLock();
+            }
+        });
     </script>
 </body>
 </html>
