@@ -324,16 +324,18 @@ function iniciarGPS() {
         
         if(markerChofer) markerChofer.setLatLng(miPos);
         else { 
-                    markerChofer = L.marker(miPos, {icon: iconoTaxi}).addTo(map); 
-                    map.setView(miPos, 17); 
-                }
-                map.panTo(miPos);
-        
+            markerChofer = L.marker(miPos, {icon: iconoTaxi}).addTo(map); 
+            map.setView(miPos, 17); 
+        }
+
+        // --- SEGUIMIENTO Y ROTACIÓN AUTOMÁTICA ---
+        map.panTo(miPos);
+        if (pos.coords.heading !== null) {
+            map.setBearing(pos.coords.heading);
+        }
+
         if (idViajeActivo) {
             database.ref('viajes/' + idViajeActivo + '/chofer').update({ lat: lat, lon: lon });
-            
-            // --- ESTA ES LA LINEA QUE HACE QUE EL MAPA TE SIGA ---
-            map.panTo(miPos); 
             
             if (markerCliente) {
                 var dist = miPos.distanceTo(markerCliente.getLatLng());
@@ -497,6 +499,7 @@ function iniciarGPS() {
     </script>
 </body>
 </html>
+
 
 
 
