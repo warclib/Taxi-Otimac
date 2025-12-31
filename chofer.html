@@ -20,8 +20,6 @@
             justify-content: center; align-items: center; z-index: 10000;
             transition: opacity 0.6s ease, visibility 0.6s;
         }
-        .logo-animado { font-size: 80px; animation: latido 1.5s infinite; }
-        @keyframes latido { 0% { transform: scale(1); } 50% { transform: scale(1.2); } 100% { transform: scale(1); } }
         .texto-carga { color: #1a1a1a; font-weight: bold; margin-top: 20px; letter-spacing: 3px; font-size: 14px; }
 
         body { font-family: 'Segoe UI', Roboto, Helvetica, sans-serif; text-align: center; background: #1a1a1a; color: white; margin: 0; padding: 0; overflow: hidden; }
@@ -117,8 +115,7 @@
 </head>
 <body onload="iniciarAppCentral()" id="app-body">
     <div id="splash-screen">
-        <div class="logo-animado">🚖</div>
-        <div style="color: #1a1a1a; font-size: 28px; font-weight: 900; margin-top: 10px;">OTIMAC</div>
+        <div style="color: #1a1a1a; font-size: 32px; font-weight: 900; letter-spacing: 2px;">OTIMAC</div>
         <div class="texto-carga">REINICIANDO SISTEMA...</div>
     </div>
 
@@ -171,6 +168,28 @@
         var wakeLock = null;
         var circuloReferenciaCliente;
 
+        // --- ICONOS INTERNOS (SVG) PERSONALIZADOS ---
+        var iconoTaxi = L.divIcon({
+            html: `
+                <svg width="50" height="50" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M12 0C7.58 0 4 3.58 4 8c0 5.25 7 13 8 16 1-3 8-10.75 8-16 0-4.42-3.58-8-8-8z" fill="#b39ddb"/>
+                    <circle cx="12" cy="8" r="5" fill="white"/>
+                    <path d="M14.5 9.5H9.5L9 11H15L14.5 9.5ZM10.5 10C10.22 10 10 9.78 10 9.5C10 9.22 10.22 9 10.5 9C10.78 9 11 9.22 11 9.5C11 9.78 10.78 10 10.5 10ZM13.5 10C13.22 10 13 9.78 13 9.5C13 9.22 13.22 9 13.5 9C13.78 9 14 9.22 14 9.5C14 9.78 13.78 10 13.5 10Z" fill="#b39ddb"/>
+                </svg>`,
+            className: "custom-div-icon", iconSize: [50, 50], iconAnchor: [25, 50]
+        });
+
+        var iconoPasajero = L.divIcon({
+            html: `
+                <svg width="45" height="45" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M12 0C7.58 0 4 3.58 4 8c0 5.25 7 13 8 16 1-3 8-10.75 8-16 0-4.42-3.58-8-8-8z" fill="#2e7d32"/>
+                    <circle cx="12" cy="8" r="5" fill="white"/>
+                    <path d="M12 11C13.1 11 14 10.1 14 9C14 7.9 13.1 7 12 7C10.9 7 10 7.9 10 9C10 10.1 10.9 11 12 11ZM12 11.5C10.33 11.5 7 12.33 7 14V15H17V14C17 12.33 13.67 11.5 12 11.5Z" fill="#2e7d32"/>
+                </svg>`,
+            className: "custom-div-icon", iconSize: [45, 45], iconAnchor: [22, 45]
+        });
+        // --------------------------------------------
+
         function avisarConVoz(mensaje) {
             if ('speechSynthesis' in window) {
                 var nombreChofer = localStorage.getItem("choferNombre") || "Chofer";
@@ -181,29 +200,20 @@
             }
         }
 
-        // --- LÓGICA MEJORADA DE WAKE LOCK ---
         async function mantenerPantallaEncendida() {
             if ('wakeLock' in navigator) {
                 try {
                     wakeLock = await navigator.wakeLock.request('screen');
-                    console.log("Pantalla bloqueada (Siempre encendida)");
-                    
-                    wakeLock.addEventListener('release', () => {
-                        console.log('Wake Lock fue liberado');
-                    });
-                } catch (err) {
-                    console.error("Error activando Wake Lock:", err);
-                }
+                    wakeLock.addEventListener('release', () => console.log('Wake Lock liberado'));
+                } catch (err) { console.error("Error Wake Lock:", err); }
             }
         }
 
-        // Re-activar si el chofer regresa a la app desde otra ventana
         document.addEventListener('visibilitychange', async () => {
             if (wakeLock !== null && document.visibilityState === 'visible' && document.getElementById('checkTrabajo').checked) {
                 await mantenerPantallaEncendida();
             }
         });
-        // ------------------------------------
 
         function toggleSidebar() {
             var side = document.getElementById('sidebar');
@@ -228,9 +238,6 @@
 
         var map = L.map('map', { zoomControl: false }).setView([23.6345, -102.5528], 5);
         L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}').addTo(map);
-
-        var iconoTaxi = L.icon({ iconUrl: 'https://img.icons8.com/fluency/96/taxi-location.png', iconSize: [50, 50], iconAnchor: [25, 50] });
-        var iconoPasajero = L.icon({ iconUrl: 'https://img.icons8.com/fluency/96/marker.png', iconSize: [45, 45], iconAnchor: [22, 45] });
 
         function verificarEstadoChofer() {
             var n = localStorage.getItem("choferNombre"), e = localStorage.getItem("choferEco");
@@ -268,10 +275,7 @@
                         localStorage.setItem("modoTrabajoActivo", true);
                         document.getElementById('txtModo').innerText = "TRABAJANDO";
                         document.getElementById('txtModo').style.color = "#00ff00";
-                        
-                        // Activar pantalla siempre encendida
                         mantenerPantallaEncendida();
-                        
                         iniciarGPS(); escucharPedidos();
                         if(document.getElementById('sidebar').classList.contains('active')) toggleSidebar();
                     } else {
@@ -281,10 +285,7 @@
                 });
             } else {
                 localStorage.setItem("modoTrabajoActivo", false);
-                // Liberar pantalla si se desconecta
-                if (wakeLock !== null) {
-                    wakeLock.release().then(() => { wakeLock = null; });
-                }
+                if (wakeLock !== null) { wakeLock.release().then(() => { wakeLock = null; }); }
                 location.reload();
             }
         }
