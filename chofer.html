@@ -73,7 +73,10 @@
             border-radius: 10px; 
             border-left: 4px solid #b39ddb; 
             text-align: left; 
+            transition: 0.2s;
         }
+        /* Resaltado cuando se selecciona para ver en mapa */
+        .pedido-card.revisando { border: 2px solid #ffeb3b; background: rgba(255, 235, 59, 0.1); }
 
         .rating-estrella { color: #ffca28; font-weight: bold; font-size: 13px; }
         .badge-confianza { font-size: 9px; padding: 2px 6px; border-radius: 4px; font-weight: bold; text-transform: uppercase; margin-left: 5px; vertical-align: middle; background: #2e7d32; color: white; }
@@ -159,6 +162,7 @@
         var ultimoConteoPedidos = 0, markerChofer, markerCliente, controlRuta, idViajeActivo, watchID;
         var viajesRechazados = [], avisoLlegadaEnviado = false;
         var wakeLock = null;
+        var marcadorRevision = null; // Para previsualizar clientes
 
         function avisarConVoz(mensaje) {
             if ('speechSynthesis' in window) {
@@ -302,6 +306,20 @@
             });
         }
 
+        // FUNCIÓN PARA REVISAR UBICACIÓN ANTES DE ACEPTAR
+        function previsualizarCliente(id, lat, lon) {
+            if (marcadorRevision) map.removeLayer(marcadorRevision);
+
+            marcadorRevision = L.circleMarker([lat, lon], {
+                radius: 15, color: '#ffeb3b', fillColor: '#ffeb3b', fillOpacity: 0.4, weight: 3
+            }).addTo(map);
+
+            marcadorRevision.bindPopup("<b>Ubicación del Pasajero</b>").openPopup();
+
+            var grupo = new L.featureGroup([markerChofer, marcadorRevision]);
+            map.fitBounds(grupo.getBounds(), { padding: [70, 70] });
+        }
+
         function renderizarListaPedidos(pedidos) {
             var contenedor = document.getElementById('lista-pedidos');
             if (!idViajeActivo && document.getElementById('checkTrabajo').checked) {
@@ -333,7 +351,7 @@
                         var totalV = pedidos[id].cliente_historial || "1";
 
                         contenedor.innerHTML += `
-                        <div class="pedido-card">
+                        <div class="pedido-card" onclick="previsualizarCliente('${id}', ${cli.lat}, ${cli.lon})">
                             <div style="float: right;">
                                 <span class="reloj-tag">⏳ ${minutos}:${segundos < 10 ? '0' : ''}${segundos}</span>
                                 <span class="distancia-tag">📍 ${km} km</span>
@@ -344,12 +362,12 @@
                                 <span class="rating-estrella">⭐ ${estrellas}</span>
                                 <small style="color:#aaa; margin-left:10px;">Historial: ${totalV} viajes</small>
                             </div>
-                            <small style="color:#b39ddb; font-size:10px; font-weight:bold;">${pedidos[id].cliente_uid || "OT-100"}</small>
+                            <small style="color:#b39ddb; font-size:10px; font-weight:bold;">Toca para ubicar en mapa</small>
                             <div class="tiempo-container">
                                 <div class="barra-progreso" style="width: ${porcentajeBarra}%"></div>
                             </div>
-                            <button class="btn-aceptar" onclick="aceptarViaje('${id}')">ACEPTAR VIAJE</button>
-                            <button class="btn-rechazar" onclick="rechazarViajeLocal('${id}')">OCULTAR</button>
+                            <button class="btn-aceptar" onclick="event.stopPropagation(); aceptarViaje('${id}')">ACEPTAR VIAJE</button>
+                            <button class="btn-rechazar" onclick="event.stopPropagation(); rechazarViajeLocal('${id}')">OCULTAR</button>
                         </div>`;
                     }
                 }
@@ -364,16 +382,17 @@
 
         function rechazarViajeLocal(id) { 
             viajesRechazados.push(id); 
+            if (marcadorRevision) map.removeLayer(marcadorRevision);
             if(window.ultimoSnapshotPedidos) { renderizarListaPedidos(window.ultimoSnapshotPedidos); }
         }
 
-        // --- CORRECCIÓN INTEGRADA AQUÍ ---
         function aceptarViaje(id) {
-            // VALIDACIÓN DE RED ANTES DE HACER NADA
             if (!navigator.onLine) {
                 alert("❌ ERROR DE RED: No tienes internet para aceptar este viaje.");
                 return;
             }
+
+            if (marcadorRevision) map.removeLayer(marcadorRevision);
 
             idViajeActivo = id;
             localStorage.setItem("idViajeChoferActivo", id);
@@ -381,7 +400,6 @@
             
             document.getElementById('app-body').classList.add('modo-enfocado');
             
-            // Intentar actualizar Firebase
             database.ref('viajes/' + id).update({ 
                 estado: 'en_curso', 
                 chofer: { 
@@ -391,10 +409,9 @@
                     lon: markerChofer.getLatLng().lng 
                 } 
             }).then(() => {
-                // Si la red responde bien, reconectamos la UI
+                avisoLlegadaEnviado = false;
                 reconectarViajeChofer(id);
             }).catch((error) => {
-                // Si falla por internet o porque otro lo ganó
                 alert("❌ Error: No se pudo confirmar el viaje. Verifica tu señal.");
                 document.getElementById('app-body').classList.remove('modo-enfocado');
                 localStorage.removeItem("idViajeChoferActivo");
@@ -437,7 +454,6 @@
 
         function terminarViaje(id) {
             if (!navigator.onLine) return alert("❌ SIN CONEXIÓN: No puedes finalizar el viaje sin internet.");
-
             const btn = document.getElementById('btn-finalizar-viaje');
             if (btn.disabled) return;
 
@@ -481,4 +497,3 @@
     </script>
 </body>
 </html>
-
