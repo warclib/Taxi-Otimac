@@ -536,9 +536,57 @@ function iniciarGPS() {
                 database.ref('viajes/' + id).remove().then(() => location.reload());
             });
         }
+        // --- LÓGICA PARA EL DESLIZADOR TIPO UBER ---
+function activarDeslizador(viajeId) {
+    const handle = document.getElementById('sliderHandle');
+    const container = document.getElementById('sliderContainer');
+    if (!handle || !container) return;
+
+    let isDragging = false;
+    let startX = 0;
+
+    const onStart = (e) => {
+        isDragging = true;
+        startX = (e.touches ? e.touches[0].clientX : e.clientX) - handle.offsetLeft;
+    };
+
+    const onMove = (e) => {
+        if (!isDragging) return;
+        let clientX = e.touches ? e.touches[0].clientX : e.clientX;
+        let x = clientX - startX;
+        let maxX = container.clientWidth - handle.clientWidth - 10;
+
+        if (x < 5) x = 5;
+        if (x > maxX) x = maxX;
+
+        handle.style.left = x + 'px';
+
+        // Si llega al final (90%), termina el viaje
+        if (x >= maxX * 0.9) {
+            isDragging = false;
+            handle.style.left = maxX + 'px';
+            terminarViaje(viajeId); // Activa tu función de la línea 521
+        }
+    };
+
+    const onEnd = () => {
+        isDragging = false;
+        if (parseInt(handle.style.left) < (container.clientWidth - 70)) {
+            handle.style.left = '5px'; // Se regresa si no llegó al final
+        }
+    };
+
+    handle.addEventListener('touchstart', onStart);
+    window.addEventListener('touchmove', onMove);
+    window.addEventListener('touchend', onEnd);
+    handle.addEventListener('mousedown', onStart);
+    window.addEventListener('mousemove', onMove);
+    window.addEventListener('mouseup', onEnd);
+}
     </script>
 </body>
 </html>
+
 
 
 
