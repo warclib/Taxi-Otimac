@@ -315,30 +315,35 @@
                 location.reload();
             }
         }
-
-        function iniciarGPS() {
-            watchID = navigator.geolocation.watchPosition((pos) => {
-                var lat = pos.coords.latitude, lon = pos.coords.longitude;
-                var miPos = L.latLng(lat, lon);
-                document.getElementById('status-gps').innerText = "✅ GPS ON";
-                document.getElementById('status-gps').style.color = "#00ff00";
-                if(markerChofer) markerChofer.setLatLng(miPos);
-                else { markerChofer = L.marker(miPos, {icon: iconoTaxi}).addTo(map); map.setView(miPos, 17); }
-                
-                if (idViajeActivo) {
-                    database.ref('viajes/' + idViajeActivo + '/chofer').update({ lat: lat, lon: lon });
-                    if (markerCliente) {
-                        var dist = miPos.distanceTo(markerCliente.getLatLng());
-                        if (dist < 150 && !avisoLlegadaEnviado) {
-                            avisoLlegadaEnviado = true;
-                            avisarConVoz("Atención, estás llegando a la ubicación del cliente.");
-                            database.ref('viajes/' + idViajeActivo).update({ estado: 'chofer_llego' });
-                        }
-                    }
+function iniciarGPS() {
+    watchID = navigator.geolocation.watchPosition((pos) => {
+        var lat = pos.coords.latitude, lon = pos.coords.longitude;
+        var miPos = L.latLng(lat, lon);
+        document.getElementById('status-gps').innerText = "✅ GPS ON";
+        document.getElementById('status-gps').style.color = "#00ff00";
+        
+        if(markerChofer) markerChofer.setLatLng(miPos);
+        else { markerChofer = L.marker(miPos, {icon: iconoTaxi}).addTo(map); map.setView(miPos, 17); }
+        
+        if (idViajeActivo) {
+            database.ref('viajes/' + idViajeActivo + '/chofer').update({ lat: lat, lon: lon });
+            
+            // --- ESTA ES LA LINEA QUE HACE QUE EL MAPA TE SIGA ---
+            map.panTo(miPos); 
+            
+            if (markerCliente) {
+                var dist = miPos.distanceTo(markerCliente.getLatLng());
+                if (dist < 150 && !avisoLlegadaEnviado) {
+                    avisoLlegadaEnviado = true;
+                    avisarConVoz("Atención, estás llegando a la ubicación del cliente.");
+                    database.ref('viajes/' + idViajeActivo).update({ estado: 'chofer_llego' });
                 }
-            }, null, {enableHighAccuracy: true});
+            }
         }
-
+    }, (err) => { 
+        console.error(err); 
+    }, {enableHighAccuracy: true, maximumAge: 0, timeout: 5000});
+}
         function escucharPedidos() {
             database.ref('viajes').on('value', (snapshot) => {
                 var pedidos = snapshot.val();
@@ -488,4 +493,5 @@
     </script>
 </body>
 </html>
+
 
