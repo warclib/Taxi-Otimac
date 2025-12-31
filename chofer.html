@@ -53,56 +53,55 @@
         #map { height: 100vh; width: 100%; z-index: 1; }
         #interfaz { position: fixed; bottom: 0; left: 0; right: 0; z-index: 2000; padding: 10px; }
 
-        /* AJUSTE: Opacidad equilibrada (0.55) */
+        /* AJUSTE: Panel más pequeño para celular */
         .panel-pedidos { 
-            background: rgba(0, 0, 0, 0.55); 
-            backdrop-filter: blur(15px); 
-            -webkit-backdrop-filter: blur(15px);
+            background: rgba(0, 0, 0, 0.75); 
+            backdrop-filter: blur(12px); 
+            -webkit-backdrop-filter: blur(12px);
             padding: 10px 12px; 
-            border-radius: 20px 20px 0 0; 
-            border-top: 2px solid rgba(179, 157, 219, 0.5);
-            box-shadow: 0 -5px 20px rgba(0,0,0,0.3); 
-            max-height: 32vh; 
+            border-radius: 15px 15px 0 0; 
+            border-top: 2px solid #b39ddb;
+            box-shadow: 0 -5px 20px rgba(0,0,0,0.5); 
+            max-height: 30vh; /* Ocupa menos pantalla */
             overflow-y: auto;
         }
 
         .pedido-card { 
-            padding: 10px; 
-            background: rgba(255, 255, 255, 0.08); 
-            margin: 6px 0; 
-            border-radius: 12px; 
-            border-left: 4px solid #b39ddb; 
+            padding: 8px 10px; 
+            background: rgba(255, 255, 255, 0.05); 
+            margin: 5px 0; 
+            border-radius: 8px; 
+            border-left: 3px solid #b39ddb; 
             text-align: left; 
             font-size: 13px;
-            user-select: none; /* Evita que se seleccione texto al mantener presionado */
-            -webkit-user-select: none;
         }
 
+        /* Etiqueta para el ID del Cliente */
         .id-cliente-tag {
             color: #b39ddb;
             font-family: monospace;
             font-weight: bold;
-            background: rgba(179, 157, 219, 0.15);
-            padding: 1px 5px;
-            border-radius: 4px;
+            background: rgba(179, 157, 219, 0.1);
+            padding: 1px 4px;
+            border-radius: 3px;
             font-size: 10px;
-            margin-left: 6px;
+            margin-left: 5px;
         }
 
         .rating-estrella { color: #ffca28; font-weight: bold; font-size: 12px; }
         .reloj-tag { color: #ffca28; font-weight: bold; font-size: 11px; }
         .distancia-tag { color: #b39ddb; font-weight: bold; font-size: 11px; }
         
-        .tiempo-container { width: 100%; height: 3px; background: rgba(255,255,255,0.1); border-radius: 2px; margin: 6px 0; overflow: hidden; }
+        .tiempo-container { width: 100%; height: 3px; background: rgba(255,255,255,0.1); border-radius: 2px; margin: 5px 0; overflow: hidden; }
         .barra-progreso { height: 100%; background: #00ff00; width: 100%; transition: width 1s linear; }
 
         .btn-aceptar { background:#b39ddb; border:none; padding:10px; border-radius:8px; font-weight:bold; width:100%; cursor: pointer; color: black; font-size: 13px; margin-top: 5px; }
         .btn-rechazar { background:transparent; border:none; color: #ff4444; padding:5px; width:100%; cursor: pointer; font-size: 10px; text-decoration: underline; }
-        .btn-cancelar { background: #ff4444; color: white; border: none; padding: 15px; border-radius: 12px; font-weight: bold; width: 100%; font-size: 16px; }
+        .btn-cancelar { background: #ff4444; color: white; border: none; padding: 15px; border-radius: 10px; font-weight: bold; width: 100%; font-size: 16px; }
 
-        .contenedor-navegacion { display: flex; justify-content: space-between; gap: 8px; margin-bottom: 10px; }
-        .btn-navegar-waze { background: #33ccff; color: white; border: none; padding: 12px; border-radius: 10px; font-weight: bold; width: 50%; cursor: pointer; }
-        .btn-navegar-maps { background: #4285F4; color: white; border: none; padding: 12px; border-radius: 10px; font-weight: bold; width: 50%; cursor: pointer; }
+        .contenedor-navegacion { display: flex; justify-content: space-between; gap: 8px; margin-bottom: 8px; }
+        .btn-navegar-waze { background: #33ccff; color: white; border: none; padding: 10px; border-radius: 8px; font-weight: bold; width: 50%; cursor: pointer; font-size: 13px; }
+        .btn-navegar-maps { background: #4285F4; color: white; border: none; padding: 10px; border-radius: 8px; font-weight: bold; width: 50%; cursor: pointer; font-size: 13px; }
 
         .sidebar-item { background: rgba(255,255,255,0.08); padding: 15px; border-radius: 12px; margin-bottom: 15px; border-left: 4px solid #b39ddb; }
         .switch { position: relative; display: inline-block; width: 50px; height: 28px; }
@@ -120,7 +119,7 @@
     <div id="splash-screen">
         <div class="logo-animado">🚖</div>
         <div style="color: #1a1a1a; font-size: 28px; font-weight: 900; margin-top: 10px;">OTIMAC</div>
-        <div class="texto-carga">INICIANDO...</div>
+        <div class="texto-carga">REINICIANDO SISTEMA...</div>
     </div>
 
     <button id="btn-menu" onclick="toggleSidebar()">☰</button>
@@ -143,7 +142,7 @@
         <div class="sidebar-item" onclick="cambiarDatosChofer()" style="cursor:pointer;">
             <div style="font-size: 15px; font-weight: bold;">👤 <span id="displayNombre">...</span></div>
             <div style="font-size: 15px; font-weight: bold;">🚕 Eco: <span id="displayEco">...</span></div>
-            <small style="color: #b39ddb; font-size: 10px;">(Editar)</small>
+            <small style="color: #b39ddb; font-size: 10px;">(Toca para editar)</small>
         </div>
     </div>
 
@@ -152,7 +151,7 @@
     <div id="interfaz">
         <div class="panel-pedidos">
             <h3 id="titulo-panel" style="margin: 0 0 8px 0; font-size: 14px;">Viajes Disponibles</h3>
-            <div id="lista-pedidos" style="color: #aaa; font-size: 12px;">Activa el modo trabajo.</div>
+            <div id="lista-pedidos" style="color: #aaa; font-size: 12px;">Enciende el modo trabajo.</div>
         </div>
     </div>
 
@@ -169,6 +168,7 @@
         var audioNotificacion = new Audio('https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3');
         var ultimoConteoPedidos = 0, markerChofer, markerCliente, controlRuta, idViajeActivo, watchID;
         var viajesRechazados = [], avisoLlegadaEnviado = false;
+        var wakeLock = null;
         var marcadorRevision = null;
 
         function avisarConVoz(mensaje) {
@@ -176,6 +176,12 @@
                 var msg = new SpeechSynthesisUtterance(mensaje);
                 msg.lang = 'es-MX';
                 window.speechSynthesis.speak(msg);
+            }
+        }
+
+        async function mantenerPantallaEncendida() {
+            if ('wakeLock' in navigator) {
+                try { wakeLock = await navigator.wakeLock.request('screen'); } catch (err) {}
             }
         }
 
@@ -243,6 +249,7 @@
                         localStorage.setItem("modoTrabajoActivo", true);
                         document.getElementById('txtModo').innerText = "TRABAJANDO";
                         document.getElementById('txtModo').style.color = "#00ff00";
+                        mantenerPantallaEncendida();
                         iniciarGPS(); escucharPedidos();
                         if(document.getElementById('sidebar').classList.contains('active')) toggleSidebar();
                     } else {
@@ -268,7 +275,8 @@
                 if (idViajeActivo) {
                     database.ref('viajes/' + idViajeActivo + '/chofer').update({ lat: lat, lon: lon });
                     if (markerCliente) {
-                        if (miPos.distanceTo(markerCliente.getLatLng()) < 150 && !avisoLlegadaEnviado) {
+                        var dist = miPos.distanceTo(markerCliente.getLatLng());
+                        if (dist < 150 && !avisoLlegadaEnviado) {
                             avisoLlegadaEnviado = true;
                             avisarConVoz("Atención, estás llegando al cliente.");
                             database.ref('viajes/' + idViajeActivo).update({ estado: 'chofer_llego' });
@@ -286,21 +294,26 @@
             });
         }
 
-        // FUNCIONES DE VISTA RÁPIDA (MODIFICADO)
-        function mostrarVistaPrevia(lat, lon) {
+        // CÍRCULO AHORA ES MORADO (CORREGIDO)
+        function previsualizarCliente(id, lat, lon) {
             if (marcadorRevision) map.removeLayer(marcadorRevision);
+
             marcadorRevision = L.circleMarker([lat, lon], {
-                radius: 18, color: '#b39ddb', fillColor: '#b39ddb', fillOpacity: 0.5, weight: 3, dashArray: '5, 5'
+                radius: 15, 
+                color: '#b39ddb', // MORADO
+                fillColor: '#b39ddb', 
+                fillOpacity: 0.4, 
+                weight: 3,
+                dashArray: '5, 5'
             }).addTo(map);
+
+            marcadorRevision.bindPopup("<b>Ubicación del Pasajero</b>").openPopup();
+
             var grupo = new L.featureGroup([markerChofer, marcadorRevision]);
-            map.fitBounds(grupo.getBounds(), { padding: [60, 60] });
+            map.fitBounds(grupo.getBounds(), { padding: [50, 50] });
         }
 
-        function quitarVistaPrevia() {
-            if (marcadorRevision) { map.removeLayer(marcadorRevision); marcadorRevision = null; }
-            if (markerChofer) { map.setView(markerChofer.getLatLng(), 17); }
-        }
-
+        // RENDERIZADO CON ID Y PANEL COMPACTO (CORREGIDO)
         function renderizarListaPedidos(pedidos) {
             var contenedor = document.getElementById('lista-pedidos');
             if (!idViajeActivo && document.getElementById('checkTrabajo').checked) {
@@ -312,10 +325,15 @@
                     if (pedidos[id].estado === 'esperando' && !viajesRechazados.includes(id)) {
                         conteoActual++;
                         var cli = pedidos[id].cliente;
-                        var idCli = pedidos[id].cliente_uid || "S/ID";
-                        var restanteMs = 300000 - (ahora - (pedidos[id].timestamp || ahora));
+                        var idCli = pedidos[id].cliente_uid || "S/ID"; // ID RECUPERADO
                         
-                        if (restanteMs <= 0) { database.ref('viajes/' + id).remove(); continue; }
+                        var timestampViaje = pedidos[id].timestamp || ahora;
+                        var restanteMs = 300000 - (ahora - timestampViaje);
+                        
+                        if (restanteMs <= 0) {
+                            database.ref('viajes/' + id).remove();
+                            continue;
+                        }
 
                         var seg = Math.max(0, Math.floor(restanteMs / 1000));
                         var min = Math.floor(seg / 60);
@@ -323,14 +341,8 @@
                         var porcentajeBarra = (restanteMs / 300000) * 100;
                         var km = markerChofer ? (L.latLng(markerChofer.getLatLng()).distanceTo(L.latLng(cli.lat, cli.lon)) / 1000).toFixed(1) : "...";
 
-                        // Tarjeta con Eventos de Presión (Touch/Mouse)
                         contenedor.innerHTML += `
-                        <div class="pedido-card" 
-                             ontouchstart="mostrarVistaPrevia(${cli.lat}, ${cli.lon})" 
-                             ontouchend="quitarVistaPrevia()" 
-                             onmousedown="mostrarVistaPrevia(${cli.lat}, ${cli.lon})" 
-                             onmouseup="quitarVistaPrevia()"
-                             onmouseleave="quitarVistaPrevia()">
+                        <div class="pedido-card" onclick="previsualizarCliente('${id}', ${cli.lat}, ${cli.lon})">
                             <div style="float: right; text-align: right;">
                                 <span class="reloj-tag">⏳ ${min}:${segT}</span><br>
                                 <span class="distancia-tag">📍 ${km} km</span>
@@ -358,11 +370,12 @@
 
         function rechazarViajeLocal(id) { 
             viajesRechazados.push(id); 
+            if (marcadorRevision) map.removeLayer(marcadorRevision);
             renderizarListaPedidos(window.ultimoSnapshotPedidos);
         }
 
         function aceptarViaje(id) {
-            quitarVistaPrevia();
+            if (marcadorRevision) map.removeLayer(marcadorRevision);
             idViajeActivo = id;
             localStorage.setItem("idViajeChoferActivo", id);
             var n = localStorage.getItem("choferNombre"), e = localStorage.getItem("choferEco");
@@ -388,11 +401,11 @@
 
         function dibujarInterfazYRuta(lat, lon, id) {
             document.getElementById('interfaz').innerHTML = `
-                <div class="panel-pedidos" style="background: rgba(0,0,0,0.7);">
+                <div class="panel-pedidos">
                     <h3 style="margin:0 0 10px 0; font-size:14px; color:#b39ddb;">VIAJE ACTIVO</h3>
                     <div class="contenedor-navegacion">
-                        <button class="btn-navegar-waze" onclick="window.open('https://www.waze.com/ul?ll=${lat},${lon}&navigate=yes')">WAZE</button>
-                        <button class="btn-navegar-maps" onclick="window.open('https://www.google.com/maps/dir/?api=1&destination=${lat},${lon}&travelmode=driving')">MAPS</button>
+                        <button class="btn-navegar-waze" onclick="window.open('https://www.waze.com/ul?ll=${lat},${lon}&navigate=yes')">🚙 WAZE</button>
+                        <button class="btn-navegar-maps" onclick="window.open('https://www.google.com/maps/dir/?api=1&destination=${lat},${lon}&travelmode=driving')">📍 MAPS</button>
                     </div>
                     <button class="btn-cancelar" id="btn-finalizar-viaje" onclick="terminarViaje('${id}')">FINALIZAR SERVICIO</button>
                 </div>`;
