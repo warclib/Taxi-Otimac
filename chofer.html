@@ -119,26 +119,10 @@
     </style>
 </head>
 <body onload="iniciarAppCentral()" id="app-body">
-
     <div id="splash-screen">
-        <div style="color: #1a1a1a; font-size: 32px; font-weight: 900; letter-spacing: 2px;">OTIMAC</div>
+        <div class="logo-animado">🚖</div>
+        <div style="color: #1a1a1a; font-size: 28px; font-weight: 900; margin-top: 10px;">OTIMAC</div>
         <div class="texto-carga">REINICIANDO SISTEMA...</div>
-    </div>
-    <button id="btn-menu" onclick="toggleSidebar()">☰</button>
-    
-    ```
-
----
-
-### ¿Por qué se pone ahí?
-1.  **Jerarquía:** Al estar arriba de todo en el `<body>`, el sistema le da prioridad visual.
-2.  **Funcionamiento:** Como tiene un `z-index: 10000` en el CSS, tapará el mapa y los botones hasta que la función `iniciarAppCentral()` termine de contar los 2.5 segundos y le dé la orden de desaparecer.
-
-### Un pequeño tip de Ponchito:
-Si ves que el texto **"OTIMAC"** queda muy arriba o muy pegado al texto de carga, puedes agregarle un `margin-bottom` al primer `div` así:
-* `<div style="... margin-bottom: 10px;">OTIMAC</div>`
-
-¿Te gustaría que le añadamos algún efecto de desvanecimiento extra o que cambie de color mientras carga, **Warclib**?
     </div>
 
     <button id="btn-menu" onclick="toggleSidebar()">☰</button>
@@ -452,4 +436,3 @@ Si ves que el texto **"OTIMAC"** queda muy arriba o muy pegado al texto de carga
     </script>
 </body>
 </html>
-
