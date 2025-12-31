@@ -168,27 +168,33 @@
         var wakeLock = null;
         var circuloReferenciaCliente;
 
-        // --- ICONOS MEJORADOS (NO MÁS GLOBOS) ---
+        // --- ICONO DE TAXI MEJORADO (RÉPLICA DEL DISEÑO PROFESIONAL) ---
         var iconoTaxi = L.divIcon({
             html: `
-                <svg width="50" height="50" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M12 0C7.58 0 4 3.58 4 8c0 5.25 7 13 8 16 1-3 8-10.75 8-16 0-4.42-3.58-8-8-8z" fill="#b39ddb"/>
-                    <circle cx="12" cy="8" r="6" fill="white"/>
-                    <path d="M17 11.5L16.5 9.5H7.5L7 11.5V13.5H17V11.5Z" fill="#b39ddb"/>
-                    <path d="M8.5 9.5L9 8H15L15.5 9.5H8.5Z" fill="#b39ddb"/>
-                    <rect x="11" y="7.5" width="2" height="1" fill="#b39ddb"/>
+                <svg width="60" height="60" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M12 21.32C12 21.32 19 15.5 19 9C19 5.13 15.87 2 12 2C8.13 2 5 5.13 5 9C5 15.5 12 21.32 12 21.32Z" fill="#b39ddb" stroke="white" stroke-width="1"/>
+                    <circle cx="12" cy="9" r="6" fill="white"/>
+                    <g fill="#b39ddb">
+                        <path d="M10 6.5C10 6.2 10.2 6 10.5 6H13.5C13.8 6 14 6.2 14 6.5L14.8 8.5H9.2L10 6.5Z" />
+                        <path d="M8.5 8.5C8.2 8.5 8 8.7 8 9V11.5C8 11.8 8.2 12 8.5 12H15.5C15.8 12 16 11.8 16 11.5V9C16 8.7 15.8 8.5 15.5 8.5H8.5Z" />
+                        <circle cx="9.5" cy="10.5" r="0.6" fill="white"/>
+                        <circle cx="14.5" cy="10.5" r="0.6" fill="white"/>
+                        <rect x="7.3" y="9.2" width="0.7" height="1.2" rx="0.2"/>
+                        <rect x="16" y="9.2" width="0.7" height="1.2" rx="0.2"/>
+                        <rect x="11.2" y="5.4" width="1.6" height="0.7" rx="0.1"/>
+                    </g>
                 </svg>`,
-            className: "custom-div-icon", iconSize: [50, 50], iconAnchor: [25, 50]
+            className: "custom-div-icon", iconSize: [60, 60], iconAnchor: [30, 60]
         });
 
         var iconoPasajero = L.divIcon({
             html: `
-                <svg width="45" height="45" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M12 0C7.58 0 4 3.58 4 8c0 5.25 7 13 8 16 1-3 8-10.75 8-16 0-4.42-3.58-8-8-8z" fill="#2e7d32"/>
-                    <circle cx="12" cy="8" r="5" fill="white"/>
+                <svg width="50" height="50" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M12 21C12 21 19 15.5 19 9C19 5.13 15.87 2 12 2C8.13 2 5 5.13 5 9C5 15.5 12 21 12 21Z" fill="#2e7d32" stroke="white" stroke-width="1"/>
+                    <circle cx="12" cy="9" r="6" fill="white"/>
                     <path d="M12 11C13.1 11 14 10.1 14 9C14 7.9 13.1 7 12 7C10.9 7 10 7.9 10 9C10 10.1 10.9 11 12 11ZM12 11.5C10.33 11.5 7 12.33 7 14V15H17V14C17 12.33 13.67 11.5 12 11.5Z" fill="#2e7d32"/>
                 </svg>`,
-            className: "custom-div-icon", iconSize: [45, 45], iconAnchor: [22, 45]
+            className: "custom-div-icon", iconSize: [50, 50], iconAnchor: [25, 50]
         });
 
         function avisarConVoz(mensaje) {
