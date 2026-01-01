@@ -198,9 +198,8 @@
         var wakeLock = null;
         var circuloReferenciaCliente;
         var pedidosVistos = new Set();
-        var serverTimeOffset = 0; // Sincronización de tiempo
+        var serverTimeOffset = 0;
 
-        // Obtener desfase de tiempo con el servidor
         database.ref(".info/serverTimeOffset").on("value", function(snap) {
             serverTimeOffset = snap.val() || 0;
         });
@@ -355,20 +354,33 @@
         }
 
         function escucharPedidos() {
+            database.ref('viajes').off(); // Evita duplicados al reconectar internet
             database.ref('viajes').on('value', (snapshot) => {
                 var pedidos = snapshot.val();
                 window.ultimoSnapshotPedidos = pedidos;
 
+                // Limpieza agresiva de memoria local
                 pedidosVistos.forEach(id => {
-                    if (!pedidos || !pedidos[id]) { pedidosVistos.delete(id); }
+                    if (!pedidos || !pedidos[id] || pedidos[id].estado !== 'esperando') { 
+                        pedidosVistos.delete(id); 
+                    }
                 });
 
                 if (pedidos && document.getElementById('checkTrabajo').checked && !idViajeActivo) {
+                    var ahoraServer = Date.now() + serverTimeOffset;
                     for (var id in pedidos) {
-                        if (pedidos[id].estado === 'esperando' && !pedidosVistos.has(id) && !viajesRechazados.includes(id)) {
-                            pedidosVistos.add(id);
-                            audioNotificacion.play().catch(e=>{});
-                            avisarConVoz("tienes un nuevo viaje disponible.");
+                        var transcurrido = ahoraServer - (pedidos[id].timestamp || ahoraServer);
+                        
+                        // Solo avisamos si el viaje es NUEVO y tiene menos de 5 min
+                        if (pedidos[id].estado === 'esperando' && transcurrido < 300000) {
+                            if (!pedidosVistos.has(id) && !viajesRechazados.includes(id)) {
+                                pedidosVistos.add(id);
+                                audioNotificacion.play().catch(e=>{});
+                                avisarConVoz("tienes un nuevo viaje disponible.");
+                            }
+                        } else if (transcurrido >= 300000) {
+                            // Limpia la base de datos si el viaje ya caducó
+                            database.ref('viajes/' + id).remove();
                         }
                     }
                 }
@@ -398,13 +410,13 @@
             var contenedor = document.getElementById('lista-pedidos');
             if (!idViajeActivo && document.getElementById('checkTrabajo').checked) {
                 contenedor.innerHTML = "";
-                let ahora = Date.now() + serverTimeOffset; // Sincronizado con Firebase
+                let ahora = Date.now() + serverTimeOffset;
                 for (var id in pedidos) {
                     if (pedidos[id].estado === 'esperando' && !viajesRechazados.includes(id)) {
                         var cli = pedidos[id].cliente;
                         var transcurrido = ahora - (pedidos[id].timestamp || ahora);
                         var restanteMs = 300000 - transcurrido;
-                        if (restanteMs <= 0) { database.ref('viajes/' + id).remove(); continue; }
+                        if (restanteMs <= 0) { continue; }
 
                         var seg = Math.max(0, Math.floor(restanteMs / 1000));
                         var min = Math.floor(seg / 60), s = seg % 60;
