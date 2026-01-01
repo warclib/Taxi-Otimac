@@ -266,10 +266,9 @@
         
         var h = new Date().getHours();
        // REEMPLAZA LAS LÍNEAS 268 A 270 POR ESTAS:
-       var estilo = (h >= 18 || h < 7) 
-       ? 'https://services.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}' 
-        : 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}';
-        
+     var estilo = (h >= 18 || h < 7) 
+    ? 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png' 
+    : 'https://services.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}';
         L.tileLayer(estilo).addTo(map);
 
         function verificarEstadoChofer() {
@@ -506,6 +505,7 @@ function iniciarGPS() {
     </script>
 </body>
 </html>
+
 
 
 
