@@ -74,6 +74,46 @@
             -webkit-user-select: none;
         }
 
+        /* --- NUEVO ESTILO DESLIZADOR --- */
+        .slider-aceptar-container {
+            position: relative;
+            width: 100%;
+            height: 60px;
+            background: #6a1b9a;
+            border-radius: 30px;
+            margin-top: 10px;
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+            border: 2px solid #b39ddb;
+            touch-action: none;
+        }
+        .slider-rastro-verde {
+            position: absolute;
+            left: 0; top: 0; height: 100%;
+            background: #00e676;
+            width: 0%; z-index: 1;
+        }
+        .slider-text {
+            position: absolute; width: 100%; text-align: center;
+            color: white; font-weight: 900; font-size: 13px;
+            z-index: 2; letter-spacing: 1px; pointer-events: none;
+            text-transform: uppercase;
+        }
+        .slider-input {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            appearance: none; -webkit-appearance: none; background: transparent;
+            z-index: 3; margin: 0; outline: none;
+        }
+        .slider-input::-webkit-slider-thumb {
+            appearance: none; -webkit-appearance: none;
+            width: 60px; height: 60px; background: white;
+            border-radius: 50%; border: 4px solid #00e676;
+            cursor: pointer; box-shadow: 0 0 15px rgba(0,0,0,0.5);
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='black' width='28px' height='28px'%3E%3Cpath d='M12 4l-1.41 1.41L16.17 11H4v2h12.17l-5.58 5.59L12 20l8-8z'/%3E%3C/svg%3E");
+            background-repeat: no-repeat; background-position: center;
+        }
+
         .rating-estrella { color: #ffca28; font-weight: bold; font-size: 13px; }
         .badge-confianza { 
             display: inline-block;
@@ -92,7 +132,6 @@
         .tiempo-container { width: 100%; height: 4px; background: rgba(255,255,255,0.1); border-radius: 2px; margin: 8px 0; overflow: hidden; }
         .barra-progreso { height: 100%; background: #00ff00; width: 100%; transition: width 1s linear; }
 
-        .btn-aceptar { background:#b39ddb; border:none; padding:12px; border-radius:8px; font-weight:bold; width:100%; margin-top:8px; cursor: pointer; color: black; font-size: 14px; }
         .btn-rechazar { background:transparent; border:none; color: #ff4444; padding:5px; width:100%; margin-top:5px; cursor: pointer; font-size: 11px; text-decoration: underline; }
         .btn-cancelar { background: #ff4444; color: white; border: none; padding: 15px; border-radius: 10px; font-weight: bold; width: 100%; margin-top: 10px; font-size: 16px; }
         .btn-cancelar:disabled { background: #555 !important; cursor: not-allowed; }
@@ -430,7 +469,15 @@
                             </div>
                             <small style="color:#b39ddb; font-size:10px; font-weight:bold;">${pedidos[id].cliente_uid || "OT-100"}</small>
                             <div class="tiempo-container"><div class="barra-progreso" style="width: ${(restanteMs/300000)*100}%"></div></div>
-                            <button class="btn-aceptar" onclick="aceptarViaje('${id}')">ACEPTAR VIAJE</button>
+                            
+                            <div class="slider-aceptar-container">
+                                <div class="slider-rastro-verde" id="rastro-${id}"></div>
+                                <span class="slider-text">DESLIZA PARA ACEPTAR</span>
+                                <input type="range" class="slider-input" min="0" max="100" value="0" 
+                                    oninput="document.getElementById('rastro-${id}').style.width=this.value+'%'" 
+                                    onchange="if(this.value>=95){ aceptarViaje('${id}') }else{ this.value=0; document.getElementById('rastro-${id}').style.width='0%' }">
+                            </div>
+
                             <button class="btn-rechazar" onclick="rechazarViajeLocal('${id}')">OCULTAR</button>
                         </div>`;
                     }
@@ -447,6 +494,7 @@
         function aceptarViaje(id) {
             if (!navigator.onLine) return alert("❌ ERROR DE RED");
             idViajeActivo = id;
+            if(window.navigator.vibrate) window.navigator.vibrate(100);
             localStorage.setItem("idViajeChoferActivo", id);
             document.getElementById('app-body').classList.add('modo-enfocado');
             database.ref('viajes/' + id).update({ 
