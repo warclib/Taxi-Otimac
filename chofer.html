@@ -354,12 +354,11 @@
         }
 
         function escucharPedidos() {
-            database.ref('viajes').off(); // Evita duplicados al reconectar internet
+            database.ref('viajes').off();
             database.ref('viajes').on('value', (snapshot) => {
                 var pedidos = snapshot.val();
                 window.ultimoSnapshotPedidos = pedidos;
 
-                // Limpieza agresiva de memoria local
                 pedidosVistos.forEach(id => {
                     if (!pedidos || !pedidos[id] || pedidos[id].estado !== 'esperando') { 
                         pedidosVistos.delete(id); 
@@ -371,7 +370,6 @@
                     for (var id in pedidos) {
                         var transcurrido = ahoraServer - (pedidos[id].timestamp || ahoraServer);
                         
-                        // Solo avisamos si el viaje es NUEVO y tiene menos de 5 min
                         if (pedidos[id].estado === 'esperando' && transcurrido < 300000) {
                             if (!pedidosVistos.has(id) && !viajesRechazados.includes(id)) {
                                 pedidosVistos.add(id);
@@ -379,7 +377,6 @@
                                 avisarConVoz("tienes un nuevo viaje disponible.");
                             }
                         } else if (transcurrido >= 300000) {
-                            // Limpia la base de datos si el viaje ya caducó
                             database.ref('viajes/' + id).remove();
                         }
                     }
@@ -427,7 +424,10 @@
                             <div style="float: right;"><span class="reloj-tag">⏳ ${min}:${s < 10 ? '0' : ''}${s}</span><span class="distancia-tag">📍 ${km} km</span></div>
                             <div><span class="badge-confianza">Verificado</span></div>
                             <b style="font-size: 16px;">${pedidos[id].nombre_cliente || "Pasajero"}</b> 
-                            <div style="margin: 5px 0;"><span class="rating-estrella">⭐ ${pedidos[id].cliente_estrellas || "4.8"}</span></div>
+                            <div style="margin: 5px 0;">
+                                <span class="rating-estrella">⭐ ${pedidos[id].cliente_estrellas || "4.8"}</span>
+                                <small style="color:#aaa; margin-left:10px;">Historial: ${pedidos[id].cliente_historial || "1"} viajes.</small>
+                            </div>
                             <small style="color:#b39ddb; font-size:10px; font-weight:bold;">${pedidos[id].cliente_uid || "OT-100"}</small>
                             <div class="tiempo-container"><div class="barra-progreso" style="width: ${(restanteMs/300000)*100}%"></div></div>
                             <button class="btn-aceptar" onclick="aceptarViaje('${id}')">ACEPTAR VIAJE</button>
