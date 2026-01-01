@@ -266,11 +266,14 @@
         
         var h = new Date().getHours();
        // REEMPLAZA LAS LÍNEAS 268 A 270 POR ESTAS:
-     var estilo = (h >= 18 || h < 7) 
-    ? 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png' 
-    : 'https://services.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}';
-        L.tileLayer(estilo).addTo(map);
+    // CÓDIGO PARA EL MAPA AZUL MEDIANOCHE (TIPO WAZE)
+var estilo = (h >= 18 || h < 7) 
+    ? 'https://tiles.stadiamaps.com/tiles/alidade_smooth_dark/{z}/{x}/{y}{r}.png' 
+    : 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}';
 
+L.tileLayer(estilo, {
+    attribution: '© Stadia Maps'
+}).addTo(map);
         function verificarEstadoChofer() {
             var n = localStorage.getItem("choferNombre"), e = localStorage.getItem("choferEco");
             if(!n) {
@@ -505,6 +508,7 @@ function iniciarGPS() {
     </script>
 </body>
 </html>
+
 
 
 
