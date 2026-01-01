@@ -121,7 +121,8 @@
             height: 50px;
         }
 .leaflet-tile-container {
-    filter: hue-rotate(210deg) brightness(70%) contrast(120%) saturate(1.3) !important;
+ /* Sustituye la línea 124 por esta: */
+filter: invert(100%) hue-rotate(190deg) brightness(90%) contrast(110%) !important;
 }
         .pulso-gps {
             width: 20px;
@@ -269,7 +270,8 @@
         var h = new Date().getHours();
        // REEMPLAZA LAS LÍNEAS 268 A 270 POR ESTAS:
    var estilo = (h >= 18 || h < 7) 
-    ? 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png' 
+    // Sustituye la línea 272 por esta:
+      ? 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png'
     : 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}';
 
 L.tileLayer(estilo, {
@@ -509,6 +511,7 @@ function iniciarGPS() {
     </script>
 </body>
 </html>
+
 
 
 
