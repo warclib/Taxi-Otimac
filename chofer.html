@@ -74,27 +74,32 @@
             -webkit-user-select: none;
         }
 
-        /* --- NUEVO: SLIDER PARA ACEPTAR --- */
+        /* --- SLIDER PARA ACEPTAR CORREGIDO --- */
         .slider-aceptar-container {
             position: relative;
             width: 100%;
-            height: 50px;
+            height: 55px;
             background: rgba(255, 255, 255, 0.1);
-            border-radius: 25px;
+            border-radius: 30px;
             margin-top: 10px;
             overflow: hidden;
             display: flex;
             align-items: center;
             justify-content: center;
-            border: 1px solid rgba(179, 157, 219, 0.3);
+            border: 1px solid rgba(179, 157, 219, 0.4);
+            user-select: none;
+            -webkit-user-select: none;
+            touch-action: none; /* Evita que el navegador use flechas o scroll */
+            -webkit-tap-highlight-color: transparent;
         }
         .slider-text {
             color: #b39ddb;
             font-weight: bold;
-            font-size: 12px;
+            font-size: 13px;
             pointer-events: none;
             z-index: 1;
             letter-spacing: 1px;
+            text-transform: uppercase;
         }
         .slider-input {
             position: absolute;
@@ -105,16 +110,19 @@
             cursor: pointer;
             z-index: 2;
             margin: 0;
+            outline: none;
+            -webkit-tap-highlight-color: transparent;
         }
         .slider-input::-webkit-slider-thumb {
             appearance: none;
-            width: 50px; height: 50px;
+            width: 55px; height: 55px;
             background: #b39ddb;
             border-radius: 50%;
-            box-shadow: 0 0 15px rgba(0,0,0,0.5);
-            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='black' width='24px' height='24px'%3E%3Cpath d='M0 0h24v24H0z' fill='none'/%3E%3Cpath d='M12 4l-1.41 1.41L16.17 11H4v2h12.17l-5.58 5.59L12 20l8-8z'/%3E%3C/svg%3E");
+            box-shadow: 0 0 20px rgba(0,0,0,0.6);
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='black' width='28px' height='28px'%3E%3Cpath d='M0 0h24v24H0z' fill='none'/%3E%3Cpath d='M12 4l-1.41 1.41L16.17 11H4v2h12.17l-5.58 5.59L12 20l8-8z'/%3E%3C/svg%3E");
             background-repeat: no-repeat;
             background-position: center;
+            cursor: pointer;
         }
 
         .rating-estrella { color: #ffca28; font-weight: bold; font-size: 13px; }
@@ -135,7 +143,7 @@
         .tiempo-container { width: 100%; height: 4px; background: rgba(255,255,255,0.1); border-radius: 2px; margin: 8px 0; overflow: hidden; }
         .barra-progreso { height: 100%; background: #00ff00; width: 100%; transition: width 1s linear; }
 
-        .btn-rechazar { background:transparent; border:none; color: #ff4444; padding:5px; width:100%; margin-top:5px; cursor: pointer; font-size: 11px; text-decoration: underline; }
+        .btn-rechazar { background:transparent; border:none; color: #ff4444; padding:5px; width:100%; margin-top:8px; cursor: pointer; font-size: 11px; text-decoration: underline; }
         .btn-cancelar { background: #ff4444; color: white; border: none; padding: 15px; border-radius: 10px; font-weight: bold; width: 100%; margin-top: 10px; font-size: 16px; }
         .btn-cancelar:disabled { background: #555 !important; cursor: not-allowed; }
 
@@ -445,7 +453,6 @@
             if (markerChofer) { map.setView(markerChofer.getLatLng(), 17); }
         }
 
-        // --- ACTUALIZACIÓN: RENDERIZAR CON SLIDER ---
         function renderizarListaPedidos(pedidos) {
             var contenedor = document.getElementById('lista-pedidos');
             if (!idViajeActivo && document.getElementById('checkTrabajo').checked) {
