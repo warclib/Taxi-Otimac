@@ -13,9 +13,10 @@
       "type": "image/png"
     }
   ],
-  "start_url": "chofer.html",
+"start_url": "chofer.html",
   "background_color": "#1a1a1a",
-  "display": "standalone",
+  "display": "fullscreen",
   "scope": "./",
-  "theme_color": "#b39ddb"
+  "theme_color": "#1a1a1a",
+  "orientation": "portrait"
 }
