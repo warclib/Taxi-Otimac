@@ -209,29 +209,28 @@
             className: '', // Limpiamos clases por defecto
             iconSize: [50, 50],
             iconAnchor: [25, 25] // Centrado para que el pulso sea simétrico
-            // --- ESTO VA ANTES DE LA LÍNEA 212 ---
+// Línea 212: Pon esto aquí arriba
+let pedidosVistos = new Set(); 
+
 snapshot.forEach((doc) => {
     const idViaje = doc.id;
     const datos = doc.data();
 
-    // Si el viaje es nuevo (no está en la memoria de la línea 219)
     if (datos.estado === 'esperando' && !pedidosVistos.has(idViaje)) {
-        // Solo avisamos si el chofer tiene el botón de "Trabajando"
         if (document.getElementById('checkTrabajo').checked) {
-            pedidosVistos.add(idViaje); // Marcamos el ID en la memoria
-            avisarConVoz("tienes un nuevo viaje disponible."); // ¡Aviso instantáneo!
+            pedidosVistos.add(idViaje);
+            avisarConVoz("tienes un nuevo viaje disponible.");
             audioNotificacion.play().catch(e => {}); 
         }
     }
 });
-        });
 
         var iconoPasajero = L.icon({
             iconUrl: 'pasajero.png',    
             iconSize: [45, 45],
             iconAnchor: [22, 45]
         });
-     let pedidosVistos = new Set(); // <--- Ponlo aquí en la 219
+     
       function avisarConVoz(mensaje) {
     if ('speechSynthesis' in window) {
         window.speechSynthesis.cancel(); // <--- Esto quita el retraso de Marco Antonio
@@ -537,6 +536,7 @@ function iniciarGPS() {
     </script>
 </body>
 </html>
+
 
 
 
