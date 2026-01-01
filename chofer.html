@@ -209,41 +209,24 @@
             className: '', // Limpiamos clases por defecto
             iconSize: [50, 50],
             iconAnchor: [25, 25] // Centrado para que el pulso sea simétrico
-// Línea 212: Pon esto aquí arriba
-let pedidosVistos = new Set(); 
-
-snapshot.forEach((doc) => {
-    const idViaje = doc.id;
-    const datos = doc.data();
-
-    if (datos.estado === 'esperando' && !pedidosVistos.has(idViaje)) {
-        if (document.getElementById('checkTrabajo').checked) {
-            pedidosVistos.add(idViaje);
-            avisarConVoz("tienes un nuevo viaje disponible.");
-            audioNotificacion.play().catch(e => {}); 
-        }
-    }
-});
+        });
 
         var iconoPasajero = L.icon({
             iconUrl: 'pasajero.png',    
             iconSize: [45, 45],
             iconAnchor: [22, 45]
         });
-     
-      function avisarConVoz(mensaje) {
-    if ('speechSynthesis' in window) {
-        window.speechSynthesis.cancel(); // <--- Esto quita el retraso de Marco Antonio
-        var nombreChofer = localStorage.getItem("choferNombre") || "Chofer";
-        var textoFinal = nombreChofer + ", " + mensaje;
-        
-        var msg = new SpeechSynthesisUtterance();
-        msg.text = textoFinal; 
-        msg.lang = 'es-MX'; 
-        msg.rate = 1.0; // Velocidad normal
-        window.speechSynthesis.speak(msg);
-    }
-}
+
+        function avisarConVoz(mensaje) {
+            if ('speechSynthesis' in window) {
+                var nombreChofer = localStorage.getItem("choferNombre") || "Chofer";
+                var textoFinal = nombreChofer + ", " + mensaje;
+                var msg = new SpeechSynthesisUtterance();
+                msg.text = textoFinal; msg.lang = 'es-MX'; msg.rate = 1.0;
+                window.speechSynthesis.speak(msg);
+            }
+        }
+
         async function mantenerPantallaEncendida() {
             if ('wakeLock' in navigator) {
                 try {
@@ -536,8 +519,6 @@ function iniciarGPS() {
     </script>
 </body>
 </html>
-
-
 
 
 
