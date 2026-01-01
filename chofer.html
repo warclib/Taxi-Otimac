@@ -343,6 +343,7 @@
                     database.ref('viajes/' + idViajeActivo + '/chofer').update({ lat: lat, lon: lon });
                     if (markerCliente) {
                         var dist = miPos.distanceTo(markerCliente.getLatLng());
+                        // Ajuste inteligente: 150 metros con seguro de voz
                         if (dist < 150 && !avisoLlegadaEnviado) {
                             avisoLlegadaEnviado = true;
                             avisarConVoz("Atención, estás llegando a la ubicación del cliente.");
