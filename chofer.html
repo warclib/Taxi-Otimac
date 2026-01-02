@@ -328,19 +328,25 @@
             }
         }
 
-    function aceptarViaje(id) {
+  function aceptarViaje(id) {
+    // 1. CANDADO: Si no hay internet antes de deslizar, bloquea y avisa
+    if (!navigator.onLine) {
+        alert("⚠️ No tienes conexión a internet. Verifica tu señal antes de aceptar.");
+        location.reload(); 
+        return; 
+    }
+
     idViajeActivo = id;
     localStorage.setItem("idViajeChoferActivo", id);
     document.getElementById('app-body').classList.add('modo-enfocado');
     
-    // Vibración de confirmación
     if (window.navigator.vibrate) window.navigator.vibrate([50, 30, 50]);
 
-    // PROTECCIÓN: Si en 6 segundos no hay internet, avisamos y reiniciamos
+    // 2. PACIENCIA: Espera 15 segundos por si la señal regresa lenta
     let timeoutInternet = setTimeout(() => {
-        alert("⚠️ Error de conexión: No se pudo confirmar el viaje. Verifica tu señal.");
+        alert("⚠️ La señal es muy débil. No se pudo confirmar el viaje.");
         location.reload(); 
-    }, 6000);
+    }, 15000);
 
     database.ref('viajes/' + id).update({
         estado: 'en_curso',
@@ -351,11 +357,11 @@
             lon: markerChofer.getLatLng().lng
         }
     }).then(() => {
-        clearTimeout(timeoutInternet); // Éxito: cancelamos el error
+        clearTimeout(timeoutInternet);
         reconectarViajeChofer(id);
     }).catch(error => {
         clearTimeout(timeoutInternet);
-        alert("Error: " + error.message);
+        alert("Error de conexión: " + error.message);
     });
 }
         function reconectarViajeChofer(id) { idViajeActivo = id; document.getElementById('app-body').classList.add('modo-enfocado'); database.ref('viajes/' + id + '/cliente').once('value', snap => { var p = snap.val(); if(p) dibujarInterfazYRuta(p.lat, p.lon, id); }); }
@@ -375,6 +381,7 @@
     </script>
 </body>
 </html>
+
 
 
 
