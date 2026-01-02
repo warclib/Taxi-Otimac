@@ -22,12 +22,14 @@
         }
         .texto-carga { color: #1a1a1a; font-weight: bold; margin-top: 20px; letter-spacing: 3px; font-size: 14px; }
         body { font-family: 'Segoe UI', Roboto, Helvetica, sans-serif; text-align: center; background: #1a1a1a; color: white; margin: 0; padding: 0; overflow: hidden; }
+        
         #btn-menu { position: fixed; top: 15px; left: 15px; z-index: 5000; background: rgba(179, 157, 219, 0.2); color: white; border: 1px solid rgba(255, 255, 255, 0.2); width: 45px; height: 45px; border-radius: 50%; font-size: 24px; cursor: pointer; backdrop-filter: blur(5px); display: flex; align-items: center; justify-content: center; transition: 0.3s; }
         #sidebar { position: fixed; top: 0; left: -320px; width: 260px; height: 100%; background: rgba(0, 0, 0, 0.85); z-index: 4500; transition: 0.4s cubic-bezier(0.4, 0, 0.2, 1); padding: 70px 15px 20px 15px; text-align: left; backdrop-filter: blur(12px); border-right: 1px solid rgba(255, 255, 255, 0.1); }
         #sidebar.active { left: 0; box-shadow: 10px 0 30px rgba(0,0,0,0.5); border-right: 2px solid #b39ddb; }
         #overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); display: none; z-index: 4000; }
         #map { height: 100vh; width: 100%; z-index: 1; }
         #interfaz { position: fixed; bottom: 0; left: 0; right: 0; z-index: 2000; padding: 10px; }
+        
         .panel-pedidos { background: rgba(20, 20, 20, 0.85); backdrop-filter: blur(15px); padding: 10px 15px; border-radius: 20px 20px 0 0; border-top: 2px solid #b39ddb; box-shadow: 0 -10px 40px rgba(0,0,0,0.7); max-height: 35vh; overflow-y: auto; }
         .pedido-card { padding: 10px; background: rgba(255, 255, 255, 0.05); margin: 8px 0; border-radius: 12px; border: 1px solid rgba(255, 255, 255, 0.1); text-align: left; }
         .rating-estrella { color: #ffca28; font-weight: bold; font-size: 13px; }
@@ -39,6 +41,9 @@
         .btn-aceptar { background:#b39ddb; border:none; padding:12px; border-radius:8px; font-weight:bold; width:100%; margin-top:8px; cursor: pointer; color: black; font-size: 14px; }
         .btn-rechazar { background:transparent; border:none; color: #ff4444; padding:5px; width:100%; margin-top:5px; cursor: pointer; font-size: 11px; text-decoration: underline; }
         .btn-cancelar { background: #ff4444; color: white; border: none; padding: 15px; border-radius: 10px; font-weight: bold; width: 100%; margin-top: 10px; font-size: 16px; }
+        .contenedor-navegacion { display: flex; justify-content: space-between; gap: 10px; margin-bottom: 10px; }
+        .btn-navegar-waze { background: #33ccff; color: white; border: none; padding: 12px; border-radius: 8px; font-weight: bold; width: 50%; }
+        .btn-navegar-maps { background: #4285F4; color: white; border: none; padding: 12px; border-radius: 8px; font-weight: bold; width: 50%; }
         .sidebar-item { background: rgba(255,255,255,0.08); padding: 15px; border-radius: 12px; margin-bottom: 15px; border-left: 4px solid #b39ddb; }
         .switch { position: relative; display: inline-block; width: 50px; height: 28px; }
         .switch input { opacity: 0; width: 0; height: 0; }
@@ -63,7 +68,7 @@
         .btn-primario { background: #b39ddb; color: black; }
         .btn-secundario { background: transparent; color: #888; text-decoration: underline; }
         .star-rating { font-size: 35px; margin: 15px 0; }
-        .star-rating span { cursor: pointer; color: #444; }
+        .star-rating span { cursor: pointer; color: #444; transition: 0.2s; }
         .star-active { color: #ffca28 !important; }
     </style>
 </head>
@@ -122,7 +127,7 @@
         var database = firebase.database();
 
         var audioNotificacion = new Audio('https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3');
-        var markerChofer, markerCliente, controlRuta, idViajeActivo, watchID, serverTimeOffset = 0, temporizadorVista, capaMapa;
+        var markerChofer, markerCliente, controlRuta, idViajeActivo, watchID, serverTimeOffset = 0, temporizadorVista;
         var viajesRechazados = [], avisoLlegadaEnviado = false, wakeLock = null, circuloReferenciaCliente, pedidosVistos = new Set();
 
         database.ref(".info/serverTimeOffset").on("value", function(snap) { serverTimeOffset = snap.val() || 0; });
@@ -138,7 +143,6 @@
         async function mantenerPantallaEncendida() { if ('wakeLock' in navigator) { try { wakeLock = await navigator.wakeLock.request('screen'); } catch (err) {} } }
         function toggleSidebar() { var side = document.getElementById('sidebar'); document.getElementById('overlay').style.display = side.classList.toggle('active') ? 'block' : 'none'; }
 
-        // --- LÓGICA DE MAPA DÍA/NOCHE ---
         function obtenerEstiloMapa() {
             var hora = new Date().getHours();
             return (hora >= 18 || hora < 7) 
@@ -158,9 +162,8 @@
             }, { once: true });
         }
 
-        // MAPA CON ROTACIÓN HABILITADA
         var map = L.map('map', { zoomControl: false, rotate: true, touchRotate: true }).setView([23.6, -102], 5);
-        capaMapa = L.tileLayer(obtenerEstiloMapa()).addTo(map);
+        L.tileLayer(obtenerEstiloMapa()).addTo(map);
 
         function verificarEstadoChofer() {
             var n = localStorage.getItem("choferNombre"), e = localStorage.getItem("choferEco");
@@ -186,16 +189,13 @@
             } else { localStorage.setItem("modoTrabajoActivo", false); location.reload(); }
         }
 
-        // --- GPS CON SEGUIMIENTO Y ROTACIÓN ---
         function iniciarGPS() {
             watchID = navigator.geolocation.watchPosition((pos) => {
                 var miPos = L.latLng(pos.coords.latitude, pos.coords.longitude);
                 document.getElementById('status-gps').innerText = "✅ GPS ON"; document.getElementById('status-gps').style.color = "#00ff00";
-                
                 if(markerChofer) markerChofer.setLatLng(miPos); 
                 else { markerChofer = L.marker(miPos, {icon: iconoTaxi}).addTo(map); map.setView(miPos, 18); }
 
-                // SIGUE AL CONDUCTOR Y ROTA EL MAPA
                 map.panTo(miPos);
                 if (pos.coords.heading !== null) { map.setBearing(pos.coords.heading); }
 
@@ -219,7 +219,7 @@
             });
         }
 
-        function verDondeEstaElCliente(lat, lon) { clearTimeout(temporizadorVista); temporizadorVista = setTimeout(() => { if (circuloReferenciaCliente) map.removeLayer(circuloReferenciaCliente); circuloReferenciaCliente = L.circle([lat, lon], { color: '#b39ddb', radius: 40 }).addTo(map); map.setView([lat, lon], 17); }, 500); }
+        function verDondeEstaElCliente(lat, lon) { clearTimeout(temporizadorVista); temporizadorVista = setTimeout(() => { if (circuloReferenciaCliente) map.removeLayer(circuloReferenciaCliente); circuloReferenciaCliente = L.circle([lat, lon], { color: '#b39ddb', radius: 40 }).addTo(map); map.setView([lat, lon], 17); if(window.navigator.vibrate) window.navigator.vibrate(50); }, 500); }
         function soltarVistaCliente() { clearTimeout(temporizadorVista); if (circuloReferenciaCliente) { map.removeLayer(circuloReferenciaCliente); circuloReferenciaCliente = null; } if (markerChofer) map.setView(markerChofer.getLatLng(), 18); }
 
         function renderizarListaPedidos(pedidos) {
@@ -260,4 +260,15 @@
                 controlRuta = L.Routing.control({
                     waypoints: [markerChofer.getLatLng(), L.latLng(lat, lon)],
                     show: false, createMarker: () => null,
-                    lineOptions: { styles: [{ color: 'white', opacity: 0.9, weight: 10 },
+                    lineOptions: { styles: [{ color: 'white', opacity: 0.9, weight: 10 }, { color: '#b39ddb', opacity: 1, weight: 6 }] }
+                }).addTo(map);
+            }
+        }
+
+        var califF = 5;
+        function setS(n) { califF = n; for(let i=1; i<=5; i++) { document.getElementById('star'+i).classList.toggle('star-active', i<=n); } }
+        function terminarViaje(id) { abrirModal(`<div class="modal-title">Finalizar</div><div class="star-rating"><span id="star1" class="star-active" onclick="setS(1)">★</span><span id="star2" class="star-active" onclick="setS(2)">★</span><span id="star3" class="star-active" onclick="setS(3)">★</span><span id="star4" class="star-active" onclick="setS(4)">★</span><span id="star5" class="star-active" onclick="setS(5)">★</span></div><button class="modal-btn btn-primario" onclick="confFin('${id}')">Cerrar Viaje</button>`); }
+        function confFin(id) { database.ref('viajes/' + id).once('value', snap => { let d = snap.val(); if (d && d.cliente_uid) { database.ref('usuarios/' + d.cliente_uid + '/perfil').transaction(p => { if (p) { p.total_viajes++; p.puntos_acumulados += califF; p.estrellas = (p.puntos_acumulados / p.total_viajes).toFixed(1); } return p; }); } localStorage.removeItem("idViajeChoferActivo"); database.ref('viajes/' + id).remove().then(() => location.reload()); }); }
+    </script>
+</body>
+</html>
