@@ -285,7 +285,7 @@
             temporizadorVista = setTimeout(() => {
                 if (window.navigator.vibrate) window.navigator.vibrate(50);
                 if (circuloReferenciaCliente) map.removeLayer(circuloReferenciaCliente);
-                circuloReferenciaCliente = L.circle([lat, lon], { color: '#b39ddb', fillColor: '#b39ddb', fillOpacity: 0.4, radius: 50 }).addTo(map);
+                circuloReferenciaCliente = L.circle([lat, lon], { color: '#b39ddb', fillColor: '#b39ddb', fillOpacity: 0.4, radius: 20 }).addTo(map);
                 map.flyTo([lat, lon], 17, { animate: true, duration: 0.8 });
             }, 500); 
         }
@@ -340,3 +340,4 @@
     </script>
 </body>
 </html>
+
