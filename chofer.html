@@ -245,6 +245,13 @@
         }
 
         function iniciarAppCentral() {
+            // SOLICITUD DE PERMISOS DE NOTIFICACIÓN AL INICIO
+            if ("Notification" in window) {
+                if (Notification.permission !== "granted" && Notification.permission !== "denied") {
+                    Notification.requestPermission();
+                }
+            }
+
             verificarEstadoChofer();
             setTimeout(() => {
                 const splash = document.getElementById('splash-screen');
