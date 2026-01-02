@@ -6,14 +6,14 @@ const urlsToCache = [
   'https://unpkg.com/leaflet-routing-machine/dist/leaflet-routing-machine.js'
 ];
 
-// Instalación: Guarda los archivos esenciales en el celular
+// Instalación y Caché
 self.addEventListener('install', event => {
   event.waitUntil(
     caches.open(CACHE_NAME).then(cache => cache.addAll(urlsToCache))
   );
 });
 
-// Estrategia: Primero buscar en caché, si no hay, ir a internet
+// Estrategia de carga
 self.addEventListener('fetch', event => {
   event.respondWith(
     caches.match(event.request).then(response => {
@@ -22,30 +22,30 @@ self.addEventListener('fetch', event => {
   );
 });
 
-// Receptor de notificaciones en segundo plano
+// RECEPTOR DE NOTIFICACIONES (Segundo Plano)
 self.addEventListener('push', event => {
-    const data = event.data ? event.data.json() : { 
-        title: 'OTIMAC', 
-        body: '¡Tienes un nuevo viaje disponible!' 
-    };
-
     const options = {
-        body: data.body,
-        icon: 'taxi-chofer.png', // Asegúrate de que el icono exista
+        body: '¡Tienes un nuevo viaje disponible!',
+        icon: 'taxi-chofer.png',
         badge: 'taxi-chofer.png',
         vibrate: [200, 100, 200],
-        data: { url: './' } // Abre la app al tocar
+        tag: 'nuevo-viaje',
+        data: { url: './' }
     };
-
     event.waitUntil(
-        self.registration.showNotification(data.title, options)
+        self.registration.showNotification('OTIMAC 🚖', options)
     );
 });
 
-// Abrir la app al hacer clic en la notificación
+// Clic en la notificación: Abre la App
 self.addEventListener('notificationclick', event => {
     event.notification.close();
     event.waitUntil(
-        clients.openWindow(event.notification.data.url)
+        clients.matchAll({ type: 'window' }).then(windowClients => {
+            if (windowClients.length > 0) {
+                return windowClients[0].focus();
+            }
+            return clients.openWindow('./');
+        })
     );
 });
