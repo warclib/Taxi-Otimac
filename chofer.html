@@ -199,6 +199,7 @@
         var circuloReferenciaCliente;
         var pedidosVistos = new Set();
         var serverTimeOffset = 0;
+        var temporizadorVista; // VARIABLE GLOBAL PARA EL RETRASO
 
         database.ref(".info/serverTimeOffset").on("value", function(snap) {
             serverTimeOffset = snap.val() || 0;
@@ -392,13 +393,19 @@
             });
         }
 
+        // --- LÓGICA DE VISTA CON RETRASO DE 500MS ---
         function verDondeEstaElCliente(lat, lon) {
-            if (circuloReferenciaCliente) map.removeLayer(circuloReferenciaCliente);
-            circuloReferenciaCliente = L.circle([lat, lon], { color: '#b39ddb', fillColor: '#b39ddb', fillOpacity: 0.5, radius: 40 }).addTo(map);
-            map.setView([lat, lon], 17);
+            clearTimeout(temporizadorVista);
+            temporizadorVista = setTimeout(() => {
+                if (circuloReferenciaCliente) map.removeLayer(circuloReferenciaCliente);
+                circuloReferenciaCliente = L.circle([lat, lon], { color: '#b39ddb', fillColor: '#b39ddb', fillOpacity: 0.5, radius: 40 }).addTo(map);
+                map.setView([lat, lon], 17);
+                if(window.navigator.vibrate) window.navigator.vibrate(50);
+            }, 500); 
         }
 
         function soltarVistaCliente() {
+            clearTimeout(temporizadorVista);
             if (circuloReferenciaCliente) { map.removeLayer(circuloReferenciaCliente); circuloReferenciaCliente = null; }
             if (markerChofer) { map.setView(markerChofer.getLatLng(), 17); }
         }
