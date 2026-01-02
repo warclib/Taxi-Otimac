@@ -370,15 +370,27 @@ function aceptarViaje(id) {
             if(markerChofer) { if(controlRuta) map.removeControl(controlRuta); controlRuta = L.Routing.control({ waypoints: [markerChofer.getLatLng(), L.latLng(lat, lon)], show: false, createMarker: () => null, lineOptions: { styles: [{ color: 'white', opacity: 0.9, weight: 10 }, { color: '#b39ddb', opacity: 1, weight: 6 }] } }).addTo(map); }
         }
 
-        function terminarViaje(id) {
-            abrirModal(`<div class="modal-title">FINALIZAR</div><p>Califica al pasajero:</p><div style="font-size:35px;margin:15px 0;"><span id="s1" onclick="setSt(1)" style="color:#444">★</span><span id="s2" onclick="setSt(2)" style="color:#444">★</span><span id="s3" onclick="setSt(3)" style="color:#444">★</span><span id="s4" onclick="setSt(4)" style="color:#444">★</span><span id="s5" onclick="setSt(5)" style="color:#ffca28">★</span></div><button class="modal-btn btn-primario" onclick="confFin('${id}')">Cerrar Viaje</button>`);
-        }
+      function terminarViaje(id) {
+    abrirModal(`
+        <div class="modal-title" style="color:#b39ddb; font-weight: 800; letter-spacing: 1px;">FINALIZAR SERVICIO</div>
+        <p style="margin-top: 10px;">¿Cómo estuvo tu pasajero?</p>
+        <div style="font-size: 45px; margin: 20px 0; user-select: none;">
+            <span id="s1" onclick="setSt(1)" style="color:#444; cursor:pointer;">★</span>
+            <span id="s2" onclick="setSt(2)" style="color:#444; cursor:pointer;">★</span>
+            <span id="s3" onclick="setSt(3)" style="color:#444; cursor:pointer;">★</span>
+            <span id="s4" onclick="setSt(4)" style="color:#444; cursor:pointer;">★</span>
+            <span id="s5" onclick="setSt(5)" style="color:#ffca28; cursor:pointer;">★</span>
+        </div>
+        <button class="modal-btn btn-primario" style="margin-top: 10px; width: 100%;" onclick="confFin('${id}')">GUARDAR Y FINALIZAR</button>
+    `);
+}
         var calif = 5;
         function setSt(n) { calif = n; for(let i=1; i<=5; i++) document.getElementById('s'+i).style.color = i<=n ? '#ffca28' : '#444'; }
         function confFin(id) { database.ref('viajes/' + id).once('value', snap => { let d = snap.val(); if (d && d.cliente_uid) { database.ref('usuarios/' + d.cliente_uid + '/perfil').transaction(p => { if (p) { p.total_viajes++; p.puntos_acumulados += calif; p.estrellas = (p.puntos_acumulados / p.total_viajes).toFixed(1); } return p; }); } localStorage.removeItem("idViajeChoferActivo"); database.ref('viajes/' + id).remove().then(() => location.reload()); }); }
     </script>
 </body>
 </html>
+
 
 
 
