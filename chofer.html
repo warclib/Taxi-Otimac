@@ -24,9 +24,8 @@
 
         body { font-family: 'Segoe UI', Roboto, Helvetica, sans-serif; text-align: center; background: #1a1a1a; color: white; margin: 0; padding: 0; overflow: hidden; }
         
-        /* MENU A LA DERECHA */
         #btn-menu {
-            position: fixed; top: 15px; right: 15px; z-index: 5000;
+            position: fixed; top: 15px; left: 15px; z-index: 5000;
             background: rgba(179, 157, 219, 0.2);
             color: white; border: 1px solid rgba(255, 255, 255, 0.2);
             width: 45px; height: 45px; border-radius: 50%;
@@ -37,16 +36,16 @@
         }
 
         #sidebar {
-            position: fixed; top: 0; right: -320px;
+            position: fixed; top: 0; left: -320px;
             width: 260px; height: 100%;
             background: rgba(0, 0, 0, 0.65);
             z-index: 4500; transition: 0.4s cubic-bezier(0.4, 0, 0.2, 1);
             padding: 70px 15px 20px 15px; text-align: left;
             backdrop-filter: blur(12px);
             -webkit-backdrop-filter: blur(12px);
-            border-left: 1px solid rgba(255, 255, 255, 0.1);
+            border-right: 1px solid rgba(255, 255, 255, 0.1);
         }
-        #sidebar.active { right: 0; box-shadow: -10px 0 30px rgba(0,0,0,0.5); border-left: 2px solid #b39ddb; }
+        #sidebar.active { left: 0; box-shadow: 10px 0 30px rgba(0,0,0,0.5); border-right: 2px solid #b39ddb; }
 
         #overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); display: none; z-index: 4000; }
         #map { height: 100vh; width: 100%; z-index: 1; }
@@ -75,57 +74,6 @@
             -webkit-user-select: none;
         }
 
-        /* --- DESLIZADOR ESTÉTICO Y PEQUEÑO --- */
-        .slider-aceptar-container {
-            position: relative;
-            width: 100%;
-            height: 45px; 
-            background: #4a148c; 
-            border-radius: 25px;
-            margin-top: 12px;
-            overflow: hidden;
-            display: flex;
-            align-items: center;
-            border: 1px solid #b39ddb; 
-            touch-action: none;
-            box-shadow: inset 0 2px 5px rgba(0,0,0,0.2); 
-        }
-        
-        .slider-rastro-verde {
-            position: absolute; left: 0; top: 0; height: 100%;
-            background: linear-gradient(90deg, #00c853, #69f0ae); 
-            width: 0%; z-index: 1;
-            transition: width 0.1s ease;
-        }
-
-        .slider-text {
-            position: absolute; width: 100%; text-align: center;
-            color: rgba(255,255,255,0.9); font-weight: 700; font-size: 11px; 
-            z-index: 2; letter-spacing: 1px; pointer-events: none;
-            text-transform: uppercase; text-shadow: 0 1px 2px rgba(0,0,0,0.5);
-        }
-
-        .slider-input {
-            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-            appearance: none; -webkit-appearance: none; background: transparent;
-            z-index: 3; margin: 0; outline: none; cursor: grab;
-        }
-
-        .slider-input::-webkit-slider-thumb {
-            appearance: none; -webkit-appearance: none;
-            width: 45px; height: 45px; 
-            background: white;
-            border-radius: 50%;
-            border: 3px solid #00e676; 
-            box-shadow: 0 2px 8px rgba(0,0,0,0.3);
-            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='black' width='20px' height='20px'%3E%3Cpath d='M12 4l-1.41 1.41L16.17 11H4v2h12.17l-5.58 5.59L12 20l8-8z'/%3E%3C/svg%3E");
-            background-repeat: no-repeat; background-position: center;
-            transition: transform 0.2s;
-        }
-        .slider-input:active::-webkit-slider-thumb {
-            transform: scale(1.05); 
-        }
-
         .rating-estrella { color: #ffca28; font-weight: bold; font-size: 13px; }
         .badge-confianza { 
             display: inline-block;
@@ -144,6 +92,7 @@
         .tiempo-container { width: 100%; height: 4px; background: rgba(255,255,255,0.1); border-radius: 2px; margin: 8px 0; overflow: hidden; }
         .barra-progreso { height: 100%; background: #00ff00; width: 100%; transition: width 1s linear; }
 
+        .btn-aceptar { background:#b39ddb; border:none; padding:12px; border-radius:8px; font-weight:bold; width:100%; margin-top:8px; cursor: pointer; color: black; font-size: 14px; }
         .btn-rechazar { background:transparent; border:none; color: #ff4444; padding:5px; width:100%; margin-top:5px; cursor: pointer; font-size: 11px; text-decoration: underline; }
         .btn-cancelar { background: #ff4444; color: white; border: none; padding: 15px; border-radius: 10px; font-weight: bold; width: 100%; margin-top: 10px; font-size: 16px; }
         .btn-cancelar:disabled { background: #555 !important; cursor: not-allowed; }
@@ -163,10 +112,35 @@
         .leaflet-routing-container { display: none !important; }
         .modo-enfocado #btn-menu { display: none; }
 
-        .contenedor-pulso { display: flex; justify-content: center; align-items: center; width: 50px; height: 50px; }
-        .pulso-gps { width: 20px; height: 20px; background: rgba(179, 157, 219, 0.7); border-radius: 50%; position: absolute; z-index: 1; animation: expandir-pulso 2s infinite; }
-        @keyframes expandir-pulso { 0% { transform: scale(1); opacity: 0.8; } 100% { transform: scale(3.5); opacity: 0; } }
-        .img-taxi-marker { width: 50px; height: 50px; position: relative; z-index: 5; }
+        .contenedor-pulso {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            width: 50px;
+            height: 50px;
+        }
+
+        .pulso-gps {
+            width: 20px;
+            height: 20px;
+            background: rgba(179, 157, 219, 0.7);
+            border-radius: 50%;
+            position: absolute;
+            z-index: 1;
+            animation: expandir-pulso 2s infinite;
+        }
+
+        @keyframes expandir-pulso {
+            0% { transform: scale(1); opacity: 0.8; }
+            100% { transform: scale(3.5); opacity: 0; }
+        }
+
+        .img-taxi-marker {
+            width: 50px;
+            height: 50px;
+            position: relative;
+            z-index: 5;
+        }
     </style>
 </head>
 <body onload="iniciarAppCentral()" id="app-body">
@@ -225,7 +199,6 @@
         var circuloReferenciaCliente;
         var pedidosVistos = new Set();
         var serverTimeOffset = 0;
-        var temporizadorVista; // VARIABLE PARA LA CORRECCIÓN
 
         database.ref(".info/serverTimeOffset").on("value", function(snap) {
             serverTimeOffset = snap.val() || 0;
@@ -419,20 +392,13 @@
             });
         }
 
-        // CORRECCIÓN: FUNCIÓN DE VISTA CON RETRASO
         function verDondeEstaElCliente(lat, lon) {
-            clearTimeout(temporizadorVista);
-            temporizadorVista = setTimeout(() => {
-                if (circuloReferenciaCliente) map.removeLayer(circuloReferenciaCliente);
-                circuloReferenciaCliente = L.circle([lat, lon], { color: '#b39ddb', fillColor: '#b39ddb', fillOpacity: 0.5, radius: 40 }).addTo(map);
-                map.setView([lat, lon], 17);
-                if(window.navigator.vibrate) window.navigator.vibrate(50);
-            }, 500); // 500ms de espera antes de mover el mapa
+            if (circuloReferenciaCliente) map.removeLayer(circuloReferenciaCliente);
+            circuloReferenciaCliente = L.circle([lat, lon], { color: '#b39ddb', fillColor: '#b39ddb', fillOpacity: 0.5, radius: 40 }).addTo(map);
+            map.setView([lat, lon], 17);
         }
 
-        // CORRECCIÓN: FUNCIÓN DE SOLTAR VISTA
         function soltarVistaCliente() {
-            clearTimeout(temporizadorVista);
             if (circuloReferenciaCliente) { map.removeLayer(circuloReferenciaCliente); circuloReferenciaCliente = null; }
             if (markerChofer) { map.setView(markerChofer.getLatLng(), 17); }
         }
@@ -454,9 +420,7 @@
                         var km = markerChofer ? (L.latLng(markerChofer.getLatLng()).distanceTo(L.latLng(cli.lat, cli.lon)) / 1000).toFixed(1) : "...";
 
                         contenedor.innerHTML += `
-                        <div class="pedido-card" 
-                             onmousedown="verDondeEstaElCliente(${cli.lat}, ${cli.lon})" onmouseup="soltarVistaCliente()" 
-                             ontouchstart="verDondeEstaElCliente(${cli.lat}, ${cli.lon})" ontouchend="soltarVistaCliente()">
+                        <div class="pedido-card" onmousedown="verDondeEstaElCliente(${cli.lat}, ${cli.lon})" onmouseup="soltarVistaCliente()" ontouchstart="verDondeEstaElCliente(${cli.lat}, ${cli.lon})" ontouchend="soltarVistaCliente()">
                             <div style="float: right;"><span class="reloj-tag">⏳ ${min}:${s < 10 ? '0' : ''}${s}</span><span class="distancia-tag">📍 ${km} km</span></div>
                             <div><span class="badge-confianza">Verificado</span></div>
                             <b style="font-size: 16px;">${pedidos[id].nombre_cliente || "Pasajero"}</b> 
@@ -466,15 +430,7 @@
                             </div>
                             <small style="color:#b39ddb; font-size:10px; font-weight:bold;">${pedidos[id].cliente_uid || "OT-100"}</small>
                             <div class="tiempo-container"><div class="barra-progreso" style="width: ${(restanteMs/300000)*100}%"></div></div>
-                            
-                            <div class="slider-aceptar-container">
-                                <div class="slider-rastro-verde" id="rastro-${id}"></div>
-                                <span class="slider-text">DESLIZA PARA ACEPTAR</span>
-                                <input type="range" class="slider-input" min="0" max="100" value="0" 
-                                    oninput="document.getElementById('rastro-${id}').style.width=this.value+'%'" 
-                                    onchange="if(this.value>=95){ aceptarViaje('${id}') }else{ this.value=0; document.getElementById('rastro-${id}').style.width='0%' }">
-                            </div>
-
+                            <button class="btn-aceptar" onclick="aceptarViaje('${id}')">ACEPTAR VIAJE</button>
                             <button class="btn-rechazar" onclick="rechazarViajeLocal('${id}')">OCULTAR</button>
                         </div>`;
                     }
