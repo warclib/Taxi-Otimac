@@ -24,7 +24,6 @@
 
         body { font-family: 'Segoe UI', Roboto, Helvetica, sans-serif; text-align: center; background: #1a1a1a; color: white; margin: 0; padding: 0; overflow: hidden; }
         
-        /* BOTÓN DE MENÚ A LA DERECHA */
         #btn-menu {
             position: fixed; top: 15px; right: 15px; z-index: 5000;
             background: rgba(179, 157, 219, 0.2);
@@ -36,7 +35,6 @@
             transition: 0.3s;
         }
 
-        /* SIDEBAR DESDE LA DERECHA */
         #sidebar {
             position: fixed; top: 0; right: -320px;
             width: 260px; height: 100%;
@@ -44,6 +42,7 @@
             z-index: 4500; transition: 0.4s cubic-bezier(0.4, 0, 0.2, 1);
             padding: 70px 15px 20px 15px; text-align: left;
             backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
             border-left: 1px solid rgba(255, 255, 255, 0.1);
             overflow-y: auto;
         }
@@ -72,46 +71,60 @@
             border-radius: 12px; 
             border: 1px solid rgba(255, 255, 255, 0.1);
             text-align: left;
+            user-select: none;
+            -webkit-user-select: none;
         }
 
-        /* DESLIZADOR PRO PEQUEÑO */
         .slider-aceptar-container {
-            position: relative;
-            width: 100%;
-            height: 45px;
-            background: #4a148c;
-            border-radius: 25px;
-            margin-top: 10px;
-            overflow: hidden;
-            display: flex;
-            align-items: center;
-            border: 1px solid #b39ddb;
-            touch-action: none;
+            position: relative; width: 100%; height: 45px; 
+            background: #4a148c; border-radius: 25px; margin-top: 12px;
+            overflow: hidden; display: flex; align-items: center;
+            border: 1px solid #b39ddb; touch-action: none;
+            box-shadow: inset 0 2px 5px rgba(0,0,0,0.2); 
         }
-        .slider-rastro-verde { position: absolute; left: 0; top: 0; height: 100%; background: linear-gradient(90deg, #00c853, #69f0ae); width: 0%; z-index: 1; transition: width 0.1s ease; }
-        .slider-text { position: absolute; width: 100%; text-align: center; color: white; font-weight: 700; font-size: 11px; z-index: 2; pointer-events: none; text-transform: uppercase; }
-        .slider-input { position: absolute; top: 0; left: 0; width: 100%; height: 100%; appearance: none; -webkit-appearance: none; background: transparent; z-index: 3; margin: 0; outline: none; }
-        .slider-input::-webkit-slider-thumb { appearance: none; -webkit-appearance: none; width: 45px; height: 45px; background: white; border-radius: 50%; border: 3px solid #00e676; box-shadow: 0 2px 8px rgba(0,0,0,0.3); background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='black' width='20px' height='20px'%3E%3Cpath d='M12 4l-1.41 1.41L16.17 11H4v2h12.17l-5.58 5.59L12 20l8-8z'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: center; }
+        .slider-rastro-verde {
+            position: absolute; left: 0; top: 0; height: 100%;
+            background: linear-gradient(90deg, #00c853, #69f0ae); 
+            width: 0%; z-index: 1; transition: width 0.1s ease;
+        }
+        .slider-text {
+            position: absolute; width: 100%; text-align: center;
+            color: rgba(255,255,255,0.9); font-weight: 700; font-size: 11px; 
+            z-index: 2; letter-spacing: 1px; pointer-events: none;
+            text-transform: uppercase; text-shadow: 0 1px 2px rgba(0,0,0,0.5);
+        }
+        .slider-input {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            appearance: none; -webkit-appearance: none; background: transparent;
+            z-index: 3; margin: 0; outline: none; cursor: grab;
+        }
+        .slider-input::-webkit-slider-thumb {
+            appearance: none; -webkit-appearance: none; width: 45px; height: 45px; 
+            background: white; border-radius: 50%; border: 3px solid #00e676; 
+            box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='black' width='20px' height='20px'%3E%3Cpath d='M12 4l-1.41 1.41L16.17 11H4v2h12.17l-5.58 5.59L12 20l8-8z'/%3E%3C/svg%3E");
+            background-repeat: no-repeat; background-position: center;
+        }
 
+        /* ESTILOS HISTORIAL Y REPORTE */
         .historial-item { background: rgba(255, 255, 255, 0.05); border-radius: 8px; padding: 10px; margin-bottom: 10px; font-size: 11px; border-left: 3px solid #b39ddb; cursor: pointer; }
+        .btn-reportar-admin { background: #ff4444; color: white; border: none; padding: 5px; border-radius: 4px; width: 100%; margin-top: 8px; cursor: pointer; font-weight: bold; font-size: 10px; text-transform: uppercase; }
+
         .rating-estrella { color: #ffca28; font-weight: bold; font-size: 13px; }
         .badge-confianza { display: inline-block; font-size: 8px; padding: 2px 6px; border-radius: 4px; font-weight: 900; background: #2e7d32; color: white; margin-bottom: 4px; }
         .reloj-tag { color: #ffca28; font-weight: bold; margin-right: 15px; font-size: 12px; }
         .distancia-tag { color: #b39ddb; font-weight: bold; float: right; font-size: 12px; }
         .tiempo-container { width: 100%; height: 4px; background: rgba(255,255,255,0.1); border-radius: 2px; margin: 8px 0; overflow: hidden; }
         .barra-progreso { height: 100%; background: #00ff00; width: 100%; transition: width 1s linear; }
-
         .btn-rechazar { background:transparent; border:none; color: #ff4444; padding:5px; width:100%; margin-top:5px; cursor: pointer; font-size: 11px; text-decoration: underline; }
         .btn-cancelar { background: #ff4444; color: white; border: none; padding: 15px; border-radius: 10px; font-weight: bold; width: 100%; margin-top: 10px; font-size: 16px; }
-
-        .sidebar-item { background: rgba(255,255,255,0.08); padding: 15px; border-radius: 12px; margin-bottom: 15px; border-left: 4px solid #b39ddb; }
+        .sidebar-item { background: rgba(255,255,255,0.08); padding: 15px; border-radius: 12px; margin-bottom: 15px; border-left: 4px solid #b39ddb; border: 1px solid rgba(255,255,255,0.05); }
         .switch { position: relative; display: inline-block; width: 50px; height: 28px; }
         .switch input { opacity: 0; width: 0; height: 0; }
         .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #555; transition: .4s; border-radius: 34px; }
         .slider:before { position: absolute; content: ""; height: 20px; width: 20px; left: 4px; bottom: 4px; background-color: white; transition: .4s; border-radius: 50%; }
         input:checked + .slider { background-color: #00ff00; }
         input:checked + .slider:before { transform: translateX(22px); }
-
         .contenedor-pulso { display: flex; justify-content: center; align-items: center; width: 50px; height: 50px; }
         .pulso-gps { width: 20px; height: 20px; background: rgba(179, 157, 219, 0.7); border-radius: 50%; position: absolute; z-index: 1; animation: expandir-pulso 2s infinite; }
         @keyframes expandir-pulso { 0% { transform: scale(1); opacity: 0.8; } 100% { transform: scale(3.5); opacity: 0; } }
@@ -140,8 +153,9 @@
             </div>
         </div>
         <div class="sidebar-item" onclick="cambiarDatosChofer()" style="cursor:pointer;">
-            <div id="displayNombre" style="font-size: 14px; font-weight: bold;">...</div>
-            <div id="displayEco" style="font-size: 14px; font-weight: bold;">...</div>
+            <div id="displayNombre" style="font-size: 14px; font-weight: bold;">👤 ...</div>
+            <div id="displayEco" style="font-size: 14px; font-weight: bold;">🚕 Eco: ...</div>
+            <small style="color: #b39ddb; font-size: 10px;">(Toca para editar)</small>
         </div>
         <div style="color: #b39ddb; font-weight: bold; margin: 15px 0 10px 0; font-size: 13px;">HISTORIAL DE HOY</div>
         <div id="lista-historial"></div>
@@ -171,7 +185,6 @@
 
         var map = L.map('map', { zoomControl: false }).setView([16.7825, -99.1245], 15);
         
-        // --- NUEVA SECCIÓN DE MAPAS PROFESIONALES ---
         function actualizarMapa() {
             var h = new Date().getHours();
             var capaUrl = (h >= 18 || h < 7) 
@@ -192,39 +205,58 @@
 
         async function mantenerPantallaEncendida() { if ('wakeLock' in navigator) { try { wakeLock = await navigator.wakeLock.request('screen'); } catch (err) {} } }
         function toggleSidebar() { document.getElementById('sidebar').classList.toggle('active'); document.getElementById('overlay').style.display = document.getElementById('sidebar').classList.contains('active') ? 'block' : 'none'; }
-        function copiarID(id) { navigator.clipboard.writeText(id); alert("ID Copiado: " + id); }
+        
+        function copiarID(id) { 
+            navigator.clipboard.writeText(id); 
+            alert("ID Copiado: " + id); 
+        }
+
+        function reportarAdmin(uid, nombre) {
+            // REEMPLAZA ESTE NÚMERO POR EL TUYO REAL:
+            const numeroAdmin = "5210000000000"; 
+            const mensaje = encodeURIComponent("Otimac Reporte: Problema con cliente " + nombre + " (ID: " + uid + ")");
+            window.open("https://wa.me/" + numeroAdmin + "?text=" + mensaje);
+        }
 
         function cargarHistorial() {
             var hist = JSON.parse(localStorage.getItem("historialViajes") || "[]");
-            document.getElementById("lista-historial").innerHTML = hist.slice().reverse().map(v => `<div class="historial-item" onclick="copiarID('${v.uid}')"><b>${v.hora}</b> - ${v.nombre}<br>ID: ${v.uid}</div>`).join("");
+            document.getElementById("lista-historial").innerHTML = hist.slice().reverse().map(v => `
+                <div class="historial-item" onclick="copiarID('${v.uid}')">
+                    <b>${v.hora}</b> - ${v.nombre}<br>ID: ${v.uid}
+                    <button class="btn-reportar-admin" onclick="event.stopPropagation(); reportarAdmin('${v.uid}', '${v.nombre}')">REPORTAR AL ADMIN</button>
+                </div>`).join("");
         }
 
         function iniciarAppCentral() {
             var n = localStorage.getItem("choferNombre"), e = localStorage.getItem("choferEco");
-            if(!n) { n = prompt("Nombre:"); e = prompt("Eco:"); localStorage.setItem("choferNombre", n); localStorage.setItem("choferEco", e); }
+            if(!n) { n = prompt("Nombre:"); e = prompt("Eco:"); if(n && e) { localStorage.setItem("choferNombre", n); localStorage.setItem("choferEco", e); } }
             document.getElementById('displayNombre').innerText = "👤 " + n; document.getElementById('displayEco').innerText = "🚕 Eco: " + e;
             cargarHistorial();
             setTimeout(() => { document.getElementById('splash-screen').style.opacity = '0'; setTimeout(() => { document.getElementById('splash-screen').style.visibility = 'hidden'; }, 600); }, 2500);
             setInterval(() => { if (window.ultimoSnapshotPedidos && !idViajeActivo && document.getElementById('checkTrabajo').checked) renderizarListaPedidos(window.ultimoSnapshotPedidos); }, 1000);
         }
 
+        function cambiarDatosChofer() {
+            if(idViajeActivo) return alert("No puedes cambiar datos durante un viaje.");
+            let n = prompt("Nuevo Nombre:", localStorage.getItem("choferNombre")), e = prompt("Nuevo Económico:", localStorage.getItem("choferEco"));
+            if(n && e) { localStorage.setItem("choferNombre", n); localStorage.setItem("choferEco", e); location.reload(); }
+        }
+
         function toggleTrabajo() {
-            var activo = document.getElementById('checkTrabajo').checked;
-            var eco = localStorage.getItem("choferEco");
-            var myId = obtenerDeviceId();
+            var activo = document.getElementById('checkTrabajo').checked, eco = localStorage.getItem("choferEco"), myId = obtenerDeviceId();
             if(activo) {
                 database.ref('autorizados/' + eco).once('value', (snap) => {
                     if (snap.exists()) {
                         database.ref('sesiones_activas/' + eco).once('value', (sSnap) => {
                             var s = sSnap.val();
-                            if (s && s.deviceId !== myId) { alert("ERROR: Este número ya está en uso."); document.getElementById('checkTrabajo').checked = false; return; }
+                            if (s && s.deviceId !== myId) { alert("ERROR: Este económico ya está activo."); document.getElementById('checkTrabajo').checked = false; return; }
                             database.ref('sesiones_activas/' + eco).set({ deviceId: myId, nombre: localStorage.getItem("choferNombre"), ultima_actividad: firebase.database.ServerValue.TIMESTAMP });
-                            document.getElementById('txtModo').innerText = "TRABAJANDO"; document.getElementById('txtModo').style.color = "#00ff00";
+                            localStorage.setItem("modoTrabajoActivo", true); document.getElementById('txtModo').innerText = "TRABAJANDO"; document.getElementById('txtModo').style.color = "#00ff00";
                             mantenerPantallaEncendida(); iniciarGPS(); escucharPedidos();
                         });
-                    } else { alert("DENEGADO"); document.getElementById('checkTrabajo').checked = false; }
+                    } else { alert("ACCESO DENEGADO"); document.getElementById('checkTrabajo').checked = false; }
                 });
-            } else { database.ref('sesiones_activas/' + eco).remove(); location.reload(); }
+            } else { database.ref('sesiones_activas/' + eco).remove(); localStorage.setItem("modoTrabajoActivo", false); location.reload(); }
         }
 
         function iniciarGPS() {
@@ -250,8 +282,9 @@
             clearTimeout(temporizadorVista);
             temporizadorVista = setTimeout(() => {
                 if (circuloReferenciaCliente) map.removeLayer(circuloReferenciaCliente);
-                circuloReferenciaCliente = L.circle([lat, lon], { color: '#b39ddb', radius: 40 }).addTo(map);
+                circuloReferenciaCliente = L.circle([lat, lon], { color: '#b39ddb', radius: 40, fillOpacity: 0.5 }).addTo(map);
                 map.setView([lat, lon], 17);
+                if(window.navigator.vibrate) window.navigator.vibrate(50);
             }, 500);
         }
 
@@ -268,9 +301,9 @@
                         var seg = Math.max(0, Math.floor(rest / 1000)), min = Math.floor(seg / 60), s = seg % 60;
                         var km = markerChofer ? (L.latLng(markerChofer.getLatLng()).distanceTo(L.latLng(cli.lat, cli.lon)) / 1000).toFixed(1) : "...";
                         contenedor.innerHTML += `
-                        <div class="pedido-card" ontouchstart="verDondeEstaElCliente(${cli.lat}, ${cli.lon})" ontouchend="soltarVistaCliente()" onmousedown="verDondeEstaElCliente(${cli.lat}, ${cli.lon})" onmouseup="soltarVistaCliente()">
+                        <div class="pedido-card" onmousedown="verDondeEstaElCliente(${cli.lat}, ${cli.lon})" onmouseup="soltarVistaCliente()" ontouchstart="verDondeEstaElCliente(${cli.lat}, ${cli.lon})" ontouchend="soltarVistaCliente()">
                             <div style="float: right;"><span class="reloj-tag">⏳ ${min}:${s < 10 ? '0' : ''}${s}</span><span class="distancia-tag">📍 ${km} km</span></div>
-                            <b>${pedidos[id].nombre_cliente}</b><br>
+                            <b style="font-size: 16px;">${pedidos[id].nombre_cliente}</b><br>
                             <span class="rating-estrella">⭐ ${pedidos[id].cliente_estrellas || "4.8"}</span><small style="color:#aaa; margin-left:10px;">ID: ${pedidos[id].cliente_uid}</small>
                             <div class="tiempo-container"><div class="barra-progreso" style="width: ${(rest/300000)*100}%"></div></div>
                             <div class="slider-aceptar-container"><div class="slider-rastro-verde" id="rastro-${id}"></div><span class="slider-text">DESLIZA PARA ACEPTAR</span><input type="range" class="slider-input" min="0" max="100" value="0" oninput="document.getElementById('rastro-${id}').style.width=this.value+'%'" onchange="if(this.value>=95){ aceptarViaje('${id}') }else{ this.value=0; document.getElementById('rastro-${id}').style.width='0%' }"></div>
@@ -288,7 +321,7 @@
                 var d = snap.val();
                 var hist = JSON.parse(localStorage.getItem("historialViajes") || "[]");
                 hist.push({ nombre: d.nombre_cliente, uid: d.cliente_uid, hora: new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) });
-                localStorage.setItem("historialViajes", JSON.stringify(hist));
+                localStorage.setItem("historialViajes", JSON.stringify(hist)); localStorage.setItem("idViajeChoferActivo", id);
                 database.ref('viajes/' + id).update({ estado: 'en_curso', chofer: { nombre: localStorage.getItem("choferNombre"), economico: localStorage.getItem("choferEco"), lat: markerChofer.getLatLng().lat, lon: markerChofer.getLatLng().lng } }).then(() => {
                     document.getElementById('interfaz').innerHTML = `<div class="panel-pedidos"><h3>VIAJE ACTIVO</h3><div class="contenedor-navegacion"><button class="btn-navegar-waze" onclick="window.open('https://www.waze.com/ul?ll=${d.cliente.lat},${d.cliente.lon}&navigate=yes')">WAZE</button><button class="btn-navegar-maps" onclick="window.open('https://www.google.com/maps/dir/?api=1&destination=${d.cliente.lat},${d.cliente.lon}&travelmode=driving')">MAPS</button></div><button class="btn-cancelar" onclick="terminarViaje('${id}')">FINALIZAR</button></div>`;
                     markerCliente = L.marker([d.cliente.lat, d.cliente.lon], {icon: iconoPasajero}).addTo(map);
@@ -298,7 +331,15 @@
 
         function terminarViaje(id) {
             let calif = prompt("Califica al cliente (1-5):", "5");
-            database.ref('viajes/' + id).remove().then(() => location.reload());
+            database.ref('viajes/' + id).once('value', (s) => {
+                let d = s.val(); if(d && d.cliente_uid) {
+                    database.ref('usuarios/' + d.cliente_uid + '/perfil').transaction((p) => {
+                        if (p) { p.total_viajes = (p.total_viajes || 0) + 1; p.puntos_acumulados = (p.puntos_acumulados || 0) + parseInt(calif); p.estrellas = parseFloat((p.puntos_acumulados / p.total_viajes).toFixed(1)); }
+                        return p;
+                    });
+                }
+                localStorage.removeItem("idViajeChoferActivo"); database.ref('viajes/' + id).remove().then(() => location.reload());
+            });
         }
     </script>
 </body>
