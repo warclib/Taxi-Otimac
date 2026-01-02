@@ -79,28 +79,28 @@
         .slider-aceptar-container {
             position: relative;
             width: 100%;
-            height: 45px; /* Altura reducida */
-            background: #4a148c; /* Fondo un poco más oscuro */
+            height: 45px; 
+            background: #4a148c; 
             border-radius: 25px;
             margin-top: 12px;
             overflow: hidden;
             display: flex;
             align-items: center;
-            border: 1px solid #b39ddb; /* Borde más fino */
+            border: 1px solid #b39ddb; 
             touch-action: none;
-            box-shadow: inset 0 2px 5px rgba(0,0,0,0.2); /* Sombra interna para profundidad */
+            box-shadow: inset 0 2px 5px rgba(0,0,0,0.2); 
         }
         
         .slider-rastro-verde {
             position: absolute; left: 0; top: 0; height: 100%;
-            background: linear-gradient(90deg, #00c853, #69f0ae); /* Degradado verde */
+            background: linear-gradient(90deg, #00c853, #69f0ae); 
             width: 0%; z-index: 1;
             transition: width 0.1s ease;
         }
 
         .slider-text {
             position: absolute; width: 100%; text-align: center;
-            color: rgba(255,255,255,0.9); font-weight: 700; font-size: 11px; /* Texto más pequeño */
+            color: rgba(255,255,255,0.9); font-weight: 700; font-size: 11px; 
             z-index: 2; letter-spacing: 1px; pointer-events: none;
             text-transform: uppercase; text-shadow: 0 1px 2px rgba(0,0,0,0.5);
         }
@@ -113,19 +113,18 @@
 
         .slider-input::-webkit-slider-thumb {
             appearance: none; -webkit-appearance: none;
-            width: 45px; height: 45px; /* Ajustado a la nueva altura */
+            width: 45px; height: 45px; 
             background: white;
             border-radius: 50%;
-            border: 3px solid #00e676; /* Borde más fino */
+            border: 3px solid #00e676; 
             box-shadow: 0 2px 8px rgba(0,0,0,0.3);
             background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='black' width='20px' height='20px'%3E%3Cpath d='M12 4l-1.41 1.41L16.17 11H4v2h12.17l-5.58 5.59L12 20l8-8z'/%3E%3C/svg%3E");
             background-repeat: no-repeat; background-position: center;
             transition: transform 0.2s;
         }
         .slider-input:active::-webkit-slider-thumb {
-            transform: scale(1.05); /* Pequeño efecto al tocar */
+            transform: scale(1.05); 
         }
-        /* ------------------------------------ */
 
         .rating-estrella { color: #ffca28; font-weight: bold; font-size: 13px; }
         .badge-confianza { 
@@ -226,6 +225,7 @@
         var circuloReferenciaCliente;
         var pedidosVistos = new Set();
         var serverTimeOffset = 0;
+        var temporizadorVista; // VARIABLE PARA LA CORRECCIÓN
 
         database.ref(".info/serverTimeOffset").on("value", function(snap) {
             serverTimeOffset = snap.val() || 0;
@@ -419,13 +419,20 @@
             });
         }
 
+        // CORRECCIÓN: FUNCIÓN DE VISTA CON RETRASO
         function verDondeEstaElCliente(lat, lon) {
-            if (circuloReferenciaCliente) map.removeLayer(circuloReferenciaCliente);
-            circuloReferenciaCliente = L.circle([lat, lon], { color: '#b39ddb', fillColor: '#b39ddb', fillOpacity: 0.5, radius: 40 }).addTo(map);
-            map.setView([lat, lon], 17);
+            clearTimeout(temporizadorVista);
+            temporizadorVista = setTimeout(() => {
+                if (circuloReferenciaCliente) map.removeLayer(circuloReferenciaCliente);
+                circuloReferenciaCliente = L.circle([lat, lon], { color: '#b39ddb', fillColor: '#b39ddb', fillOpacity: 0.5, radius: 40 }).addTo(map);
+                map.setView([lat, lon], 17);
+                if(window.navigator.vibrate) window.navigator.vibrate(50);
+            }, 500); // 500ms de espera antes de mover el mapa
         }
 
+        // CORRECCIÓN: FUNCIÓN DE SOLTAR VISTA
         function soltarVistaCliente() {
+            clearTimeout(temporizadorVista);
             if (circuloReferenciaCliente) { map.removeLayer(circuloReferenciaCliente); circuloReferenciaCliente = null; }
             if (markerChofer) { map.setView(markerChofer.getLatLng(), 17); }
         }
@@ -447,7 +454,9 @@
                         var km = markerChofer ? (L.latLng(markerChofer.getLatLng()).distanceTo(L.latLng(cli.lat, cli.lon)) / 1000).toFixed(1) : "...";
 
                         contenedor.innerHTML += `
-                        <div class="pedido-card" onmousedown="verDondeEstaElCliente(${cli.lat}, ${cli.lon})" onmouseup="soltarVistaCliente()" ontouchstart="verDondeEstaElCliente(${cli.lat}, ${cli.lon})" ontouchend="soltarVistaCliente()">
+                        <div class="pedido-card" 
+                             onmousedown="verDondeEstaElCliente(${cli.lat}, ${cli.lon})" onmouseup="soltarVistaCliente()" 
+                             ontouchstart="verDondeEstaElCliente(${cli.lat}, ${cli.lon})" ontouchend="soltarVistaCliente()">
                             <div style="float: right;"><span class="reloj-tag">⏳ ${min}:${s < 10 ? '0' : ''}${s}</span><span class="distancia-tag">📍 ${km} km</span></div>
                             <div><span class="badge-confianza">Verificado</span></div>
                             <b style="font-size: 16px;">${pedidos[id].nombre_cliente || "Pasajero"}</b> 
