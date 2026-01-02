@@ -328,10 +328,11 @@
             }
         }
 
-function aceptarViaje(id) {
-    // 1. CANDADO CON MODAL PROFESIONAL
+  function aceptarViaje(id) {
+    // 1. CANDADO: Si no hay internet antes de deslizar, bloquea y avisa
     if (!navigator.onLine) {
-        abrirModal(`<div class="modal-title" style="color:#ff4444;">SIN CONEXIÓN</div><p>Verifica tu señal antes de aceptar el viaje.</p><button class="modal-btn btn-primario" onclick="location.reload()">REINTENTAR</button>`);
+        alert("⚠️ No tienes conexión a internet. Verifica tu señal antes de aceptar.");
+        location.reload(); 
         return; 
     }
 
@@ -341,9 +342,10 @@ function aceptarViaje(id) {
     
     if (window.navigator.vibrate) window.navigator.vibrate([50, 30, 50]);
 
-    // 2. PACIENCIA CON MODAL DE ADVERTENCIA
+    // 2. PACIENCIA: Espera 15 segundos por si la señal regresa lenta
     let timeoutInternet = setTimeout(() => {
-        abrirModal(`<div class="modal-title" style="color:#ffca28;">SEÑAL DÉBIL</div><p>No se pudo confirmar el viaje. Revisa tu cobertura.</p><button class="modal-btn btn-primario" onclick="location.reload()">ENTENDIDO</button>`);
+        alert("⚠️ La señal es muy débil. No se pudo confirmar el viaje.");
+        location.reload(); 
     }, 15000);
 
     database.ref('viajes/' + id).update({
@@ -359,7 +361,7 @@ function aceptarViaje(id) {
         reconectarViajeChofer(id);
     }).catch(error => {
         clearTimeout(timeoutInternet);
-        abrirModal(`<div class="modal-title" style="color:#ff4444;">ERROR</div><p>${error.message}</p><button class="modal-btn btn-primario" onclick="cerrarModal()">CERRAR</button>`);
+        alert("Error de conexión: " + error.message);
     });
 }
         function reconectarViajeChofer(id) { idViajeActivo = id; document.getElementById('app-body').classList.add('modo-enfocado'); database.ref('viajes/' + id + '/cliente').once('value', snap => { var p = snap.val(); if(p) dibujarInterfazYRuta(p.lat, p.lon, id); }); }
@@ -379,7 +381,6 @@ function aceptarViaje(id) {
     </script>
 </body>
 </html>
-
 
 
 
