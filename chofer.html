@@ -310,7 +310,10 @@
                             <div style="float: right;"><span class="reloj-tag">⏳ ${m}:${s < 10 ? '0' : ''}${s}</span><span class="distancia-tag">📍 ${km} km</span></div>
                             <div class="badge-confianza">Verificado</div><br>
                             <b style="font-size: 17px;">${pedidos[id].nombre_cliente}</b><br>
-                            <span style="color:#ffca28;">⭐ ${pedidos[id].cliente_estrellas}</span> | <small style="color:#aaa;">Historial: ${pedidos[id].cliente_historial} viajes</small><br>
+                            <span style="color:#ffca28; font-size: 14px;">
+                             ${'★'.repeat(Math.floor(pedidos[id].cliente_estrellas))}${'☆'.repeat(5 - Math.floor(pedidos[id].cliente_estrellas))}
+                             </span>
+                             <small style="color:#aaa;"> (${pedidos[id].cliente_estrellas})</small>
                             <div class="tiempo-container" style="width:100%;height:6px;background:rgba(255,255,255,0.1);border-radius:3px;margin:10px 0;overflow:hidden;"><div class="barra-progreso" style="height:100%;background:#00ff00;width:${(restMs/300000)*100}%;"></div></div>
                             <div class="slider-aceptar-container">
                                 <div class="slider-rastro-verde" id="rastro-${id}"></div>
@@ -343,6 +346,7 @@
     </script>
 </body>
 </html>
+
 
 
 
