@@ -225,7 +225,7 @@
         function iniciarAppCentral() {
             verificarEstadoChofer();
             setTimeout(() => { document.getElementById('splash-screen').style.opacity = '0'; setTimeout(() => { document.getElementById('splash-screen').style.visibility = 'hidden'; }, 800); }, 2500);
-            setInterval(() => { if (window.ultimoSnapshotPedidos && !idViajeActivo && document.getElementById('checkTrabajo').checked) renderizarListaPedidos(window.ultimoSnapshotPedidos); }, 1000);
+            setInterval(() => { if (window.ultimoSnapshotPedidos && !idViajeActivo && document.getElementById('checkTrabajo').checked && !window.tocandoSlider) renderizarListaPedidos(window.ultimoSnapshotPedidos); }, 1000);      
             
             // Forzar pantalla completa al primer toque
             document.addEventListener('click', activarPantallaCompleta, { once: true });
@@ -313,7 +313,7 @@
                             <div class="slider-aceptar-container">
                                 <div class="slider-rastro-verde" id="rastro-${id}"></div>
                                 <span class="slider-text">DESLIZA PARA ACEPTAR</span>
-                                <input type="range" class="slider-input" min="0" max="100" value="0" oninput="document.getElementById('rastro-${id}').style.width=this.value+'%'" onchange="if(this.value>=95){ aceptarViaje('${id}') }else{ this.value=0; document.getElementById('rastro-${id}').style.width='0%' }">
+                                <input type="range" class="slider-input" min="0" max="100" value="0" ontouchstart="window.tocandoSlider = true" ontouchend="window.tocandoSlider = false" oninput="document.getElementById('rastro-${id}').style.width=this.value+'%'" onchange="if(this.value>=95){ aceptarViaje('${id}') }else{ this.value=0; document.getElementById('rastro-${id}').style.width='0%' }">
                             </div>
                             <button class="btn-rechazar" onclick="viajesRechazados.push('${id}'); renderizarListaPedidos(window.ultimoSnapshotPedidos);">OCULTAR</button>
                         </div>`;
@@ -341,5 +341,6 @@
     </script>
 </body>
 </html>
+
 
 
