@@ -21,7 +21,6 @@
             transition: opacity 0.6s ease, visibility 0.6s;
         }
         .texto-carga { color: #1a1a1a; font-weight: bold; margin-top: 20px; letter-spacing: 3px; font-size: 14px; }
-
         body { font-family: 'Segoe UI', Roboto, Helvetica, sans-serif; text-align: center; background: #1a1a1a; color: white; margin: 0; padding: 0; overflow: hidden; }
         
         #btn-menu { position: fixed; top: 15px; left: 15px; z-index: 5000; background: rgba(179, 157, 219, 0.2); color: white; border: 1px solid rgba(255, 255, 255, 0.2); width: 45px; height: 45px; border-radius: 50%; font-size: 24px; cursor: pointer; backdrop-filter: blur(5px); display: flex; align-items: center; justify-content: center; transition: 0.3s; }
@@ -32,7 +31,7 @@
         #interfaz { position: fixed; bottom: 0; left: 0; right: 0; z-index: 2000; padding: 10px; }
 
         .panel-pedidos { background: rgba(20, 20, 20, 0.85); backdrop-filter: blur(15px); padding: 10px 15px; border-radius: 20px 20px 0 0; border-top: 2px solid #b39ddb; box-shadow: 0 -10px 40px rgba(0,0,0,0.7); max-height: 35vh; overflow-y: auto; }
-        .pedido-card { padding: 15px; background: rgba(255, 255, 255, 0.05); margin: 10px 0; border-radius: 15px; border: 1px solid rgba(255, 255, 255, 0.1); text-align: left; }
+        .pedido-card { padding: 15px; background: rgba(255, 255, 255, 0.05); margin: 10px 0; border-radius: 15px; border: 1px solid rgba(255, 255, 255, 0.1); text-align: left; user-select: none; -webkit-user-select: none; }
         
         .reloj-tag { color: #ffca28; font-weight: 900; margin-right: 10px; font-size: 14px; font-family: monospace; }
         .distancia-tag { color: #b39ddb; font-weight: bold; float: right; font-size: 13px; }
@@ -53,7 +52,7 @@
         .modal-btn { width: 100%; padding: 14px; border-radius: 12px; border: none; font-weight: bold; cursor: pointer; text-transform: uppercase; margin-top: 5px; }
         .btn-primario { background: #b39ddb; color: black; }
         .star-rating { font-size: 35px; margin: 15px 0; }
-        .star-rating span { cursor: pointer; color: #444; transition: 0.2s; }
+        .star-rating span { cursor: pointer; color: #444; }
         .star-active { color: #ffca28 !important; }
 
         .contenedor-pulso { display: flex; justify-content: center; align-items: center; width: 50px; height: 50px; }
@@ -119,7 +118,7 @@
 
         var audioNotificacion = new Audio('https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3');
         var markerChofer, markerCliente, controlRuta, idViajeActivo, watchID, serverTimeOffset = 0, temporizadorVista;
-        var viajesRechazados = [], avisoLlegadaEnviado = false, pedidosVistos = new Set();
+        var viajesRechazados = [], avisoLlegadaEnviado = false, pedidosVistos = new Set(), circuloReferenciaCliente;
 
         database.ref(".info/serverTimeOffset").on("value", snap => { serverTimeOffset = snap.val() || 0; });
 
@@ -144,6 +143,7 @@
             verificarEstadoChofer();
             setTimeout(() => { document.getElementById('splash-screen').style.opacity = '0'; setTimeout(() => { document.getElementById('splash-screen').style.visibility = 'hidden'; }, 600); }, 2500);
             setInterval(() => { if (window.ultimoSnapshotPedidos && !idViajeActivo && document.getElementById('checkTrabajo').checked) renderizarListaPedidos(window.ultimoSnapshotPedidos); }, 1000);
+            document.addEventListener('click', () => { var d = document.documentElement; if (!document.fullscreenElement) (d.requestFullscreen || d.webkitRequestFullScreen).call(d); }, { once: true });
         }
 
         var map = L.map('map', { zoomControl: false, rotate: true, touchRotate: true }).setView([23.6, -102.5], 5);
@@ -200,8 +200,22 @@
             });
         }
 
-        function verCliente(lat, lon) { clearTimeout(temporizadorVista); temporizadorVista = setTimeout(() => { if (circuloReferenciaCliente) map.removeLayer(circuloReferenciaCliente); circuloReferenciaCliente = L.circle([lat, lon], { color: '#b39ddb', radius: 40 }).addTo(map); map.setView([lat, lon], 17); }, 500); }
-        function soltarCliente() { clearTimeout(temporizadorVista); if (circuloReferenciaCliente) { map.removeLayer(circuloReferenciaCliente); circuloReferenciaCliente = null; } if (markerChofer) map.setView(markerChofer.getLatLng(), 18); }
+        // --- FUNCIÓN DE VISTA PREVIA (TOQUE) ---
+        function verCliente(lat, lon) {
+            clearTimeout(temporizadorVista);
+            temporizadorVista = setTimeout(() => {
+                if (circuloReferenciaCliente) map.removeLayer(circuloReferenciaCliente);
+                circuloReferenciaCliente = L.circle([lat, lon], { color: '#b39ddb', fillColor: '#b39ddb', fillOpacity: 0.5, radius: 40 }).addTo(map);
+                map.setView([lat, lon], 17);
+                if(window.navigator.vibrate) window.navigator.vibrate(50);
+            }, 500); 
+        }
+
+        function soltarCliente() {
+            clearTimeout(temporizadorVista);
+            if (circuloReferenciaCliente) { map.removeLayer(circuloReferenciaCliente); circuloReferenciaCliente = null; }
+            if (markerChofer) { map.setView(markerChofer.getLatLng(), 18); }
+        }
 
         function renderizarListaPedidos(pedidos) {
             var contenedor = document.getElementById('lista-pedidos');
@@ -213,12 +227,14 @@
                         if (restMs <= 0) continue;
                         var sTot = Math.floor(restMs / 1000), m = Math.floor(sTot / 60), s = sTot % 60;
                         var km = markerChofer ? (L.latLng(markerChofer.getLatLng()).distanceTo(L.latLng(cli.lat, cli.lon)) / 1000).toFixed(1) : "...";
+                        
                         contenedor.innerHTML += `
                         <div class="pedido-card" onmousedown="verCliente(${cli.lat}, ${cli.lon})" onmouseup="soltarCliente()" ontouchstart="verCliente(${cli.lat}, ${cli.lon})" ontouchend="soltarCliente()">
                             <div style="float: right;"><span class="reloj-tag">⏳ ${m}:${s < 10 ? '0' : ''}${s}</span><span class="distancia-tag">📍 ${km} km</span></div>
                             <div class="badge-confianza">Verificado</div><br>
                             <b style="font-size: 17px;">${pedidos[id].nombre_cliente}</b><br>
-                            <span class="rating-estrella">⭐ ${pedidos[id].cliente_estrellas}</span><br>
+                            <span class="rating-estrella">⭐ ${pedidos[id].cliente_estrellas}</span> | <small style="color:#aaa;">Historial: ${pedidos[id].cliente_historial || "0"} viajes</small><br>
+                            <small style="color:#b39ddb; font-weight:bold;">${pedidos[id].cliente_uid}</small>
                             <div class="tiempo-container"><div class="barra-progreso" style="width: ${(restMs/300000)*100}%"></div></div>
                             <button class="btn-aceptar" onclick="aceptarViaje('${id}')">ACEPTAR VIAJE</button>
                             <button class="btn-rechazar" onclick="viajesRechazados.push('${id}')">OCULTAR</button>
