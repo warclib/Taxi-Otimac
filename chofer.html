@@ -33,16 +33,17 @@
         body { font-family: 'Segoe UI', Roboto, Helvetica, sans-serif; text-align: center; color: white; }
         
         /* BOTÓN MENÚ A LA DERECHA */
-        #btn-menu {
-            position: fixed; top: 15px; right: 15px; z-index: 5000;
-            background: rgba(179, 157, 219, 0.2);
-            color: white; border: 1px solid rgba(255, 255, 255, 0.2);
-            width: 45px; height: 45px; border-radius: 50%;
-            font-size: 24px; cursor: pointer;
-            backdrop-filter: blur(5px);
-            display: flex; align-items: center; justify-content: center;
-            transition: 0.3s;
-        }
+      #btn-menu {
+    position: fixed; top: 15px; right: 15px; z-index: 30000;
+    background: rgba(74, 20, 140, 0.9); /* Morado de Otimac más visible */
+    color: white; border: 2px solid #b39ddb;
+    width: 48px; height: 48px; border-radius: 50%;
+    font-size: 26px; cursor: pointer;
+    backdrop-filter: blur(5px);
+    display: flex; align-items: center; justify-content: center;
+    transition: 0.3s;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.6);
+}
 
         #sidebar {
             position: fixed; top: 0; right: -320px;
@@ -379,6 +380,7 @@ function aceptarViaje(id) {
     </script>
 </body>
 </html>
+
 
 
 
