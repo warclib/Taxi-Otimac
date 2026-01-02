@@ -109,6 +109,9 @@
         input:checked + .slider { background-color: #00ff00; }
         input:checked + .slider:before { transform: translateX(22px); }
 
+        .leaflet-routing-container { display: none !important; }
+        .modo-enfocado #btn-menu { display: none; }
+
         .contenedor-pulso { display: flex; justify-content: center; align-items: center; width: 50px; height: 50px; }
         .pulso-gps { width: 20px; height: 20px; background: rgba(179, 157, 219, 0.7); border-radius: 50%; position: absolute; z-index: 1; animation: expandir-pulso 2s infinite; }
         @keyframes expandir-pulso { 0% { transform: scale(1); opacity: 0.8; } 100% { transform: scale(3.5); opacity: 0; } }
@@ -131,8 +134,7 @@
 <body onload="iniciarAppCentral()" id="app-body">
 
     <div id="modal-global" class="modal-overlay">
-        <div class="modal-card" id="modal-content">
-            </div>
+        <div class="modal-card" id="modal-content"></div>
     </div>
 
     <div id="splash-screen">
@@ -192,18 +194,10 @@
         var iconoTaxi = L.divIcon({ html: `<div class="contenedor-pulso"><div class="pulso-gps"></div><img src="taxi-chofer.png" class="img-taxi-marker"></div>`, className: '', iconSize: [50, 50], iconAnchor: [25, 25] });
         var iconoPasajero = L.icon({ iconUrl: 'pasajero.png', iconSize: [45, 45], iconAnchor: [22, 45] });
 
-        // --- LÓGICA DE MODALES PRO ---
-        function abrirModal(contenidoHTML) {
-            document.getElementById('modal-content').innerHTML = contenidoHTML;
-            document.getElementById('modal-global').style.display = 'flex';
-        }
+        function abrirModal(contenidoHTML) { document.getElementById('modal-content').innerHTML = contenidoHTML; document.getElementById('modal-global').style.display = 'flex'; }
         function cerrarModal() { document.getElementById('modal-global').style.display = 'none'; }
+        function proAlert(titulo, mensaje) { abrirModal(`<div class="modal-title">${titulo}</div><div class="modal-body">${mensaje}</div><button class="modal-btn btn-primario" onclick="cerrarModal()">Entendido</button>`); }
 
-        function proAlert(titulo, mensaje) {
-            abrirModal(`<div class="modal-title">${titulo}</div><div class="modal-body">${mensaje}</div><button class="modal-btn btn-primario" onclick="cerrarModal()">Entendido</button>`);
-        }
-
-        // --- FUNCIONES CORE ---
         function avisarConVoz(mensaje) {
             if ('speechSynthesis' in window) {
                 window.speechSynthesis.cancel();
@@ -212,21 +206,13 @@
             }
         }
 
-        async function mantenerPantallaEncendida() {
-            if ('wakeLock' in navigator) { try { wakeLock = await navigator.wakeLock.request('screen'); } catch (err) {} }
-        }
+        async function mantenerPantallaEncendida() { if ('wakeLock' in navigator) { try { wakeLock = await navigator.wakeLock.request('screen'); } catch (err) {} } }
 
-        function toggleSidebar() {
-            var side = document.getElementById('sidebar');
-            document.getElementById('overlay').style.display = side.classList.toggle('active') ? 'block' : 'none';
-        }
+        function toggleSidebar() { var side = document.getElementById('sidebar'); document.getElementById('overlay').style.display = side.classList.toggle('active') ? 'block' : 'none'; }
 
         function iniciarAppCentral() {
             verificarEstadoChofer();
-            setTimeout(() => {
-                document.getElementById('splash-screen').style.opacity = '0';
-                setTimeout(() => { document.getElementById('splash-screen').style.visibility = 'hidden'; }, 600);
-            }, 2500);
+            setTimeout(() => { document.getElementById('splash-screen').style.opacity = '0'; setTimeout(() => { document.getElementById('splash-screen').style.visibility = 'hidden'; }, 600); }, 2500);
             setInterval(() => { if (window.ultimoSnapshotPedidos && !idViajeActivo && document.getElementById('checkTrabajo').checked) renderizarListaPedidos(window.ultimoSnapshotPedidos); }, 1000);
         }
 
@@ -236,63 +222,30 @@
         function verificarEstadoChofer() {
             var n = localStorage.getItem("choferNombre"), e = localStorage.getItem("choferEco");
             if(!n || !e) {
-                abrirModal(`
-                    <div class="modal-title">Registro de Chofer</div>
-                    <div class="modal-body">Ingresa tus datos para continuar</div>
-                    <input type="text" id="regNombre" class="modal-input" placeholder="Nombre completo">
-                    <input type="number" id="regEco" class="modal-input" placeholder="Número Económico">
-                    <button class="modal-btn btn-primario" onclick="guardarRegistro()">Entrar al Sistema</button>
-                `);
+                abrirModal(`<div class="modal-title">Registro de Chofer</div><div class="modal-body">Ingresa tus datos para continuar</div><input type="text" id="regNombre" class="modal-input" placeholder="Nombre completo"><input type="number" id="regEco" class="modal-input" placeholder="Número Económico"><button class="modal-btn btn-primario" onclick="guardarRegistro()">Entrar al Sistema</button>`);
             } else {
-                document.getElementById('displayNombre').innerText = n;
-                document.getElementById('displayEco').innerText = e;
-                if(localStorage.getItem("modoTrabajoActivo") === "true") {
-                    document.getElementById('checkTrabajo').checked = true;
-                    toggleTrabajo();
-                    var vActivo = localStorage.getItem("idViajeChoferActivo");
-                    if(vActivo) reconectarViajeChofer(vActivo);
-                }
+                document.getElementById('displayNombre').innerText = n; document.getElementById('displayEco').innerText = e;
+                if(localStorage.getItem("modoTrabajoActivo") === "true") { document.getElementById('checkTrabajo').checked = true; toggleTrabajo(); var vActivo = localStorage.getItem("idViajeChoferActivo"); if(vActivo) reconectarViajeChofer(vActivo); }
             }
         }
 
-        function guardarRegistro() {
-            let n = document.getElementById('regNombre').value, e = document.getElementById('regEco').value;
-            if(n && e) {
-                localStorage.setItem("choferNombre", n); localStorage.setItem("choferEco", e);
-                cerrarModal(); location.reload();
-            }
-        }
+        function guardarRegistro() { let n = document.getElementById('regNombre').value, e = document.getElementById('regEco').value; if(n && e) { localStorage.setItem("choferNombre", n); localStorage.setItem("choferEco", e); cerrarModal(); location.reload(); } }
 
         function cambiarDatosChofer() {
             if(idViajeActivo) return proAlert("Error", "No puedes cambiar datos durante un viaje.");
-            abrirModal(`
-                <div class="modal-title">Editar Perfil</div>
-                <input type="text" id="editNombre" class="modal-input" value="${localStorage.getItem("choferNombre")}">
-                <input type="number" id="editEco" class="modal-input" value="${localStorage.getItem("choferEco")}">
-                <button class="modal-btn btn-primario" onclick="guardarEdicion()">Guardar Cambios</button>
-                <button class="modal-btn btn-secundario" onclick="cerrarModal()">Cancelar</button>
-            `);
+            abrirModal(`<div class="modal-title">Editar Perfil</div><input type="text" id="editNombre" class="modal-input" value="${localStorage.getItem("choferNombre")}"><input type="number" id="editEco" class="modal-input" value="${localStorage.getItem("choferEco")}"><button class="modal-btn btn-primario" onclick="guardarEdicion()">Guardar Cambios</button><button class="modal-btn btn-secundario" onclick="cerrarModal()">Cancelar</button>`);
         }
 
-        function guardarEdicion() {
-            let n = document.getElementById('editNombre').value, e = document.getElementById('editEco').value;
-            if(n && e) { localStorage.setItem("choferNombre", n); localStorage.setItem("choferEco", e); location.reload(); }
-        }
+        function guardarEdicion() { let n = document.getElementById('editNombre').value, e = document.getElementById('editEco').value; if(n && e) { localStorage.setItem("choferNombre", n); localStorage.setItem("choferEco", e); location.reload(); } }
 
         function toggleTrabajo() {
             var activo = document.getElementById('checkTrabajo').checked, eco = localStorage.getItem("choferEco");
             if(activo) {
                 database.ref('autorizados/' + eco).once('value', (snap) => {
                     if (snap.exists()) { 
-                        localStorage.setItem("modoTrabajoActivo", true);
-                        document.getElementById('txtModo').innerText = "TRABAJANDO";
-                        document.getElementById('txtModo').style.color = "#00ff00";
-                        mantenerPantallaEncendida(); iniciarGPS(); escucharPedidos();
-                        if(document.getElementById('sidebar').classList.contains('active')) toggleSidebar();
-                    } else {
-                        proAlert("Acceso Denegado", "El económico " + eco + " no está autorizado.");
-                        document.getElementById('checkTrabajo').checked = false;
-                    }
+                        localStorage.setItem("modoTrabajoActivo", true); document.getElementById('txtModo').innerText = "TRABAJANDO"; document.getElementById('txtModo').style.color = "#00ff00";
+                        mantenerPantallaEncendida(); iniciarGPS(); escucharPedidos(); if(document.getElementById('sidebar').classList.contains('active')) toggleSidebar();
+                    } else { proAlert("Acceso Denegado", "El económico " + eco + " no está autorizado."); document.getElementById('checkTrabajo').checked = false; }
                 });
             } else { localStorage.setItem("modoTrabajoActivo", false); location.reload(); }
         }
@@ -302,14 +255,11 @@
                 var lat = pos.coords.latitude, lon = pos.coords.longitude, miPos = L.latLng(lat, lon);
                 document.getElementById('status-gps').innerText = "✅ GPS ON"; document.getElementById('status-gps').style.color = "#00ff00";
                 if(markerChofer) markerChofer.setLatLng(miPos); else { markerChofer = L.marker(miPos, {icon: iconoTaxi}).addTo(map); map.setView(miPos, 17); }
-                map.panTo(miPos); if (pos.coords.heading !== null) { map.setBearing(pos.coords.heading); }
+                map.panTo(miPos); if (pos.coords.heading !== null) map.setBearing(pos.coords.heading);
                 if (idViajeActivo) {
                     database.ref('viajes/' + idViajeActivo + '/chofer').update({ lat: lat, lon: lon });
                     if (markerCliente) {
-                        if (miPos.distanceTo(markerCliente.getLatLng()) < 150 && !avisoLlegadaEnviado) {
-                            avisoLlegadaEnviado = true; avisarConVoz("llegando a la ubicación.");
-                            database.ref('viajes/' + idViajeActivo).update({ estado: 'chofer_llego' });
-                        }
+                        if (miPos.distanceTo(markerCliente.getLatLng()) < 150 && !avisoLlegadaEnviado) { avisoLlegadaEnviado = true; avisarConVoz("llegando a la ubicación."); database.ref('viajes/' + idViajeActivo).update({ estado: 'chofer_llego' }); }
                     }
                 }
             }, null, {enableHighAccuracy: true});
@@ -323,10 +273,7 @@
                     var ahora = Date.now() + serverTimeOffset;
                     for (var id in pedidos) {
                         if (pedidos[id].estado === 'esperando' && (ahora - pedidos[id].timestamp) < 300000) {
-                            if (!pedidosVistos.has(id) && !viajesRechazados.includes(id)) {
-                                pedidosVistos.add(id); audioNotificacion.play().catch(e=>{});
-                                avisarConVoz("tienes un nuevo viaje disponible.");
-                            }
+                            if (!pedidosVistos.has(id) && !viajesRechazados.includes(id)) { pedidosVistos.add(id); audioNotificacion.play().catch(e=>{}); avisarConVoz("tienes un nuevo viaje disponible."); }
                         }
                     }
                 }
@@ -334,20 +281,8 @@
             });
         }
 
-        function verDondeEstaElCliente(lat, lon) {
-            clearTimeout(temporizadorVista);
-            temporizadorVista = setTimeout(() => {
-                if (circuloReferenciaCliente) map.removeLayer(circuloReferenciaCliente);
-                circuloReferenciaCliente = L.circle([lat, lon], { color: '#b39ddb', radius: 40 }).addTo(map);
-                map.setView([lat, lon], 17); if(window.navigator.vibrate) window.navigator.vibrate(50);
-            }, 500); 
-        }
-
-        function soltarVistaCliente() {
-            clearTimeout(temporizadorVista);
-            if (circuloReferenciaCliente) { map.removeLayer(circuloReferenciaCliente); circuloReferenciaCliente = null; }
-            if (markerChofer) map.setView(markerChofer.getLatLng(), 17);
-        }
+        function verDondeEstaElCliente(lat, lon) { clearTimeout(temporizadorVista); temporizadorVista = setTimeout(() => { if (circuloReferenciaCliente) map.removeLayer(circuloReferenciaCliente); circuloReferenciaCliente = L.circle([lat, lon], { color: '#b39ddb', radius: 40 }).addTo(map); map.setView([lat, lon], 17); if(window.navigator.vibrate) window.navigator.vibrate(50); }, 500); }
+        function soltarVistaCliente() { clearTimeout(temporizadorVista); if (circuloReferenciaCliente) { map.removeLayer(circuloReferenciaCliente); circuloReferenciaCliente = null; } if (markerChofer) map.setView(markerChofer.getLatLng(), 17); }
 
         function renderizarListaPedidos(pedidos) {
             var contenedor = document.getElementById('lista-pedidos');
@@ -362,8 +297,13 @@
                         contenedor.innerHTML += `
                         <div class="pedido-card" onmousedown="verDondeEstaElCliente(${cli.lat}, ${cli.lon})" onmouseup="soltarVistaCliente()" ontouchstart="verDondeEstaElCliente(${cli.lat}, ${cli.lon})" ontouchend="soltarVistaCliente()">
                             <div style="float: right;"><span class="reloj-tag">⏳ ${min}:${seg<10?'0':''}${seg}</span><span class="distancia-tag">📍 ${km} km</span></div>
+                            <div><span class="badge-confianza">Verificado</span></div>
                             <b style="font-size: 16px;">${pedidos[id].nombre_cliente || "Pasajero"}</b><br>
-                            <span class="rating-estrella">⭐ ${pedidos[id].cliente_estrellas || "4.8"}</span><br>
+                            <div style="margin: 5px 0;">
+                                <span class="rating-estrella">⭐ ${pedidos[id].cliente_estrellas || "4.8"}</span>
+                                <small style="color:#aaa; margin-left:10px;">Historial: ${pedidos[id].cliente_historial || "1"} viajes.</small>
+                            </div>
+                            <small style="color:#b39ddb; font-size:10px; font-weight:bold;">${pedidos[id].cliente_uid || "OT-100"}</small>
                             <div class="tiempo-container"><div class="barra-progreso" style="width: ${(rest/300000)*100}%"></div></div>
                             <button class="btn-aceptar" onclick="aceptarViaje('${id}')">ACEPTAR VIAJE</button>
                             <button class="btn-rechazar" onclick="viajesRechazados.push('${id}')">OCULTAR</button>
@@ -374,71 +314,25 @@
             }
         }
 
-        function aceptarViaje(id) {
-            idViajeActivo = id; localStorage.setItem("idViajeChoferActivo", id);
-            document.getElementById('app-body').classList.add('modo-enfocado');
-            database.ref('viajes/' + id).update({ 
-                estado: 'en_curso', 
-                chofer: { nombre: localStorage.getItem("choferNombre"), economico: localStorage.getItem("choferEco"), lat: markerChofer.getLatLng().lat, lon: markerChofer.getLatLng().lng } 
-            }).then(() => reconectarViajeChofer(id));
-        }
-
-        function reconectarViajeChofer(id) {
-            idViajeActivo = id; document.getElementById('app-body').classList.add('modo-enfocado');
-            database.ref('viajes/' + id + '/cliente').once('value', snap => {
-                var p = snap.val(); if(p) dibujarInterfazYRuta(p.lat, p.lon, id);
-            });
-        }
+        function aceptarViaje(id) { idViajeActivo = id; localStorage.setItem("idViajeChoferActivo", id); document.getElementById('app-body').classList.add('modo-enfocado'); database.ref('viajes/' + id).update({ estado: 'en_curso', chofer: { nombre: localStorage.getItem("choferNombre"), economico: localStorage.getItem("choferEco"), lat: markerChofer.getLatLng().lat, lon: markerChofer.getLatLng().lng } }).then(() => reconectarViajeChofer(id)); }
+        function reconectarViajeChofer(id) { idViajeActivo = id; document.getElementById('app-body').classList.add('modo-enfocado'); database.ref('viajes/' + id + '/cliente').once('value', snap => { var p = snap.val(); if(p) dibujarInterfazYRuta(p.lat, p.lon, id); }); }
 
         function dibujarInterfazYRuta(lat, lon, id) {
-            document.getElementById('interfaz').innerHTML = `
-                <div class="panel-pedidos">
-                    <h3 style="color:#b39ddb;">VIAJE ACTIVO</h3>
-                    <div class="contenedor-navegacion">
-                        <button class="btn-navegar-waze" onclick="window.open('https://www.waze.com/ul?ll=${lat},${lon}&navigate=yes')">🚙 WAZE</button>
-                        <button class="btn-navegar-maps" onclick="window.open('https://maps.google.com/?q=${lat},${lon}')">📍 MAPS</button>
-                    </div>
-                    <button class="btn-cancelar" id="btn-finalizar-viaje" onclick="terminarViaje('${id}')">FINALIZAR SERVICIO</button>
-                </div>`;
+            document.getElementById('interfaz').innerHTML = `<div class="panel-pedidos"><h3 style="color:#b39ddb;">VIAJE ACTIVO</h3><div class="contenedor-navegacion"><button class="btn-navegar-waze" onclick="window.open('https://www.waze.com/ul?ll=${lat},${lon}&navigate=yes')">🚙 WAZE</button><button class="btn-navegar-maps" onclick="window.open('https://maps.google.com/?q=${lat},${lon}')">📍 MAPS</button></div><button class="btn-cancelar" id="btn-finalizar-viaje" onclick="terminarViaje('${id}')">FINALIZAR SERVICIO</button></div>`;
             if(markerCliente) map.removeLayer(markerCliente);
             markerCliente = L.marker([lat, lon], {icon: iconoPasajero}).addTo(map);
         }
 
-        // --- CALIFICACIÓN ESTRELLAS ---
         var califFinal = 5;
-        function setStar(n) {
-            califFinal = n;
-            for(let i=1; i<=5; i++) {
-                document.getElementById('star'+i).classList.toggle('star-active', i<=n);
-            }
-        }
+        function setStar(n) { califFinal = n; for(let i=1; i<=5; i++) { document.getElementById('star'+i).classList.toggle('star-active', i<=n); } }
 
-        function terminarViaje(id) {
-            abrirModal(`
-                <div class="modal-title">Finalizar Servicio</div>
-                <div class="modal-body">Califica al pasajero:</div>
-                <div class="star-rating">
-                    <span id="star1" class="star-active" onclick="setStar(1)">★</span>
-                    <span id="star2" class="star-active" onclick="setStar(2)">★</span>
-                    <span id="star3" class="star-active" onclick="setStar(3)">★</span>
-                    <span id="star4" class="star-active" onclick="setStar(4)">★</span>
-                    <span id="star5" class="star-active" onclick="setStar(5)">★</span>
-                </div>
-                <button class="modal-btn btn-primario" onclick="confirmarFinViaje('${id}')">Cerrar Viaje</button>
-            `);
-        }
+        function terminarViaje(id) { abrirModal(`<div class="modal-title">Finalizar Servicio</div><div class="modal-body">Califica al pasajero:</div><div class="star-rating"><span id="star1" class="star-active" onclick="setStar(1)">★</span><span id="star2" class="star-active" onclick="setStar(2)">★</span><span id="star3" class="star-active" onclick="setStar(3)">★</span><span id="star4" class="star-active" onclick="setStar(4)">★</span><span id="star5" class="star-active" onclick="setStar(5)">★</span></div><button class="modal-btn btn-primario" onclick="confirmarFinViaje('${id}')">Cerrar Viaje</button>`); }
 
         function confirmarFinViaje(id) {
             database.ref('viajes/' + id).once('value', snap => {
                 let d = snap.val();
-                if (d && d.cliente_uid) {
-                    database.ref('usuarios/' + d.cliente_uid + '/perfil').transaction(p => {
-                        if (p) { p.total_viajes++; p.puntos_acumulados += califFinal; p.estrellas = (p.puntos_acumulados / p.total_viajes).toFixed(1); }
-                        return p;
-                    });
-                }
-                localStorage.removeItem("idViajeChoferActivo");
-                database.ref('viajes/' + id).remove().then(() => location.reload());
+                if (d && d.cliente_uid) { database.ref('usuarios/' + d.cliente_uid + '/perfil').transaction(p => { if (p) { p.total_viajes++; p.puntos_acumulados += califFinal; p.estrellas = (p.puntos_acumulados / p.total_viajes).toFixed(1); } return p; }); }
+                localStorage.removeItem("idViajeChoferActivo"); database.ref('viajes/' + id).remove().then(() => location.reload());
             });
         }
     </script>
