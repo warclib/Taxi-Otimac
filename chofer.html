@@ -24,7 +24,6 @@
 
         body { font-family: 'Segoe UI', Roboto, Helvetica, sans-serif; text-align: center; background: #1a1a1a; color: white; margin: 0; padding: 0; overflow: hidden; }
         
-        /* MENU A LA DERECHA */
         #btn-menu {
             position: fixed; top: 15px; right: 15px; z-index: 5000;
             background: rgba(179, 157, 219, 0.2);
@@ -70,15 +69,16 @@
             border: 1px solid rgba(255, 255, 255, 0.1);
             text-align: left;
             user-select: none;
+            -webkit-user-select: none;
         }
 
-        /* --- DESLIZADOR ACEPTAR --- */
         .slider-aceptar-container {
             position: relative; width: 100%; height: 45px; 
             background: #4a148c; border-radius: 25px;
             margin-top: 12px; overflow: hidden;
             display: flex; align-items: center;
             border: 1px solid #b39ddb; touch-action: none;
+            box-shadow: inset 0 2px 5px rgba(0,0,0,0.2); 
         }
         .slider-rastro-verde {
             position: absolute; left: 0; top: 0; height: 100%;
@@ -92,7 +92,8 @@
         }
         .slider-input {
             position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-            appearance: none; background: transparent; z-index: 3; margin: 0; outline: none;
+            appearance: none; -webkit-appearance: none; background: transparent;
+            z-index: 3; margin: 0; outline: none; cursor: grab;
         }
         .slider-input::-webkit-slider-thumb {
             appearance: none; width: 45px; height: 45px; 
@@ -101,7 +102,6 @@
             background-repeat: no-repeat; background-position: center;
         }
 
-        /* MODALES ESTILO OTIMAC */
         .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 20000; display: none; align-items: center; justify-content: center; backdrop-filter: blur(5px); }
         .modal-card { background: #1a1a1a; width: 85%; max-width: 340px; border-radius: 25px; padding: 25px; border: 1px solid #333; text-align: center; box-shadow: 0 20px 50px rgba(0,0,0,0.5); }
         .modal-title { font-size: 20px; font-weight: bold; margin-bottom: 15px; color: #b39ddb; }
@@ -111,10 +111,11 @@
         
         .reloj-tag { color: #ffca28; font-weight: bold; margin-right: 15px; font-size: 12px; }
         .distancia-tag { color: #b39ddb; font-weight: bold; float: right; font-size: 12px; }
-        .btn-cancelar { background: #ff4444; color: white; border: none; padding: 15px; border-radius: 10px; font-weight: bold; width: 100%; margin-top: 10px; font-size: 16px; }
+        .btn-rechazar { background:transparent; border:none; color: #ff4444; padding:5px; width:100%; margin-top:5px; cursor: pointer; font-size: 11px; text-decoration: underline; }
+        .btn-cancelar { background: #ff4444; color: white; border: none; padding: 15px; border-radius: 12px; font-weight: bold; width: 100%; margin-top: 10px; font-size: 16px; }
 
         .contenedor-pulso { display: flex; justify-content: center; align-items: center; width: 50px; height: 50px; }
-        .pulso-gps { width: 20px; height: 20px; background: rgba(179, 157, 219, 0.7); border-radius: 50%; position: absolute; animation: expandir-pulso 2s infinite; }
+        .pulso-gps { width: 20px; height: 20px; background: rgba(179, 157, 219, 0.7); border-radius: 50%; position: absolute; z-index: 1; animation: expandir-pulso 2s infinite; }
         @keyframes expandir-pulso { 0% { transform: scale(1); opacity: 0.8; } 100% { transform: scale(3.5); opacity: 0; } }
         .img-taxi-marker { width: 50px; height: 50px; position: relative; z-index: 5; }
         .leaflet-routing-container { display: none !important; }
@@ -128,7 +129,7 @@
 
     <div id="splash-screen">
         <div style="color: #1a1a1a; font-size: 32px; font-weight: 900; letter-spacing: 2px;">OTIMAC</div>
-        <div class="texto-carga">SISTEMA INICIADO</div>
+        <div class="texto-carga">REINICIANDO SISTEMA...</div>
     </div>
 
     <button id="btn-menu" onclick="toggleSidebar()">☰</button>
@@ -142,7 +143,7 @@
             </div>
             <div style="display: flex; justify-content: space-between; align-items: center;">
                 <span id="txtModo" style="font-weight: bold; color: #ff4444; font-size: 13px;">DESCONECTADO</span>
-                <label class="switch" style="position: relative; display: inline-block; width: 50px; height: 28px;">
+                <label style="position: relative; display: inline-block; width: 50px; height: 28px;">
                     <input type="checkbox" id="checkTrabajo" onchange="toggleTrabajo()" style="opacity:0; width:0; height:0;">
                     <span style="position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #555; transition: .4s; border-radius: 34px;"></span>
                 </label>
@@ -150,7 +151,7 @@
         </div>
         <div class="sidebar-item" onclick="cambiarDatosChofer()" style="cursor:pointer;">
             <div style="font-size: 15px; font-weight: bold;">👤 <span id="displayNombre">...</span></div>
-            <div style="font-size: 15px; font-weight: bold;">🚕 Numero Economico: <span id="displayEco">...</span></div>
+            <div style="font-size: 15px; font-weight: bold;">🚕 Eco: <span id="displayEco">...</span></div>
             <small style="color: #b39ddb; font-size: 10px;">(Toca para editar)</small>
         </div>
     </div>
@@ -175,15 +176,14 @@
         var database = firebase.database();
 
         var audioNotificacion = new Audio('https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3');
-        var markerChofer, markerCliente, controlRuta, idViajeActivo, watchID, wakeLock = null;
-        var viajesRechazados = [], avisoLlegadaEnviado = false, pedidosVistos = new Set(), serverTimeOffset = 0, temporizadorVista, circuloReferenciaCliente;
+        var markerChofer, markerCliente, controlRuta, idViajeActivo, watchID, serverTimeOffset = 0, temporizadorVista, circuloReferenciaCliente;
+        var viajesRechazados = [], avisoLlegadaEnviado = false, pedidosVistos = new Set();
 
         database.ref(".info/serverTimeOffset").on("value", snap => { serverTimeOffset = snap.val() || 0; });
 
         var iconoTaxi = L.divIcon({ html: `<div class="contenedor-pulso"><div class="pulso-gps"></div><img src="taxi-chofer.png" class="img-taxi-marker"></div>`, className: '', iconSize: [50, 50], iconAnchor: [25, 25] });
         var iconoPasajero = L.icon({ iconUrl: 'pasajero.png', iconSize: [45, 45], iconAnchor: [22, 45] });
 
-        // FUNCIONES MODALES
         function abrirModal(html) { document.getElementById('modal-content').innerHTML = html; document.getElementById('modal-global').style.display = 'flex'; }
         function cerrarModal() { document.getElementById('modal-global').style.display = 'none'; }
 
@@ -209,30 +209,18 @@
 
         function verificarEstadoChofer() {
             var n = localStorage.getItem("choferNombre"), e = localStorage.getItem("choferEco");
-            if(!n) {
-                abrirModal(`<div class="modal-title">REGISTRO OTIMAC</div><input type="text" id="regN" class="modal-input" placeholder="Nombre completo"><input type="number" id="regE" class="modal-input" placeholder="Número Económico"><button class="modal-btn btn-primario" onclick="saveReg()">Entrar al Sistema</button>`);
-            } else {
-                document.getElementById('displayNombre').innerText = n; document.getElementById('displayEco').innerText = e;
-                if(localStorage.getItem("modoTrabajoActivo") === "true") { document.getElementById('checkTrabajo').checked = true; toggleTrabajo(); if(localStorage.getItem("idViajeChoferActivo")) reconectarViajeChofer(localStorage.getItem("idViajeChoferActivo")); }
-            }
+            if(!n) { abrirModal(`<div class="modal-title">REGISTRO OTIMAC</div><input type="text" id="regN" class="modal-input" placeholder="Nombre completo"><input type="number" id="regE" class="modal-input" placeholder="Eco"><button class="modal-btn btn-primario" onclick="saveReg()">Entrar</button>`); }
+            else { document.getElementById('displayNombre').innerText = n; document.getElementById('displayEco').innerText = e; if(localStorage.getItem("modoTrabajoActivo") === "true") { document.getElementById('checkTrabajo').checked = true; toggleTrabajo(); if(localStorage.getItem("idViajeChoferActivo")) reconectarViajeChofer(localStorage.getItem("idViajeChoferActivo")); } }
         }
 
         function saveReg() { let n = document.getElementById('regN').value, e = document.getElementById('regE').value; if(n && e) { localStorage.setItem("choferNombre", n); localStorage.setItem("choferEco", e); location.reload(); } }
-        
-        function cambiarDatosChofer() {
-            if(idViajeActivo) return;
-            abrirModal(`<div class="modal-title">EDITAR PERFIL</div><input type="text" id="edN" class="modal-input" value="${localStorage.getItem("choferNombre")}"><input type="number" id="edE" class="modal-input" value="${localStorage.getItem("choferEco")}"><button class="modal-btn btn-primario" onclick="saveEd()">Guardar Cambios</button><button class="modal-btn" style="background:#444;color:white;" onclick="cerrarModal()">Cancelar</button>`);
-        }
+        function cambiarDatosChofer() { if(idViajeActivo) return; abrirModal(`<div class="modal-title">EDITAR PERFIL</div><input type="text" id="edN" class="modal-input" value="${localStorage.getItem("choferNombre")}"><input type="number" id="edE" class="modal-input" value="${localStorage.getItem("choferEco")}"><button class="modal-btn btn-primario" onclick="saveEd()">Guardar</button>`); }
         function saveEd() { let n = document.getElementById('edN').value, e = document.getElementById('edE').value; if(n && e) { localStorage.setItem("choferNombre", n); localStorage.setItem("choferEco", e); location.reload(); } }
 
         function toggleTrabajo() {
             var activo = document.getElementById('checkTrabajo').checked, eco = localStorage.getItem("choferEco");
-            if(activo) {
-                database.ref('autorizados/' + eco).once('value', snap => {
-                    if (snap.exists()) { localStorage.setItem("modoTrabajoActivo", true); document.getElementById('txtModo').innerText = "TRABAJANDO"; document.getElementById('txtModo').style.color = "#00ff00"; iniciarGPS(); escucharPedidos(); if(document.getElementById('sidebar').classList.contains('active')) toggleSidebar(); }
-                    else { document.getElementById('checkTrabajo').checked = false; abrirModal(`<div class="modal-title">ACCESO DENEGADO</div><p>Tu número económico no está autorizado.</p><button class="modal-btn btn-primario" onclick="cerrarModal()">Entendido</button>`); }
-                });
-            } else { localStorage.setItem("modoTrabajoActivo", false); location.reload(); }
+            if(activo) { database.ref('autorizados/' + eco).once('value', snap => { if (snap.exists()) { localStorage.setItem("modoTrabajoActivo", true); document.getElementById('txtModo').innerText = "TRABAJANDO"; document.getElementById('txtModo').style.color = "#00ff00"; iniciarGPS(); escucharPedidos(); if(document.getElementById('sidebar').classList.contains('active')) toggleSidebar(); } else { document.getElementById('checkTrabajo').checked = false; } }); }
+            else { localStorage.setItem("modoTrabajoActivo", false); location.reload(); }
         }
 
         function iniciarGPS() {
@@ -241,10 +229,7 @@
                 document.getElementById('status-gps').innerText = "✅ GPS ON"; document.getElementById('status-gps').style.color = "#00ff00";
                 if(markerChofer) markerChofer.setLatLng(miPos); else { markerChofer = L.marker(miPos, {icon: iconoTaxi}).addTo(map); map.setView(miPos, 17); }
                 if(!temporizadorVista) { map.panTo(miPos); if (pos.coords.heading !== null) map.setBearing(pos.coords.heading); }
-                if (idViajeActivo) {
-                    database.ref('viajes/' + idViajeActivo + '/chofer').update({ lat: pos.coords.latitude, lon: pos.coords.longitude });
-                    if (markerCliente && miPos.distanceTo(markerCliente.getLatLng()) < 150 && !avisoLlegadaEnviado) { avisoLlegadaEnviado = true; avisarConVoz("Atención, estás llegando."); database.ref('viajes/' + idViajeActivo).update({ estado: 'chofer_llego' }); }
-                }
+                if (idViajeActivo) { database.ref('viajes/' + idViajeActivo + '/chofer').update({ lat: pos.coords.latitude, lon: pos.coords.longitude }); if (markerCliente && miPos.distanceTo(markerCliente.getLatLng()) < 150 && !avisoLlegadaEnviado) { avisoLlegadaEnviado = true; avisarConVoz("llegando."); database.ref('viajes/' + idViajeActivo).update({ estado: 'chofer_llego' }); } }
             }, null, {enableHighAccuracy: true});
         }
 
@@ -252,6 +237,15 @@
             database.ref('viajes').on('value', snap => {
                 var p = snap.val(); window.ultimoSnapshotPedidos = p;
                 pedidosVistos.forEach(id => { if (!p || !p[id] || p[id].estado !== 'esperando') pedidosVistos.delete(id); });
+                
+                // Lógica de reseteo: si no hay pedidos esperando, se limpia la lista negra
+                if (!p) { viajesRechazados = []; } 
+                else {
+                    let hayEsperando = false;
+                    for (var id in p) { if (p[id].estado === 'esperando') { hayEsperando = true; break; } }
+                    if (!hayEsperando) { viajesRechazados = []; }
+                }
+
                 if (p && document.getElementById('checkTrabajo').checked && !idViajeActivo) {
                     var ahora = Date.now() + serverTimeOffset;
                     for (var id in p) { if (p[id].estado === 'esperando' && (ahora - p[id].timestamp) < 300000) { if (!pedidosVistos.has(id) && !viajesRechazados.includes(id)) { pedidosVistos.add(id); audioNotificacion.play().catch(e=>{}); avisarConVoz("viaje disponible."); } } }
@@ -263,11 +257,11 @@
         function verDondeEstaElCliente(lat, lon) {
             clearTimeout(temporizadorVista);
             temporizadorVista = setTimeout(() => {
+                if (window.navigator.vibrate) window.navigator.vibrate(50);
                 if (circuloReferenciaCliente) map.removeLayer(circuloReferenciaCliente);
-                circuloReferenciaCliente = L.circle([lat, lon], { color: '#b39ddb', fillColor: '#b39ddb', fillOpacity: 0.5, radius: 40 }).addTo(map);
+                circuloReferenciaCliente = L.circle([lat, lon], { color: '#b39ddb', fillColor: '#b39ddb', fillOpacity: 0.4, radius: 50 }).addTo(map);
                 map.flyTo([lat, lon], 17, { animate: true, duration: 0.8 });
-                if(window.navigator.vibrate) window.navigator.vibrate(50);
-            }, 500);
+            }, 500); 
         }
 
         function soltarVistaCliente() { clearTimeout(temporizadorVista); if (circuloReferenciaCliente) { map.removeLayer(circuloReferenciaCliente); circuloReferenciaCliente = null; } if (markerChofer) map.setView(markerChofer.getLatLng(), 17); }
@@ -294,7 +288,7 @@
                                 <span class="slider-text">DESLIZA PARA ACEPTAR</span>
                                 <input type="range" class="slider-input" min="0" max="100" value="0" oninput="document.getElementById('rastro-${id}').style.width=this.value+'%'" onchange="if(this.value>=95){ aceptarViaje('${id}') }else{ this.value=0; document.getElementById('rastro-${id}').style.width='0%' }">
                             </div>
-                            <button class="btn-rechazar" onclick="viajesRechazados.push('${id}')">OCULTAR</button>
+                            <button class="btn-rechazar" onclick="viajesRechazados.push('${id}'); renderizarListaPedidos(window.ultimoSnapshotPedidos);">OCULTAR</button>
                         </div>`;
                     }
                 }
@@ -306,7 +300,7 @@
         function reconectarViajeChofer(id) { idViajeActivo = id; document.getElementById('app-body').classList.add('modo-enfocado'); database.ref('viajes/' + id + '/cliente').once('value', snap => { var p = snap.val(); if(p) dibujarInterfazYRuta(p.lat, p.lon, id); }); }
 
         function dibujarInterfazYRuta(lat, lon, id) {
-            document.getElementById('interfaz').innerHTML = `<div class="panel-pedidos"><h3 style="color:#b39ddb;">VIAJE ACTIVO</h3><div class="contenedor-navegacion" style="display:flex;gap:10px;margin-bottom:10px;"><button class="btn-navegar-waze" style="background:#33ccff;color:white;border:none;padding:12px;border-radius:8px;font-weight:bold;width:50%;" onclick="window.open('https://www.waze.com/ul?ll=${lat},${lon}&navigate=yes')">🚙 WAZE</button><button class="btn-navegar-maps" style="background:#4285F4;color:white;border:none;padding:12px;border-radius:8px;font-weight:bold;width:50%;" onclick="window.open('https://www.google.com/maps/dir/?api=1&destination=${lat},${lon}&travelmode=driving')">📍 MAPS</button></div><button class="btn-cancelar" onclick="terminarViaje('${id}')">FINALIZAR</button></div>`;
+            document.getElementById('interfaz').innerHTML = `<div class="panel-pedidos"><h3 style="color:#b39ddb;">VIAJE ACTIVO</h3><div class="contenedor-navegacion" style="display:flex;gap:10px;margin-bottom:10px;"><button style="background:#33ccff;color:white;border:none;padding:12px;border-radius:8px;font-weight:bold;width:50%;" onclick="window.open('https://www.waze.com/ul?ll=${lat},${lon}&navigate=yes')">🚙 WAZE</button><button style="background:#4285F4;color:white;border:none;padding:12px;border-radius:8px;font-weight:bold;width:50%;" onclick="window.open('https://www.google.com/maps/dir/?api=1&destination=${lat},${lon}&travelmode=driving')">📍 MAPS</button></div><button class="btn-cancelar" onclick="terminarViaje('${id}')">FINALIZAR</button></div>`;
             if(markerCliente) map.removeLayer(markerCliente); markerCliente = L.marker([lat, lon], {icon: iconoPasajero}).addTo(map);
             if(markerChofer) { if(controlRuta) map.removeControl(controlRuta); controlRuta = L.Routing.control({ waypoints: [markerChofer.getLatLng(), L.latLng(lat, lon)], show: false, createMarker: () => null, lineOptions: { styles: [{ color: 'white', opacity: 0.9, weight: 10 }, { color: '#b39ddb', opacity: 1, weight: 6 }] } }).addTo(map); }
         }
