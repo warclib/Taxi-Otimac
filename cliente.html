@@ -24,7 +24,6 @@
 
         #map { position: absolute; top: 0; bottom: 70px; width: 100%; z-index: 1; border: none; }
 
-        /* EFECTO VIDRIO OSCURO */
         .glass-card {
             background: rgba(20, 20, 20, 0.85);
             backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
@@ -34,7 +33,6 @@
 
         #areaPedido { position: absolute; top: 20px; left: 5%; width: 90%; z-index: 10; padding: 18px; }
 
-        /* NOTIFICACIÓN TIPO APP (REEMPLAZA ALERT) */
         #notificacion {
             position: fixed; top: -100px; left: 5%; width: 90%; 
             padding: 15px; border-radius: 12px; z-index: 30000;
@@ -43,7 +41,6 @@
         .notif-error { background: #ff4444; color: white; }
         .notif-ok { background: #b39ddb; color: black; }
 
-        /* MODAL DE CONFIRMACIÓN (REEMPLAZA CONFIRM) */
         #modal-confirmar {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background: rgba(0,0,0,0.8); z-index: 40000;
@@ -51,13 +48,11 @@
         }
         .confirmar-caja { padding: 25px; width: 85%; max-width: 320px; text-align: center; }
 
-        /* DISEÑO DE BOTONES */
         .btn-pedido { background: #b39ddb; color: black; border: none; padding: 18px; font-weight: 900; border-radius: 12px; width: 100%; font-size: 16px; text-transform: uppercase; margin-top: 10px; }
-        .btn-cancelar { background: rgba(255, 68, 68, 0.15); color: #ff4444; border: 1px solid #ff4444; padding: 12px; border-radius: 10px; width: 100%; margin-top: 10px; font-weight: bold; }
+        .btn-cancelar { background: rgba(255, 68, 68, 0.15); color: #ff4444; border: 1px solid #ff4444; padding: 12px; border-radius: 10px; width: 100%; margin-top: 10px; font-weight: bold; display: none; }
         .btn-si { background: #ff4444; color: white; border: none; padding: 12px; border-radius: 8px; width: 45%; font-weight: bold; }
         .btn-no { background: #444; color: white; border: none; padding: 12px; border-radius: 8px; width: 45%; font-weight: bold; }
 
-        /* MENU INFERIOR */
         .nav-didi {
             position: fixed; bottom: 0; left: 0; width: 100%; height: 70px;
             background: #0a0a0a; border-top: 1px solid #222;
@@ -114,7 +109,7 @@
             </div>
             <div id="status-viaje" style="color:#b39ddb; margin-top:8px; font-size:14px; font-weight: bold;">Listo para pedir</div>
             <button class="btn-pedido" id="btnPedir" onclick="validarYPedir()">🚖 SOLICITAR TAXI</button>
-            <button class="btn-cancelar" onclick="abrirConfirmacion()">CANCELAR SOLICITUD</button>
+            <button id="btnCancelarUI" class="btn-cancelar" onclick="abrirConfirmacion()">CANCELAR SOLICITUD</button>
         </div>
     </div>
 
@@ -217,7 +212,10 @@
         }
 
         function reconectarViaje(id) {
-            idViaje = id; document.getElementById('btnPedir').style.display = 'none'; document.getElementById('btnCancelar').style.display = 'block';
+            idViaje = id; 
+            document.getElementById('btnPedir').style.display = 'none'; 
+            document.getElementById('btnCancelarUI').style.display = 'block'; // MUESTRA CANCELAR SOLO AQUÍ
+            
             database.ref('viajes/' + id).on('value', (snap) => {
                 var v = snap.val(); if(!v) { localStorage.removeItem("idViajeActivo"); location.reload(); return; }
                 if (v.estado === 'chofer_llego') { document.getElementById('alertaLlegada').style.display = 'block'; if (!vozLlegadaActivada) { avisarConVoz("Tu taxi ha llegado."); vozLlegadaActivada = true; } }
