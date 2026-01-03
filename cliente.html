@@ -49,6 +49,8 @@
         .confirmar-caja { padding: 25px; width: 85%; max-width: 320px; text-align: center; }
 
         .btn-pedido { background: #b39ddb; color: black; border: none; padding: 18px; font-weight: 900; border-radius: 12px; width: 100%; font-size: 16px; text-transform: uppercase; margin-top: 10px; }
+        .btn-pedido:disabled { background: #444 !important; color: #888 !important; }
+        
         .btn-cancelar { background: rgba(255, 68, 68, 0.15); color: #ff4444; border: 1px solid #ff4444; padding: 12px; border-radius: 10px; width: 100%; margin-top: 10px; font-weight: bold; display: none; }
         .btn-si { background: #ff4444; color: white; border: none; padding: 12px; border-radius: 8px; width: 45%; font-weight: bold; }
         .btn-no { background: #444; color: white; border: none; padding: 12px; border-radius: 8px; width: 45%; font-weight: bold; }
@@ -169,16 +171,42 @@
         function cerrarConfirmacion() { document.getElementById('modal-confirmar').style.display = 'none'; }
         
         function ejecutarCancelacion() {
+            if (!navigator.onLine) { mostrarAviso("Sin internet para cancelar", "error"); return; }
             cerrarConfirmacion();
             database.ref('viajes/' + idViaje).update({ estado: "cancelado_por_cliente" }).then(() => {
                 setTimeout(() => {
-                    database.ref('viajes/' + idViaje).off(); // Detener escucha
+                    database.ref('viajes/' + idViaje).off();
                     database.ref('viajes/' + idViaje).remove().then(() => { 
                         localStorage.removeItem("idViajeActivo"); 
                         location.reload(); 
                     });
                 }, 1000);
             });
+        }
+
+        // --- LÓGICA DE MONITOREO DE INTERNET ---
+        function monitorearRed() {
+            const btn = document.getElementById('btnPedir');
+            const statusText = document.getElementById('status-viaje');
+            
+            function actualizarEstadoRed() {
+                if (navigator.onLine) {
+                    btn.disabled = false;
+                    if (!localStorage.getItem("idViajeActivo")) {
+                        btn.innerText = "🚖 SOLICITAR TAXI";
+                        statusText.innerText = "Listo para pedir";
+                    }
+                } else {
+                    btn.disabled = true;
+                    btn.innerText = "🚫 SIN CONEXIÓN";
+                    statusText.innerText = "Esperando internet...";
+                    mostrarAviso("Se ha perdido la conexión a internet", "error");
+                }
+            }
+
+            window.addEventListener('online', actualizarEstadoRed);
+            window.addEventListener('offline', actualizarEstadoRed);
+            actualizarEstadoRed();
         }
 
         async function activarMantenerEncendido() { try { if ('wakeLock' in navigator) wakeLock = await navigator.wakeLock.request('screen'); } catch(e){} }
@@ -196,6 +224,7 @@
         }
 
         function iniciarAppCliente() {
+            monitorearRed();
             activarMantenerEncendido();
             document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') activarMantenerEncendido(); });
             
@@ -232,10 +261,14 @@
         }
 
         function validarYPedir() {
+            if (!navigator.onLine) { mostrarAviso("No tienes internet", "error"); return; }
+            
             var b = document.getElementById('btnPedir'); b.innerText = "LOCALIZANDO..."; b.disabled = true;
             navigator.geolocation.getCurrentPosition((pos) => {
                 let lat = pos.coords.latitude, lon = pos.coords.longitude; 
                 idViaje = miUUID.replace("ID-", "V-");
+                
+                // Forzar que Firebase no guarde peticiones offline
                 database.ref('viajes/' + idViaje).set({ 
                     cliente: {lat, lon}, 
                     nombre_cliente: localStorage.getItem("nombreCliente"), 
@@ -247,6 +280,10 @@
                 }).then(() => { 
                     localStorage.setItem("idViajeActivo", idViaje); 
                     reconectarViaje(idViaje); 
+                }).catch(e => {
+                    b.disabled = false;
+                    b.innerText = "🚖 SOLICITAR TAXI";
+                    mostrarAviso("Error de conexión con el servidor", "error");
                 });
             }, () => { 
                 mostrarAviso("ERROR: Activa tu GPS", "error"); 
@@ -267,10 +304,9 @@
                     return; 
                 }
                 
-                // Lógica Botón Cancelar
                 if (v.estado === 'chofer_llego' || v.estado === 'en_curso') {
                     document.getElementById('btnCancelarUI').style.display = 'none';
-                } else {
+                } else if (navigator.onLine) {
                     document.getElementById('btnCancelarUI').style.display = 'block';
                 }
 
@@ -280,9 +316,6 @@
                     if (!vozLlegadaActivada) { avisarConVoz("Tu taxi ha llegado."); vozLlegadaActivada = true; } 
                 } else if (v.estado === 'en_curso') {
                     document.getElementById('status-viaje').innerText = "🚕 VIAJE EN CURSO";
-                    document.getElementById('alertaLlegada').style.display = 'none';
-                } else if (v.chofer) {
-                    document.getElementById('status-viaje').innerText = "🚕 EL CHOFER VA EN CAMINO";
                 }
                 
                 if(v.cliente && !isNaN(v.cliente.lat)) { 
@@ -297,12 +330,6 @@
                     document.getElementById('infoChofer').innerHTML = `<b>${v.chofer.nombre}</b> en camino<br><small>Unidad: ${v.chofer.economico}</small>`; 
                     if (markerChofer) markerChofer.setLatLng([v.chofer.lat, v.chofer.lon]); 
                     else markerChofer = L.marker([v.chofer.lat, v.chofer.lon], {icon: iconoTaxiVio}).addTo(map); 
-                    
-                    // Ajustar mapa para ver ambos
-                    if(markerCliente && markerChofer) {
-                        var group = new L.featureGroup([markerCliente, markerChofer]);
-                        map.fitBounds(group.getBounds().pad(0.2));
-                    }
                 }
             });
         }
