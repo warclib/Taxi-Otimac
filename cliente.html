@@ -168,19 +168,11 @@
         function abrirConfirmacion() { document.getElementById('modal-confirmar').style.display = 'flex'; }
         function cerrarConfirmacion() { document.getElementById('modal-confirmar').style.display = 'none'; }
         
-        // --- FUNCIÓN DE CANCELACIÓN MEJORADA ---
         function ejecutarCancelacion() {
             cerrarConfirmacion();
-            // Primero avisamos al chofer cambiando el estado
-            database.ref('viajes/' + idViaje).update({ 
-                estado: "cancelado_por_cliente" 
-            }).then(() => {
-                // Damos un pequeño segundo para que la señal llegue al chofer antes de borrarlo
+            database.ref('viajes/' + idViaje).update({ estado: "cancelado_por_cliente" }).then(() => {
                 setTimeout(() => {
-                    database.ref('viajes/' + idViaje).remove().then(() => { 
-                        localStorage.removeItem("idViajeActivo"); 
-                        location.reload(); 
-                    });
+                    database.ref('viajes/' + idViaje).remove().then(() => { localStorage.removeItem("idViajeActivo"); location.reload(); });
                 }, 1000);
             });
         }
@@ -227,18 +219,23 @@
         function reconectarViaje(id) {
             idViaje = id; 
             document.getElementById('btnPedir').style.display = 'none'; 
-            document.getElementById('btnCancelarUI').style.display = 'block'; 
             
             database.ref('viajes/' + id).on('value', (snap) => {
-                var v = snap.val(); 
-                if(!v) { 
-                    // Si el viaje desaparece (lo borró el chofer o admin)
-                    localStorage.removeItem("idViajeActivo"); 
-                    location.reload(); 
-                    return; 
+                var v = snap.val(); if(!v) { localStorage.removeItem("idViajeActivo"); location.reload(); return; }
+                
+                // --- LÓGICA DE BOTÓN CANCELAR ---
+                // Si el taxi ya llegó o el viaje empezó, escondemos el botón de cancelar
+                if (v.estado === 'chofer_llego' || v.estado === 'en_curso') {
+                    document.getElementById('btnCancelarUI').style.display = 'none';
+                } else {
+                    document.getElementById('btnCancelarUI').style.display = 'block';
+                }
+
+                if (v.estado === 'chofer_llego') { 
+                    document.getElementById('alertaLlegada').style.display = 'block'; 
+                    if (!vozLlegadaActivada) { avisarConVoz("Tu taxi ha llegado."); vozLlegadaActivada = true; } 
                 }
                 
-                if (v.estado === 'chofer_llego') { document.getElementById('alertaLlegada').style.display = 'block'; if (!vozLlegadaActivada) { avisarConVoz("Tu taxi ha llegado."); vozLlegadaActivada = true; } }
                 if(v.cliente) { var pC = [v.cliente.lat, v.cliente.lon]; if (markerCliente) markerCliente.setLatLng(pC); else markerCliente = L.marker(pC, {icon: iconoPasajero}).addTo(map); map.setView(pC, 16); }
                 if(v.chofer) { document.getElementById('cardChofer').style.display = 'block'; document.getElementById('infoChofer').innerHTML = `<b>${v.chofer.nombre}</b> en camino<br><small>Unidad: ${v.chofer.economico}</small>`; if (markerChofer) markerChofer.setLatLng([v.chofer.lat, v.chofer.lon]); else markerChofer = L.marker([v.chofer.lat, v.chofer.lon], {icon: iconoTaxiVio}).addTo(map); }
             });
