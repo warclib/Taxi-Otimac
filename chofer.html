@@ -311,8 +311,8 @@
                             <div class="badge-confianza">Verificado</div><br>
                             <b style="font-size: 17px;">${pedidos[id].nombre_cliente}</b><br>
                             <div style="font-size: 11px; color: #b39ddb; font-weight: bold; margin-top: 2px; margin-bottom: 5px;">
-                             // Cambia esto en la línea 314 de tu Chofer://
-                              📊 HISTORIAL: ${pedidos[id].cliente_historial || 0} VIAJES REALIZADOS
+                           
+                              HISTORIAL: ${pedidos[id].cliente_historial || 0} VIAJES 
                            </div>
                             <span style="color:#ffca28; font-size: 14px;">
                              ${'★'.repeat(Math.floor(pedidos[id].cliente_estrellas))}${'☆'.repeat(5 - Math.floor(pedidos[id].cliente_estrellas))}
@@ -394,6 +394,7 @@ function terminarViaje(id) {
     </script>
 </body>
 </html>
+
 
 
 
