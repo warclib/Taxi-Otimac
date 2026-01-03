@@ -22,27 +22,45 @@
             display: flex; flex-direction: column;
         }
 
-        #map { position: absolute; top: 0; bottom: 70px; width: 100%; z-index: 1; border: none; }
+        /* FONDO NEGRO SUPERIOR TIPO DIDI */
+        .fondo-superior {
+            position: fixed; top: 0; left: 0; width: 100%; height: 140px;
+            background: #1a1a1a; z-index: 5;
+        }
 
+        /* MAPA CON CURVATURA PROFESIONAL */
+        #map { 
+            position: absolute; top: 110px; bottom: 70px; width: 100%; 
+            z-index: 1; border: none;
+            border-top-left-radius: 35px; border-top-right-radius: 35px;
+            box-shadow: 0 -5px 15px rgba(0,0,0,0.5);
+        }
+
+        /* MENU INFERIOR */
         .nav-didi {
             position: fixed; bottom: 0; left: 0; width: 100%; height: 70px;
             background: #1e1e1e; border-top: 1px solid #333;
             display: flex; justify-content: space-around; align-items: center;
             z-index: 1000; padding-bottom: env(safe-area-inset-bottom);
         }
-        .nav-item {
-            display: flex; flex-direction: column; align-items: center;
-            color: #888; text-decoration: none; font-size: 11px;
-        }
+        .nav-item { display: flex; flex-direction: column; align-items: center; color: #888; text-decoration: none; font-size: 11px; }
         .nav-item.active { color: #b39ddb; font-weight: bold; }
         .nav-icon { font-size: 24px; margin-bottom: 4px; }
 
         .seccion-full {
             position: fixed; top: 0; left: 0; width: 100%; height: calc(100% - 70px);
-            background: #1a1a1a; z-index: 100; display: none; padding: 30px 20px;
-            overflow-y: auto;
+            background: #1a1a1a; z-index: 100; display: none; padding: 30px 20px; overflow-y: auto;
         }
 
+        /* TARJETA DE PEDIDO FLOTANTE SOBRE EL NEGRO */
+        #areaPedido {
+            position: absolute; top: 15px; left: 5%; width: 90%;
+            z-index: 10; background: rgba(30, 30, 30, 0.98);
+            padding: 15px; border-radius: 20px; border: 1px solid #b39ddb;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+        }
+
+        /* ESTILOS DE PANTALLAS Y BOTONES */
         #splash-screen {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background: #b39ddb; display: flex; flex-direction: column;
@@ -54,17 +72,8 @@
             background: #000; display: none; flex-direction: column;
             justify-content: center; align-items: center; z-index: 20000; text-align: center; padding: 20px;
         }
-
-        #areaPedido {
-            position: absolute; top: 20px; left: 5%; width: 90%;
-            z-index: 10; background: rgba(26, 26, 26, 0.95);
-            padding: 15px; border-radius: 15px; border: 1px solid #b39ddb;
-            box-shadow: 0 10px 25px rgba(0,0,0,0.5);
-        }
-
-        .btn-pedido { background: #b39ddb; color: black; border: none; padding: 20px; font-weight: bold; border-radius: 10px; width: 100%; font-size: 18px; margin-top: 10px; }
+        .btn-pedido { background: #b39ddb; color: black; border: none; padding: 18px; font-weight: bold; border-radius: 12px; width: 100%; font-size: 18px; margin-top: 10px; }
         .btn-cancelar { background: #ff4444; color: white; border: none; padding: 12px; border-radius: 8px; font-weight: bold; width: 100%; margin-top: 10px; }
-        
         input { padding: 15px; width: 100%; border-radius: 10px; margin-bottom: 10px; font-size: 16px; border: 2px solid #b39ddb; background: #333; color: white; }
         
         .contenedor-pulso { display: flex; justify-content: center; align-items: center; width: 50px; height: 50px; }
@@ -88,6 +97,8 @@
         <div style="color: #1a1a1a; font-size: 28px; font-weight: 900;">OTIMAC</div>
     </div>
 
+    <div class="fondo-superior"></div>
+
     <div id="areaPedido" style="display:none;">
         <div id="registro" style="display:none;">
             <input type="text" id="inputNombre" placeholder="Tu nombre">
@@ -100,7 +111,7 @@
             <div id="cardChofer" class="card-chofer">
                 <div id="infoChofer" style="font-size: 18px;"></div>
             </div>
-            <div id="status-viaje" style="color:#b39ddb; margin-top:5px;">Listo para pedir</div>
+            <div id="status-viaje" style="color:#b39ddb; margin-top:5px; font-size:14px;">Listo para pedir</div>
             <button class="btn-pedido" id="btnPedir" onclick="validarYPedir()">🚖 PEDIR TAXI AHORA</button>
             <button class="btn-cancelar" id="btnCancelar" onclick="cancelarPedido()" style="display:none;">❌ CANCELAR PEDIDO</button>
         </div>
@@ -150,13 +161,7 @@
         var map = L.map('map', {zoomControl: false}).setView([23.6345, -102.5528], 5);
         L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}').addTo(map);
 
-        // --- ICONOS USANDO TUS ARCHIVOS LOCALES ---
-        var iconoPasajero = L.icon({ 
-            iconUrl: 'pasajero.png', 
-            iconSize: [45, 45], 
-            iconAnchor: [22, 45] 
-        });
-
+        var iconoPasajero = L.icon({ iconUrl: 'pasajero.png', iconSize: [45, 45], iconAnchor: [22, 45] });
         var iconoTaxiVio = L.divIcon({
             html: `<div class="contenedor-pulso"><div class="pulso-gps"></div><img src="taxi-chofer.png" class="img-taxi-marker"></div>`,
             className: '', iconSize: [50, 50], iconAnchor: [25, 25]
@@ -182,7 +187,6 @@
             database.ref('baneados/' + miUUID).on('value', snap => {
                 if (snap.exists()) document.getElementById('pantalla-bloqueo').style.display = 'flex';
             });
-
             var n = localStorage.getItem("nombreCliente");
             document.getElementById('areaPedido').style.display = 'block';
             if(!n) document.getElementById('registro').style.display = 'block';
@@ -192,7 +196,6 @@
                 var vActivo = localStorage.getItem("idViajeActivo");
                 if(vActivo) reconectarViaje(vActivo);
             }
-
             database.ref('usuarios/' + miUUID + '/perfil').on('value', (snap) => {
                 let p = snap.val() || {};
                 totalViajesRealizados = p.total_viajes || 0;
@@ -200,7 +203,6 @@
                 document.getElementById('info-historial').innerText = "⭐ " + estrellasActuales + " | " + totalViajesRealizados + " viajes";
                 document.getElementById('txt-historial-v').innerText = "Has completado " + totalViajesRealizados + " viajes.";
             });
-
             setTimeout(() => { document.getElementById('splash-screen').style.opacity = '0'; 
             setTimeout(() => { document.getElementById('splash-screen').style.visibility = 'hidden'; }, 600); }, 2500);
         }
@@ -212,8 +214,7 @@
 
         function validarYPedir() {
             navigator.geolocation.getCurrentPosition((pos) => {
-                let lat = pos.coords.latitude; 
-                let lon = pos.coords.longitude;
+                let lat = pos.coords.latitude; let lon = pos.coords.longitude;
                 idViaje = miUUID.replace("ID-", "V-");
                 database.ref('viajes/' + idViaje).set({
                     cliente: {lat, lon},
