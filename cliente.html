@@ -68,7 +68,6 @@
         .img-taxi-marker { width: 50px; height: 50px; position: relative; z-index: 5; }
         .card-chofer { background: #222; padding: 15px; border-radius: 12px; border: 2px solid #b39ddb; margin-bottom: 10px; display: none; }
         .alerta-llegada { background: #00ff00; color: black; padding: 15px; border-radius: 10px; font-weight: bold; margin-bottom: 10px; display: none; animation: pulse 1s infinite; }
-        @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.5; } 100% { opacity: 1; } }
     </style>
 </head>
 <body onload="iniciarAppCliente()">
@@ -195,11 +194,17 @@
             if(n) { localStorage.setItem("nombreCliente", n); location.reload(); }
         }
 
-        // --- FUNCIÓN DE PEDIDO OPTIMIZADA PARA RAPIDEZ ---
         function validarYPedir() {
             var btn = document.getElementById('btnPedir');
             btn.innerText = "⏳ LOCALIZANDO...";
             btn.disabled = true;
+
+            // CONFIGURACIÓN DE GPS MÁS TOLERANTE
+            var opcionesGps = {
+                enableHighAccuracy: true, 
+                timeout: 15000, // Espera hasta 15 segundos antes de dar error
+                maximumAge: 0 
+            };
 
             navigator.geolocation.getCurrentPosition((pos) => {
                 let lat = pos.coords.latitude; 
@@ -218,11 +223,15 @@
                     localStorage.setItem("idViajeActivo", idViaje);
                     reconectarViaje(idViaje);
                 });
-            }, () => {
-                alert("Error: Activa el GPS.");
+            }, (error) => {
+                // Manejo de errores más inteligente
+                if (error.code === 1) alert("Por favor, permite el acceso a la ubicación en tu navegador.");
+                else if (error.code === 3) alert("La señal GPS es débil. Intenta moverte a un lugar despejado.");
+                else alert("Asegúrate de tener el GPS encendido.");
+                
                 btn.innerText = "🚖 PEDIR TAXI AHORA";
                 btn.disabled = false;
-            }, { enableHighAccuracy: false, timeout: 5000 }); // Prioridad a la velocidad
+            }, opcionesGps);
         }
 
         function reconectarViaje(id) {
