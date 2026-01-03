@@ -310,6 +310,9 @@
                             <div style="float: right;"><span class="reloj-tag">⏳ ${m}:${s < 10 ? '0' : ''}${s}</span><span class="distancia-tag">📍 ${km} km</span></div>
                             <div class="badge-confianza">Verificado</div><br>
                             <b style="font-size: 17px;">${pedidos[id].nombre_cliente}</b><br>
+                            <div style="font-size: 11px; color: #b39ddb; font-weight: bold; margin-top: 2px; margin-bottom: 5px;">
+                              📊 HISTORIAL: ${pedidos[id].cliente_viajes || 0} VIAJES REALIZADOS
+                           </div>
                             <span style="color:#ffca28; font-size: 14px;">
                              ${'★'.repeat(Math.floor(pedidos[id].cliente_estrellas))}${'☆'.repeat(5 - Math.floor(pedidos[id].cliente_estrellas))}
                              </span>
@@ -390,6 +393,7 @@ function terminarViaje(id) {
     </script>
 </body>
 </html>
+
 
 
 
