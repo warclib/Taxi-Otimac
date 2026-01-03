@@ -390,10 +390,35 @@ function terminarViaje(id) {
 }
         var calif = 5;
         function setSt(n) { calif = n; for(let i=1; i<=5; i++) document.getElementById('s'+i).style.color = i<=n ? '#ffca28' : '#444'; }
-        function confFin(id) { database.ref('viajes/' + id).once('value', snap => { let d = snap.val(); if (d && d.cliente_uid) { database.ref('usuarios/' + d.cliente_uid + '/perfil').transaction(p => { if (p) { p.total_viajes++; p.puntos_acumulados += calif; p.estrellas = (p.puntos_acumulados / p.total_viajes).toFixed(1); } return p; }); } localStorage.removeItem("idViajeChoferActivo"); database.ref('viajes/' + id).remove().then(() => location.reload()); }); }
+       // Reemplaza desde la línea 393 hasta el final de la función:
+function confFin(id) { 
+    database.ref('viajes/' + id).once('value', snap => { 
+        let d = snap.val(); 
+        if (d && d.cliente_uid) { 
+            database.ref('usuarios/' + d.cliente_uid + '/perfil').transaction(p => { 
+                // Si el cliente es nuevo, inicializamos su perfil
+                if (!p) {
+                    return {
+                        total_viajes: 1,
+                        puntos_acumulados: calif,
+                        estrellas: parseFloat(calif).toFixed(1)
+                    };
+                }
+                // Si ya existe, sumamos al historial actual
+                p.total_viajes++; 
+                p.puntos_acumulados += calif; 
+                p.estrellas = (p.puntos_acumulados / p.total_viajes).toFixed(1); 
+                return p; 
+            }); 
+        } 
+        localStorage.removeItem("idViajeChoferActivo"); 
+        database.ref('viajes/' + id).remove().then(() => location.reload()); 
+    }); 
+}
     </script>
 </body>
 </html>
+
 
 
 
