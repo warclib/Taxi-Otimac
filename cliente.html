@@ -24,6 +24,7 @@
 
         #map { position: absolute; top: 0; bottom: 70px; width: 100%; z-index: 1; border: none; }
 
+        /* EFECTO VIDRIO */
         .glass-card {
             background: rgba(20, 20, 20, 0.85);
             backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
@@ -33,6 +34,7 @@
 
         #areaPedido { position: absolute; top: 20px; left: 5%; width: 90%; z-index: 10; padding: 18px; }
 
+        /* NOTIFICACIÓN INTERNA (REEMPLAZA ALERTS) */
         #notificacion {
             position: fixed; top: -100px; left: 5%; width: 90%; 
             padding: 15px; border-radius: 12px; z-index: 30000;
@@ -41,6 +43,7 @@
         .notif-error { background: #ff4444; color: white; }
         .notif-ok { background: #b39ddb; color: black; }
 
+        /* MODAL CONFIRMACIÓN (REEMPLAZA CONFIRMS) */
         #modal-confirmar {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background: rgba(0,0,0,0.8); z-index: 40000;
@@ -48,13 +51,14 @@
         }
         .confirmar-caja { padding: 25px; width: 85%; max-width: 320px; text-align: center; }
 
+        /* BOTONES */
         .btn-pedido { background: #b39ddb; color: black; border: none; padding: 18px; font-weight: 900; border-radius: 12px; width: 100%; font-size: 16px; text-transform: uppercase; margin-top: 10px; }
         .btn-pedido:disabled { background: #444 !important; color: #888 !important; }
-        
         .btn-cancelar { background: rgba(255, 68, 68, 0.15); color: #ff4444; border: 1px solid #ff4444; padding: 12px; border-radius: 10px; width: 100%; margin-top: 10px; font-weight: bold; display: none; }
         .btn-si { background: #ff4444; color: white; border: none; padding: 12px; border-radius: 8px; width: 45%; font-weight: bold; }
         .btn-no { background: #444; color: white; border: none; padding: 12px; border-radius: 8px; width: 45%; font-weight: bold; }
 
+        /* NAV INFERIOR */
         .nav-didi {
             position: fixed; bottom: 0; left: 0; width: 100%; height: 70px;
             background: #0a0a0a; border-top: 1px solid #222;
@@ -70,7 +74,7 @@
         .card-chofer { background: rgba(179, 157, 219, 0.1); padding: 15px; border-radius: 12px; border: 1px solid #b39ddb; margin-top: 15px; display: none; }
         .alerta-llegada { background: #00ff00; color: black; padding: 15px; border-radius: 10px; font-weight: 900; margin-bottom: 10px; display: none; animation: pulse 1s infinite; }
         #splash-screen { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #b39ddb; display: flex; flex-direction: column; justify-content: center; align-items: center; z-index: 10000; transition: 0.6s; }
-        @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.5; } 100% { opacity: 1; } }
+        
         .contenedor-pulso { display: flex; justify-content: center; align-items: center; width: 50px; height: 50px; }
         .pulso-gps { width: 20px; height: 20px; background: rgba(179, 157, 219, 0.7); border-radius: 50%; position: absolute; animation: expandir-pulso 2s infinite; }
         @keyframes expandir-pulso { 0% { transform: scale(1); opacity: 0.8; } 100% { transform: scale(3.5); opacity: 0; } }
@@ -162,7 +166,7 @@
         var iconoPasajero = L.icon({ iconUrl: 'pasajero.png', iconSize: [45, 45], iconAnchor: [22, 45] });
         var iconoTaxiVio = L.divIcon({ html: `<div class="contenedor-pulso"><div class="pulso-gps"></div><img src="taxi-chofer.png" class="img-taxi-marker"></div>`, className: '', iconSize: [50, 50], iconAnchor: [25, 25] });
 
-        var markerCliente, markerChofer, idViaje, wakeLock = null, totalViajesRealizados = 0, estrellasActuales = "5.0", vozLlegadaActivada = false;
+        var markerCliente, markerChofer, idViaje, wakeLock = null, totalViajesRealizados = 0, estrellasActuales = "5.0", vozLlegadaActivada = false, temporizadorAutolimpieza;
 
         function avisarConVoz(msg) { if ('speechSynthesis' in window) { var m = new SpeechSynthesisUtterance(msg); m.lang = 'es-MX'; window.speechSynthesis.speak(m); } }
         function mostrarAviso(msg, t='ok') { let el=document.getElementById('notificacion'); el.innerText=msg; el.className=t==='ok'?'notif-ok':'notif-error'; el.style.top='20px'; setTimeout(()=>el.style.top='-100px', 3000); }
@@ -172,6 +176,7 @@
         
         function ejecutarCancelacion() {
             if (!navigator.onLine) { mostrarAviso("Sin internet para cancelar", "error"); return; }
+            if (temporizadorAutolimpieza) clearTimeout(temporizadorAutolimpieza);
             cerrarConfirmacion();
             database.ref('viajes/' + idViaje).update({ estado: "cancelado_por_cliente" }).then(() => {
                 setTimeout(() => {
@@ -184,28 +189,19 @@
             });
         }
 
-        // --- LÓGICA DE MONITOREO DE INTERNET ---
         function monitorearRed() {
             const btn = document.getElementById('btnPedir');
             const statusText = document.getElementById('status-viaje');
-            
             function actualizarEstadoRed() {
                 if (navigator.onLine) {
                     btn.disabled = false;
-                    if (!localStorage.getItem("idViajeActivo")) {
-                        btn.innerText = "🚖 SOLICITAR TAXI";
-                        statusText.innerText = "Listo para pedir";
-                    }
+                    if (!localStorage.getItem("idViajeActivo")) { btn.innerText = "🚖 SOLICITAR TAXI"; statusText.innerText = "Listo para pedir"; }
                 } else {
-                    btn.disabled = true;
-                    btn.innerText = "🚫 SIN CONEXIÓN";
-                    statusText.innerText = "Esperando internet...";
-                    mostrarAviso("Se ha perdido la conexión a internet", "error");
+                    btn.disabled = true; btn.innerText = "🚫 SIN CONEXIÓN"; statusText.innerText = "Esperando internet...";
+                    mostrarAviso("Sin internet", "error");
                 }
             }
-
-            window.addEventListener('online', actualizarEstadoRed);
-            window.addEventListener('offline', actualizarEstadoRed);
+            window.addEventListener('online', actualizarEstadoRed); window.addEventListener('offline', actualizarEstadoRed);
             actualizarEstadoRed();
         }
 
@@ -224,92 +220,55 @@
         }
 
         function iniciarAppCliente() {
-            monitorearRed();
-            activarMantenerEncendido();
+            monitorearRed(); activarMantenerEncendido();
             document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') activarMantenerEncendido(); });
-            
             database.ref('usuarios/' + miUUID + '/perfil').on('value', snap => {
                 let p = snap.val() || {}; totalViajesRealizados = p.total_viajes || 0; estrellasActuales = p.estrellas || "5.0";
                 document.getElementById('info-historial').innerText = "⭐ " + estrellasActuales + " | " + totalViajesRealizados + " viajes";
                 document.getElementById('txt-historial-v').innerText = "Has completado " + totalViajesRealizados + " viajes.";
             });
-
             var n = localStorage.getItem("nombreCliente");
             document.getElementById('areaPedido').style.display = 'block';
-            
-            if(!n) {
-                document.getElementById('registro').style.display = 'block';
-                document.getElementById('interfazReal').style.display = 'none';
-            } else {
-                document.getElementById('registro').style.display = 'none';
-                document.getElementById('interfazReal').style.display = 'block';
-                document.getElementById('nombre-usuario').innerText = "Hola, " + n + " 👋";
-                var vA = localStorage.getItem("idViajeActivo");
-                if(vA) reconectarViaje(vA);
-            }
+            if(!n) { document.getElementById('registro').style.display = 'block'; document.getElementById('interfazReal').style.display = 'none'; }
+            else { document.getElementById('registro').style.display = 'none'; document.getElementById('interfazReal').style.display = 'block'; document.getElementById('nombre-usuario').innerText = "Hola, " + n + " 👋"; var vA = localStorage.getItem("idViajeActivo"); if(vA) reconectarViaje(vA); }
             setTimeout(() => { document.getElementById('splash-screen').style.opacity = '0'; setTimeout(() => document.getElementById('splash-screen').style.visibility = 'hidden', 600); }, 2500);
         }
 
-        function guardarNombre() { 
-            var n = document.getElementById('inputNombre').value.trim(); 
-            if(n.length > 2) { 
-                localStorage.setItem("nombreCliente", n); 
-                location.reload(); 
-            } else {
-                mostrarAviso("Nombre muy corto", "error");
-            }
-        }
+        function guardarNombre() { var n = document.getElementById('inputNombre').value.trim(); if(n.length > 2) { localStorage.setItem("nombreCliente", n); location.reload(); } else { mostrarAviso("Nombre muy corto", "error"); } }
 
         function validarYPedir() {
             if (!navigator.onLine) { mostrarAviso("No tienes internet", "error"); return; }
-            
             var b = document.getElementById('btnPedir'); b.innerText = "LOCALIZANDO..."; b.disabled = true;
             navigator.geolocation.getCurrentPosition((pos) => {
-                let lat = pos.coords.latitude, lon = pos.coords.longitude; 
-                idViaje = miUUID.replace("ID-", "V-");
-                
-                // Forzar que Firebase no guarde peticiones offline
-                database.ref('viajes/' + idViaje).set({ 
-                    cliente: {lat, lon}, 
-                    nombre_cliente: localStorage.getItem("nombreCliente"), 
-                    cliente_uid: miUUID, 
-                    cliente_historial: totalViajesRealizados, 
-                    cliente_estrellas: estrellasActuales, 
-                    estado: "esperando", 
-                    timestamp: firebase.database.ServerValue.TIMESTAMP 
-                }).then(() => { 
+                let lat = pos.coords.latitude, lon = pos.coords.longitude; idViaje = miUUID.replace("ID-", "V-");
+                database.ref('viajes/' + idViaje).set({ cliente: {lat, lon}, nombre_cliente: localStorage.getItem("nombreCliente"), cliente_uid: miUUID, cliente_historial: totalViajesRealizados, cliente_estrellas: estrellasActuales, estado: "esperando", timestamp: firebase.database.ServerValue.TIMESTAMP }).then(() => { 
                     localStorage.setItem("idViajeActivo", idViaje); 
-                    reconectarViaje(idViaje); 
-                }).catch(e => {
-                    b.disabled = false;
-                    b.innerText = "🚖 SOLICITAR TAXI";
-                    mostrarAviso("Error de conexión con el servidor", "error");
-                });
-            }, () => { 
-                mostrarAviso("ERROR: Activa tu GPS", "error"); 
-                b.innerText = "🚖 SOLICITAR TAXI"; 
-                b.disabled = false; 
-            }, { enableHighAccuracy: true, timeout: 15000 });
+                    reconectarViaje(idViaje);
+                    if (temporizadorAutolimpieza) clearTimeout(temporizadorAutolimpieza);
+                    temporizadorAutolimpieza = setTimeout(() => {
+                        database.ref('viajes/' + idViaje).once('value', (s) => {
+                            if (s.val() && s.val().estado === 'esperando') {
+                                database.ref('viajes/' + idViaje).remove();
+                                localStorage.removeItem("idViajeActivo");
+                                mostrarAviso("Tiempo agotado: No hay choferes", "error");
+                                setTimeout(() => location.reload(), 3000);
+                            }
+                        });
+                    }, 300000);
+                }).catch(() => { b.disabled = false; b.innerText = "🚖 SOLICITAR TAXI"; });
+            }, () => { mostrarAviso("Activa el GPS", "error"); b.innerText = "🚖 SOLICITAR TAXI"; b.disabled = false; }, { enableHighAccuracy: true, timeout: 15000 });
         }
 
         function reconectarViaje(id) {
-            idViaje = id; 
-            document.getElementById('btnPedir').style.display = 'none'; 
-            
+            idViaje = id; document.getElementById('btnPedir').style.display = 'none'; 
             database.ref('viajes/' + id).on('value', (snap) => {
-                var v = snap.val(); 
-                if(!v) { 
-                    localStorage.removeItem("idViajeActivo"); 
-                    location.reload(); 
-                    return; 
-                }
-                
+                var v = snap.val(); if(!v) { localStorage.removeItem("idViajeActivo"); location.reload(); return; }
                 if (v.estado === 'chofer_llego' || v.estado === 'en_curso') {
+                    if (temporizadorAutolimpieza) clearTimeout(temporizadorAutolimpieza);
                     document.getElementById('btnCancelarUI').style.display = 'none';
                 } else if (navigator.onLine) {
                     document.getElementById('btnCancelarUI').style.display = 'block';
                 }
-
                 if (v.estado === 'chofer_llego') { 
                     document.getElementById('alertaLlegada').style.display = 'block'; 
                     document.getElementById('status-viaje').innerText = "🚨 EL TAXI ESTÁ AFUERA";
@@ -317,19 +276,10 @@
                 } else if (v.estado === 'en_curso') {
                     document.getElementById('status-viaje').innerText = "🚕 VIAJE EN CURSO";
                 }
-                
-                if(v.cliente && !isNaN(v.cliente.lat)) { 
-                    var pC = [v.cliente.lat, v.cliente.lon]; 
-                    if (markerCliente) markerCliente.setLatLng(pC); 
-                    else markerCliente = L.marker(pC, {icon: iconoPasajero}).addTo(map); 
-                    if(!markerChofer) map.setView(pC, 16); 
-                }
-                
+                if(v.cliente && !isNaN(v.cliente.lat)) { var pC = [v.cliente.lat, v.cliente.lon]; if (markerCliente) markerCliente.setLatLng(pC); else markerCliente = L.marker(pC, {icon: iconoPasajero}).addTo(map); if(!markerChofer) map.setView(pC, 16); }
                 if(v.chofer && !isNaN(v.chofer.lat)) { 
-                    document.getElementById('cardChofer').style.display = 'block'; 
-                    document.getElementById('infoChofer').innerHTML = `<b>${v.chofer.nombre}</b> en camino<br><small>Unidad: ${v.chofer.economico}</small>`; 
-                    if (markerChofer) markerChofer.setLatLng([v.chofer.lat, v.chofer.lon]); 
-                    else markerChofer = L.marker([v.chofer.lat, v.chofer.lon], {icon: iconoTaxiVio}).addTo(map); 
+                    document.getElementById('cardChofer').style.display = 'block'; document.getElementById('infoChofer').innerHTML = `<b>${v.chofer.nombre}</b> en camino<br><small>Unidad: ${v.chofer.economico}</small>`; 
+                    if (markerChofer) markerChofer.setLatLng([v.chofer.lat, v.chofer.lon]); else markerChofer = L.marker([v.chofer.lat, v.chofer.lon], {icon: iconoTaxiVio}).addTo(map); 
                 }
             });
         }
