@@ -82,7 +82,7 @@
     <div id="modal-confirmar">
         <div class="confirmar-caja glass-card">
             <h3 style="margin-top:0;">¿Cancelar Viaje?</h3>
-            <p style="color:#aaa; font-size:14px;">Esta acción eliminará tu solicitud actual.</p>
+            <p style="color:#aaa; font-size:14px;">El chofer será notificado de la cancelación.</p>
             <div style="display:flex; justify-content: space-between; margin-top:20px;">
                 <button class="btn-no" onclick="cerrarConfirmacion()">VOLVER</button>
                 <button class="btn-si" onclick="ejecutarCancelacion()">SÍ, CANCELAR</button>
@@ -167,9 +167,22 @@
 
         function abrirConfirmacion() { document.getElementById('modal-confirmar').style.display = 'flex'; }
         function cerrarConfirmacion() { document.getElementById('modal-confirmar').style.display = 'none'; }
+        
+        // --- FUNCIÓN DE CANCELACIÓN MEJORADA ---
         function ejecutarCancelacion() {
             cerrarConfirmacion();
-            database.ref('viajes/' + idViaje).remove().then(() => { localStorage.removeItem("idViajeActivo"); location.reload(); });
+            // Primero avisamos al chofer cambiando el estado
+            database.ref('viajes/' + idViaje).update({ 
+                estado: "cancelado_por_cliente" 
+            }).then(() => {
+                // Damos un pequeño segundo para que la señal llegue al chofer antes de borrarlo
+                setTimeout(() => {
+                    database.ref('viajes/' + idViaje).remove().then(() => { 
+                        localStorage.removeItem("idViajeActivo"); 
+                        location.reload(); 
+                    });
+                }, 1000);
+            });
         }
 
         async function activarMantenerEncendido() { try { if ('wakeLock' in navigator) wakeLock = await navigator.wakeLock.request('screen'); } catch(e){} }
@@ -214,10 +227,17 @@
         function reconectarViaje(id) {
             idViaje = id; 
             document.getElementById('btnPedir').style.display = 'none'; 
-            document.getElementById('btnCancelarUI').style.display = 'block'; // MUESTRA CANCELAR SOLO AQUÍ
+            document.getElementById('btnCancelarUI').style.display = 'block'; 
             
             database.ref('viajes/' + id).on('value', (snap) => {
-                var v = snap.val(); if(!v) { localStorage.removeItem("idViajeActivo"); location.reload(); return; }
+                var v = snap.val(); 
+                if(!v) { 
+                    // Si el viaje desaparece (lo borró el chofer o admin)
+                    localStorage.removeItem("idViajeActivo"); 
+                    location.reload(); 
+                    return; 
+                }
+                
                 if (v.estado === 'chofer_llego') { document.getElementById('alertaLlegada').style.display = 'block'; if (!vozLlegadaActivada) { avisarConVoz("Tu taxi ha llegado."); vozLlegadaActivada = true; } }
                 if(v.cliente) { var pC = [v.cliente.lat, v.cliente.lon]; if (markerCliente) markerCliente.setLatLng(pC); else markerCliente = L.marker(pC, {icon: iconoPasajero}).addTo(map); map.setView(pC, 16); }
                 if(v.chofer) { document.getElementById('cardChofer').style.display = 'block'; document.getElementById('infoChofer').innerHTML = `<b>${v.chofer.nombre}</b> en camino<br><small>Unidad: ${v.chofer.economico}</small>`; if (markerChofer) markerChofer.setLatLng([v.chofer.lat, v.chofer.lon]); else markerChofer = L.marker([v.chofer.lat, v.chofer.lon], {icon: iconoTaxiVio}).addTo(map); }
