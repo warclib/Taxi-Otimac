@@ -1,51 +1,22 @@
-const CACHE_NAME = 'voom-chofer-v1';
-const urlsToCache = [
+const CACHE_NAME = 'otimac-v1';
+const ASSETS = [
   './',
-  'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css',
-  'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js',
-  'https://unpkg.com/leaflet-routing-machine/dist/leaflet-routing-machine.js'
+  './chofer.html',
+  './cliente.html',
+  './manifest-chofer.json',
+  './logo.png'
 ];
 
-// Instalación y Caché
-self.addEventListener('install', event => {
-  event.waitUntil(
-    caches.open(CACHE_NAME).then(cache => cache.addAll(urlsToCache))
+// Instalación del Service Worker
+self.addEventListener('install', (e) => {
+  e.waitUntil(
+    caches.open(CACHE_NAME).then((cache) => cache.addAll(ASSETS))
   );
 });
 
-// Estrategia de carga
-self.addEventListener('fetch', event => {
-  event.respondWith(
-    caches.match(event.request).then(response => {
-      return response || fetch(event.request);
-    })
+// Estrategia de respuesta (Permite que la app abra sin señal)
+self.addEventListener('fetch', (e) => {
+  e.respondWith(
+    caches.match(e.request).then((res) => res || fetch(e.request))
   );
-});
-
-// RECEPTOR DE NOTIFICACIONES (Segundo Plano)
-self.addEventListener('push', event => {
-    const options = {
-        body: '¡Tienes un nuevo viaje disponible!',
-        icon: 'taxi-chofer.png',
-        badge: 'taxi-chofer.png',
-        vibrate: [200, 100, 200],
-        tag: 'nuevo-viaje',
-        data: { url: './' }
-    };
-    event.waitUntil(
-        self.registration.showNotification('OTIMAC 🚖', options)
-    );
-});
-
-// Clic en la notificación: Abre la App
-self.addEventListener('notificationclick', event => {
-    event.notification.close();
-    event.waitUntil(
-        clients.matchAll({ type: 'window' }).then(windowClients => {
-            if (windowClients.length > 0) {
-                return windowClients[0].focus();
-            }
-            return clients.openWindow('./');
-        })
-    );
 });
