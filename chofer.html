@@ -32,7 +32,6 @@
 
         body { font-family: 'Segoe UI', Roboto, Helvetica, sans-serif; text-align: center; color: white; }
         
-        /* BOTÓN MENÚ A LA DERECHA */
         #btn-menu {
             position: fixed; top: 15px; right: 15px; z-index: 5000;
             background: rgba(179, 157, 219, 0.2);
@@ -80,7 +79,6 @@
             -webkit-user-select: none;
         }
 
-        /* --- DESLIZADOR PROFESIONAL --- */
         .slider-aceptar-container {
             position: relative; width: 100%; height: 48px; 
             background: #4a148c; border-radius: 25px;
@@ -90,11 +88,10 @@
             box-shadow: inset 0 2px 5px rgba(0,0,0,0.3);
         }
         .slider-rastro-verde {
-                     position: absolute; left: 0; top: 0; height: 100%;
-                     background: linear-gradient(90deg, #00c853, #69f0ae); 
-                      width: 0%; z-index: 1;
-                     /* BORRA LA LÍNEA DE TRANSITION QUE ESTABA AQUÍ */
-       }
+            position: absolute; left: 0; top: 0; height: 100%;
+            background: linear-gradient(90deg, #00c853, #69f0ae); 
+            width: 0%; z-index: 1;
+        }
         .slider-text {
             position: absolute; width: 100%; text-align: center;
             color: white; font-weight: 700; font-size: 11px; 
@@ -115,7 +112,6 @@
             background-repeat: no-repeat; background-position: center;
         }
 
-        /* MODALES ESTILO OTIMAC */
         .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 20000; display: none; align-items: center; justify-content: center; backdrop-filter: blur(5px); }
         .modal-card { background: #1a1a1a; width: 85%; max-width: 340px; border-radius: 25px; padding: 25px; border: 1px solid #333; text-align: center; box-shadow: 0 20px 50px rgba(0,0,0,0.6); }
         .modal-title { font-size: 20px; font-weight: bold; margin-bottom: 15px; color: #b39ddb; }
@@ -123,6 +119,11 @@
         .modal-btn { width: 100%; padding: 14px; border-radius: 12px; border: none; font-weight: bold; cursor: pointer; text-transform: uppercase; margin-top: 10px; }
         .btn-primario { background: #b39ddb; color: black; }
         
+        /* NOTIFICACIONES */
+        #notificacion { position: fixed; top: -100px; left: 5%; width: 90%; padding: 15px; border-radius: 12px; z-index: 30000; font-weight: bold; transition: 0.5s; display: flex; align-items: center; justify-content: center; }
+        .notif-error { background: #ff4444; color: white; }
+        .notif-ok { background: #b39ddb; color: black; }
+
         .reloj-tag { color: #ffca28; font-weight: bold; margin-right: 15px; font-size: 13px; font-family: monospace; }
         .distancia-tag { color: #b39ddb; font-weight: bold; float: right; font-size: 13px; }
         .btn-rechazar { background:transparent; border:none; color: #ff4444; padding:5px; width:100%; margin-top:5px; cursor: pointer; font-size: 11px; text-decoration: underline; }
@@ -137,6 +138,8 @@
     </style>
 </head>
 <body onload="iniciarAppCentral()" id="app-body">
+
+    <div id="notificacion"></div>
 
     <div id="modal-global" class="modal-overlay">
         <div class="modal-card" id="modal-content"></div>
@@ -201,6 +204,12 @@
 
         function abrirModal(html) { document.getElementById('modal-content').innerHTML = html; document.getElementById('modal-global').style.display = 'flex'; }
         function cerrarModal() { document.getElementById('modal-global').style.display = 'none'; }
+        
+        function mostrarAviso(msg, t='ok') { 
+            let el=document.getElementById('notificacion'); 
+            el.innerText=msg; el.className=t==='ok'?'notif-ok':'notif-error'; 
+            el.style.top='20px'; setTimeout(()=>el.style.top='-100px', 3000); 
+        }
 
         function avisarConVoz(mensaje) {
             if ('speechSynthesis' in window) {
@@ -212,7 +221,6 @@
 
         function toggleSidebar() { var side = document.getElementById('sidebar'); var over = document.getElementById('overlay'); side.classList.toggle('active'); over.style.display = side.classList.contains('active') ? 'block' : 'none'; }
 
-        // --- SISTEMA DE PANTALLA COMPLETA ---
         function activarPantallaCompleta() {
             var doc = window.document;
             var docEl = doc.documentElement;
@@ -222,14 +230,31 @@
             }
         }
 
+        // --- LÓGICA DE MEJORA INTEGRADA ---
         function iniciarAppCentral() {
             verificarEstadoChofer();
-            setTimeout(() => { document.getElementById('splash-screen').style.opacity = '0'; setTimeout(() => { document.getElementById('splash-screen').style.visibility = 'hidden'; }, 800); }, 2500);
-            setInterval(() => { if (window.ultimoSnapshotPedidos && !idViajeActivo && document.getElementById('checkTrabajo').checked && !window.tocandoSlider) renderizarListaPedidos(window.ultimoSnapshotPedidos); }, 1000);      
             
-            // Forzar pantalla completa al primer toque
+            window.addEventListener('online', () => mostrarAviso("Conexión restablecida", "ok"));
+            window.addEventListener('offline', () => mostrarAviso("Sin conexión a internet", "error"));
+
+            setTimeout(() => {
+                const splash = document.getElementById('splash-screen');
+                if (splash) {
+                    splash.style.opacity = '0';
+                    setTimeout(() => {
+                        splash.style.visibility = 'hidden';
+                        if (map) map.invalidateSize(); 
+                    }, 800);
+                }
+            }, 2000);
+
+            setInterval(() => { if (window.ultimoSnapshotPedidos && !idViajeActivo && document.getElementById('checkTrabajo').checked && !window.tocandoSlider) renderizarListaPedidos(window.ultimoSnapshotPedidos); }, 1000);       
+            
             document.addEventListener('click', activarPantallaCompleta, { once: true });
-            document.addEventListener('touchstart', activarPantallaCompleta, { once: true });
+            document.addEventListener('touchstart', function() { if (map) map.invalidateSize(); }, { once: true });
+
+            var vA = localStorage.getItem("idViajeChoferActivo");
+            if(vA) reconectarViajeChofer(vA);
         }
 
         var map = L.map('map', { zoomControl: false, rotate: true, touchRotate: true }).setView([23.63, -102.55], 5);
@@ -239,7 +264,7 @@
         function verificarEstadoChofer() {
             var n = localStorage.getItem("choferNombre"), e = localStorage.getItem("choferEco");
             if(!n) { abrirModal(`<div class="modal-title">REGISTRO OTIMAC</div><input type="text" id="regN" class="modal-input" placeholder="Tu Nombre"><input type="number" id="regE" class="modal-input" placeholder="Número Económico"><button class="modal-btn btn-primario" onclick="saveReg()">Entrar</button>`); }
-            else { document.getElementById('displayNombre').innerText = n; document.getElementById('displayEco').innerText = e; if(localStorage.getItem("modoTrabajoActivo") === "true") { document.getElementById('checkTrabajo').checked = true; toggleTrabajo(); if(localStorage.getItem("idViajeChoferActivo")) reconectarViajeChofer(localStorage.getItem("idViajeChoferActivo")); } }
+            else { document.getElementById('displayNombre').innerText = n; document.getElementById('displayEco').innerText = e; if(localStorage.getItem("modoTrabajoActivo") === "true") { document.getElementById('checkTrabajo').checked = true; toggleTrabajo(); } }
         }
 
         function saveReg() { let n = document.getElementById('regN').value, e = document.getElementById('regE').value; if(n && e) { localStorage.setItem("choferNombre", n); localStorage.setItem("choferEco", e); location.reload(); } }
@@ -251,8 +276,8 @@
         function toggleTrabajo() {
             var activo = document.getElementById('checkTrabajo').checked, eco = localStorage.getItem("choferEco");
             var slider = document.getElementById('sliderRef');
-    if (slider) slider.style.backgroundColor = activo ? "#2ecc71" : "#555";
-            if(activo) { database.ref('autorizados/' + eco).once('value', snap => { if (snap.exists()) { localStorage.setItem("modoTrabajoActivo", true); document.getElementById('txtModo').innerText = "TRABAJANDO"; document.getElementById('txtModo').style.color = "#00ff00"; mantenerPantallaEncendida(); iniciarGPS(); escucharPedidos(); if(document.getElementById('sidebar').classList.contains('active')) toggleSidebar(); } else { document.getElementById('checkTrabajo').checked = false; } }); }
+            if (slider) slider.style.backgroundColor = activo ? "#2ecc71" : "#555";
+            if(activo) { database.ref('autorizados/' + eco).once('value', snap => { if (snap.exists()) { localStorage.setItem("modoTrabajoActivo", true); document.getElementById('txtModo').innerText = "TRABAJANDO"; document.getElementById('txtModo').style.color = "#00ff00"; mantenerPantallaEncendida(); iniciarGPS(); escucharPedidos(); if(document.getElementById('sidebar').classList.contains('active')) toggleSidebar(); } else { document.getElementById('checkTrabajo').checked = false; mostrarAviso("Unidad no autorizada", "error"); } }); }
             else { localStorage.setItem("modoTrabajoActivo", false); location.reload(); }
         }
 
@@ -270,11 +295,6 @@
             database.ref('viajes').on('value', snap => {
                 var p = snap.val(); window.ultimoSnapshotPedidos = p;
                 pedidosVistos.forEach(id => { if (!p || !p[id] || p[id].estado !== 'esperando') pedidosVistos.delete(id); });
-                if (!p) { viajesRechazados = []; } else {
-                    let hayEsperando = false;
-                    for (var id in p) { if (p[id].estado === 'esperando') { hayEsperando = true; break; } }
-                    if (!hayEsperando) { viajesRechazados = []; }
-                }
                 if (p && document.getElementById('checkTrabajo').checked && !idViajeActivo) {
                     var ahora = Date.now() + serverTimeOffset;
                     for (var id in p) { if (p[id].estado === 'esperando' && (ahora - p[id].timestamp) < 300000) { if (!pedidosVistos.has(id) && !viajesRechazados.includes(id)) { pedidosVistos.add(id); audioNotificacion.play().catch(e=>{}); avisarConVoz("viaje disponible."); } } }
@@ -308,17 +328,10 @@
                         contenedor.innerHTML += `
                         <div class="pedido-card" onmousedown="verDondeEstaElCliente(${cli.lat}, ${cli.lon})" onmouseup="soltarVistaCliente()" ontouchstart="verDondeEstaElCliente(${cli.lat}, ${cli.lon})" ontouchend="soltarVistaCliente()">
                             <div style="float: right;"><span class="reloj-tag">⏳ ${m}:${s < 10 ? '0' : ''}${s}</span><span class="distancia-tag">📍 ${km} km</span></div>
-                            <div class="badge-confianza">Verificado</div><br>
                             <b style="font-size: 17px;">${pedidos[id].nombre_cliente}</b><br>
-                            <div style="font-size: 11px; color: #b39ddb; font-weight: bold; margin-top: 2px; margin-bottom: 5px;">
-                           
-                              HISTORIAL: ${pedidos[id].cliente_historial || 0} VIAJES 
-                           </div>
-                            <span style="color:#ffca28; font-size: 14px;">
-                             ${'★'.repeat(Math.floor(pedidos[id].cliente_estrellas))}${'☆'.repeat(5 - Math.floor(pedidos[id].cliente_estrellas))}
-                             </span>
-                             <small style="color:#aaa;"> (${pedidos[id].cliente_estrellas})</small>
-                            <div class="tiempo-container" style="width:100%;height:6px;background:rgba(255,255,255,0.1);border-radius:3px;margin:10px 0;overflow:hidden;"><div class="barra-progreso" style="height:100%;background:#00ff00;width:${(restMs/300000)*100}%;"></div></div>
+                            <div style="font-size: 11px; color: #b39ddb; font-weight: bold; margin-top: 2px;">HISTORIAL: ${pedidos[id].cliente_historial || 0} VIAJES</div>
+                            <span style="color:#ffca28; font-size: 14px;">${'★'.repeat(Math.floor(pedidos[id].cliente_estrellas || 5))}${ '☆'.repeat(5 - Math.floor(pedidos[id].cliente_estrellas || 5))}</span>
+                            <small style="color:#aaa;"> (${pedidos[id].cliente_estrellas || '5.0'})</small>
                             <div class="slider-aceptar-container">
                                 <div class="slider-rastro-verde" id="rastro-${id}"></div>
                                 <span class="slider-text">DESLIZA PARA ACEPTAR</span>
@@ -332,107 +345,52 @@
             }
         }
 
-function aceptarViaje(id) {
-    // 1. CANDADO CON MODAL PROFESIONAL
-    if (!navigator.onLine) {
-        abrirModal(`<div class="modal-title" style="color:#ff4444;">SIN CONEXIÓN</div><p>Verifica tu señal antes de aceptar el viaje.</p><button class="modal-btn btn-primario" onclick="location.reload()">REINTENTAR</button>`);
-        return; 
-    }
-
-    idViajeActivo = id;
-    localStorage.setItem("idViajeChoferActivo", id);
-    document.getElementById('app-body').classList.add('modo-enfocado');
-    
-    if (window.navigator.vibrate) window.navigator.vibrate([50, 30, 50]);
-
-    // 2. PACIENCIA CON MODAL DE ADVERTENCIA
-    let timeoutInternet = setTimeout(() => {
-        abrirModal(`<div class="modal-title" style="color:#ffca28;">SEÑAL DÉBIL</div><p>No se pudo confirmar el viaje. Revisa tu cobertura.</p><button class="modal-btn btn-primario" onclick="location.reload()">ENTENDIDO</button>`);
-    }, 15000);
-
-    database.ref('viajes/' + id).update({
-        estado: 'en_curso',
-        chofer: {
-            nombre: localStorage.getItem("choferNombre"),
-            economico: localStorage.getItem("choferEco"),
-            lat: markerChofer.getLatLng().lat,
-            lon: markerChofer.getLatLng().lng
+        function aceptarViaje(id) {
+            if (!navigator.onLine) { mostrarAviso("Sin conexión", "error"); return; }
+            idViajeActivo = id;
+            localStorage.setItem("idViajeChoferActivo", id);
+            document.getElementById('app-body').classList.add('modo-enfocado');
+            database.ref('viajes/' + id).update({
+                estado: 'en_curso',
+                chofer: { nombre: localStorage.getItem("choferNombre"), economico: localStorage.getItem("choferEco"), lat: markerChofer.getLatLng().lat, lon: markerChofer.getLatLng().lng }
+            }).then(() => { reconectarViajeChofer(id); });
         }
-    }).then(() => {
-        clearTimeout(timeoutInternet);
-        reconectarViajeChofer(id);
-    }).catch(error => {
-        clearTimeout(timeoutInternet);
-        abrirModal(`<div class="modal-title" style="color:#ff4444;">ERROR</div><p>${error.message}</p><button class="modal-btn btn-primario" onclick="cerrarModal()">CERRAR</button>`);
-    });
-}
-        function reconectarViajeChofer(id) { idViajeActivo = id; document.getElementById('app-body').classList.add('modo-enfocado'); database.ref('viajes/' + id + '/cliente').once('value', snap => { var p = snap.val(); if(p) dibujarInterfazYRuta(p.lat, p.lon, id); }); }
+
+        function reconectarViajeChofer(id) { 
+            idViajeActivo = id; 
+            document.getElementById('app-body').classList.add('modo-enfocado'); 
+            database.ref('viajes/' + id + '/cliente').once('value', snap => { 
+                var p = snap.val(); if(p) dibujarInterfazYRuta(p.lat, p.lon, id); 
+            }); 
+        }
 
         function dibujarInterfazYRuta(lat, lon, id) {
-            document.getElementById('interfaz').innerHTML = `<div class="panel-pedidos"><h3 style="color:#b39ddb;">VIAJE ACTIVO</h3><div class="contenedor-navegacion" style="display:flex;gap:10px;margin-bottom:10px;"><button style="background:#33ccff;color:white;border:none;padding:12px;border-radius:8px;font-weight:bold;width:50%;" onclick="window.open('https://www.waze.com/ul?ll=${lat},${lon}&navigate=yes')">🚙 WAZE</button><button style="background:#4285F4;color:white;border:none;padding:12px;border-radius:8px;font-weight:bold;width:50%;" onclick="window.open('https://www.google.com/maps/dir/?api=1&destination=${lat},${lon}&travelmode=driving')">📍 MAPS</button></div><button class="btn-cancelar" onclick="terminarViaje('${id}')">FINALIZAR SERVICIO</button></div>`;
+            document.getElementById('interfaz').innerHTML = `<div class="panel-pedidos"><h3 style="color:#b39ddb;">VIAJE ACTIVO</h3><div style="display:flex;gap:10px;margin-bottom:10px;"><button style="background:#33ccff;color:white;border:none;padding:12px;border-radius:8px;font-weight:bold;width:50%;" onclick="window.open('https://www.waze.com/ul?ll=${lat},${lon}&navigate=yes')">🚙 WAZE</button><button style="background:#4285F4;color:white;border:none;padding:12px;border-radius:8px;font-weight:bold;width:50%;" onclick="window.open('https://www.google.com/maps/dir/?api=1&destination=${lat},${lon}&travelmode=driving')">📍 MAPS</button></div><button class="btn-cancelar" onclick="terminarViaje('${id}')">FINALIZAR SERVICIO</button></div>`;
             if(markerCliente) map.removeLayer(markerCliente); markerCliente = L.marker([lat, lon], {icon: iconoPasajero}).addTo(map);
-            if(markerChofer) { if(controlRuta) map.removeControl(controlRuta); controlRuta = L.Routing.control({ waypoints: [markerChofer.getLatLng(), L.latLng(lat, lon)], show: false, createMarker: () => null, lineOptions: { styles: [{ color: 'white', opacity: 0.9, weight: 10 }, { color: '#b39ddb', opacity: 1, weight: 6 }] } }).addTo(map); }
+            if(controlRuta) map.removeControl(controlRuta); controlRuta = L.Routing.control({ waypoints: [markerChofer.getLatLng(), L.latLng(lat, lon)], show: false, createMarker: () => null, lineOptions: { styles: [{ color: 'white', opacity: 0.9, weight: 10 }, { color: '#b39ddb', opacity: 1, weight: 6 }] } }).addTo(map);
         }
 
-function terminarViaje(id) {
-    abrirModal(`
-        <div class="modal-title" style="color:#b39ddb; font-weight: 800; letter-spacing: 1px;">FINALIZAR SERVICIO</div>
-        <p style="margin-top: 10px;">-Califica al Pasajero</p>
-        <div style="font-size: 45px; margin: 20px 0; user-select: none;">
-            <span id="s1" onclick="setSt(1)" style="color:#ffca28; cursor:pointer;">★</span>
-            <span id="s2" onclick="setSt(2)" style="color:#ffca28; cursor:pointer;">★</span>
-            <span id="s3" onclick="setSt(3)" style="color:#ffca28; cursor:pointer;">★</span>
-            <span id="s4" onclick="setSt(4)" style="color:#ffca28; cursor:pointer;">★</span>
-            <span id="s5" onclick="setSt(5)" style="color:#ffca28; cursor:pointer;">★</span>
-        </div>
-        <button class="modal-btn btn-primario" style="margin-top: 10px; width: 100%;" onclick="confFin('${id}')">GUARDAR Y FINALIZAR</button>
-    `);
-}
+        function terminarViaje(id) {
+            abrirModal(`<div class="modal-title">FINALIZAR</div><p>Califica al Pasajero</p><div style="font-size: 45px; margin: 20px 0;"><span id="s1" onclick="setSt(1)" style="color:#ffca28; cursor:pointer;">★</span><span id="s2" onclick="setSt(2)" style="color:#ffca28; cursor:pointer;">★</span><span id="s3" onclick="setSt(3)" style="color:#ffca28; cursor:pointer;">★</span><span id="s4" onclick="setSt(4)" style="color:#ffca28; cursor:pointer;">★</span><span id="s5" onclick="setSt(5)" style="color:#ffca28; cursor:pointer;">★</span></div><button class="modal-btn btn-primario" onclick="confFin('${id}')">GUARDAR Y FINALIZAR</button>`);
+        }
+
         var calif = 5;
         function setSt(n) { calif = n; for(let i=1; i<=5; i++) document.getElementById('s'+i).style.color = i<=n ? '#ffca28' : '#444'; }
-       // Reemplaza desde la línea 393 hasta el final de la función:
-function confFin(id) { 
-    database.ref('viajes/' + id).once('value', snap => { 
-        let d = snap.val(); 
-        if (d && d.cliente_uid) { 
-            database.ref('usuarios/' + d.cliente_uid + '/perfil').transaction(p => { 
-                // Si el cliente es nuevo, inicializamos su perfil
-                if (!p) {
-                    return {
-                        total_viajes: 1,
-                        puntos_acumulados: calif,
-                        estrellas: parseFloat(calif).toFixed(1)
-                    };
-                }
-                // Si ya existe, sumamos al historial actual
-                p.total_viajes++; 
-                p.puntos_acumulados += calif; 
-                p.estrellas = (p.puntos_acumulados / p.total_viajes).toFixed(1); 
-                return p; 
+
+        function confFin(id) { 
+            database.ref('viajes/' + id).once('value', snap => { 
+                let d = snap.val(); 
+                if (d && d.cliente_uid) { 
+                    database.ref('usuarios/' + d.cliente_uid + '/perfil').transaction(p => { 
+                        if (!p) return { total_viajes: 1, puntos_acumulados: calif, estrellas: parseFloat(calif).toFixed(1) };
+                        p.total_viajes++; p.puntos_acumulados += calif; p.estrellas = (p.puntos_acumulados / p.total_viajes).toFixed(1); 
+                        return p; 
+                    }); 
+                } 
+                localStorage.removeItem("idViajeChoferActivo"); 
+                database.ref('viajes/' + id).remove().then(() => location.reload()); 
             }); 
-        } 
-        localStorage.removeItem("idViajeChoferActivo"); 
-        database.ref('viajes/' + id).remove().then(() => location.reload()); 
-    }); 
-}
+        }
     </script>
 </body>
 </html>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
