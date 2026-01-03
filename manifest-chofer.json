@@ -5,15 +5,17 @@
     {
       "src": "logo.png",
       "sizes": "192x192",
-      "type": "image/png"
+      "type": "image/png",
+      "purpose": "any maskable"
     },
     {
       "src": "logo.png",
       "sizes": "512x512",
-      "type": "image/png"
+      "type": "image/png",
+      "purpose": "any maskable"
     }
   ],
-"start_url": "chofer.html",
+  "start_url": "chofer.html",
   "background_color": "#1a1a1a",
   "display": "fullscreen",
   "scope": "./",
