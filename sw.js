@@ -1,9 +1,10 @@
-const CACHE_NAME = 'otimac-v1';
+const CACHE_NAME = 'otimac-v2'; // Cambiamos a v2 para forzar la actualización
 const ASSETS = [
   './',
   './chofer.html',
   './cliente.html',
   './manifest-chofer.json',
+  './manifest-cliente.json', // <--- Faltaba este archivo en la lista
   './logo.png'
 ];
 
@@ -14,7 +15,7 @@ self.addEventListener('install', (e) => {
   );
 });
 
-// Estrategia de respuesta (Permite que la app abra sin señal)
+// Estrategia de respuesta (Offline)
 self.addEventListener('fetch', (e) => {
   e.respondWith(
     caches.match(e.request).then((res) => res || fetch(e.request))
