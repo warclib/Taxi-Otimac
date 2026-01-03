@@ -7,130 +7,136 @@
     
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <meta name="theme-color" content="#b39ddb">
+    <meta name="theme-color" content="#1a1a1a">
     <link rel="manifest" href="manifest-cliente.json">
 
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
-        /* Pantalla de bloqueo por baneo */
-        #pantalla-bloqueo {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: #000; color: white; display: none; flex-direction: column;
-            justify-content: center; align-items: center; z-index: 20000; text-align: center; padding: 20px;
+        * { box-sizing: border-box; }
+        ::-webkit-scrollbar { display: none; }
+
+        body { 
+            font-family: 'Segoe UI', sans-serif; text-align: center; 
+            background: #1a1a1a; color: white; margin: 0; padding: 0; 
+            overflow: hidden; height: 100vh; width: 100vw;
+            display: flex; flex-direction: column;
         }
 
-        /* Pantalla de carga (Splash) */
+        #map { position: absolute; top: 0; bottom: 70px; width: 100%; z-index: 1; border: none; }
+
+        /* MENU INFERIOR */
+        .nav-didi {
+            position: fixed; bottom: 0; left: 0; width: 100%; height: 70px;
+            background: #1e1e1e; border-top: 1px solid #333;
+            display: flex; justify-content: space-around; align-items: center;
+            z-index: 1000; padding-bottom: env(safe-area-inset-bottom);
+        }
+        .nav-item {
+            display: flex; flex-direction: column; align-items: center;
+            color: #888; text-decoration: none; font-size: 11px;
+        }
+        .nav-item.active { color: #b39ddb; font-weight: bold; }
+        .nav-icon { font-size: 24px; margin-bottom: 4px; }
+
+        .seccion-full {
+            position: fixed; top: 0; left: 0; width: 100%; height: calc(100% - 70px);
+            background: #1a1a1a; z-index: 100; display: none; padding: 30px 20px;
+            overflow-y: auto;
+        }
+
+        /* PANTALLAS */
         #splash-screen {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background: #b39ddb; display: flex; flex-direction: column;
             justify-content: center; align-items: center; z-index: 10000;
             transition: opacity 0.6s ease, visibility 0.6s;
         }
-        .logo-animado { font-size: 80px; animation: latido 1.5s infinite; }
-        @keyframes latido { 0% { transform: scale(1); } 50% { transform: scale(1.2); } 100% { transform: scale(1); } }
-        .texto-carga { color: #1a1a1a; font-weight: bold; margin-top: 20px; letter-spacing: 3px; font-size: 14px; }
-
-        /* REGLAMENTO */
-        #modal-reglamento {
-            position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
-            background: rgba(0, 0, 0, 0.97); z-index: 30000;
-            display: none; justify-content: center; align-items: center;
+        #pantalla-bloqueo {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: #000; display: none; flex-direction: column;
+            justify-content: center; align-items: center; z-index: 20000; text-align: center; padding: 20px;
         }
-        .reglamento-contenido {
-            background: #1e1e1e; border: 2px solid #b39ddb; padding: 25px; border-radius: 15px;
-            width: 88%; max-width: 400px; text-align: left; box-shadow: 0 10px 30px rgba(0,0,0,0.5);
-        }
-        .reglamento-contenido h2 { color: #b39ddb; font-size: 18px; text-align: center; border-bottom: 1px solid #333; padding-bottom: 15px; text-transform: uppercase; }
-        .reglamento-lista { list-style: none; padding: 0; margin: 20px 0; }
-        .reglamento-lista li { font-size: 14px; color: #eee; margin-bottom: 15px; padding-left: 25px; position: relative; line-height: 1.4; }
-        .reglamento-lista li::before { content: "⚠️"; position: absolute; left: 0; font-size: 14px; }
-        .btn-entendido { background: #b39ddb; color: #1a1a1a; border: none; padding: 18px; width: 100%; border-radius: 10px; font-weight: 900; cursor: pointer; text-transform: uppercase; }
 
-        body { font-family: 'Segoe UI', sans-serif; text-align: center; background: #1a1a1a; color: white; margin: 0; padding: 10px; overflow-x: hidden; }
-        #map { height: 400px; width: 100%; border-radius: 15px; border: 2px solid #b39ddb; margin-top: 10px; box-sizing: border-box; }
-        
-        .btn-pedido { background: #b39ddb; color: black; border: none; padding: 20px; font-weight: bold; border-radius: 10px; width: 100%; font-size: 18px; margin-top: 10px; cursor: pointer; }
-        .btn-pedido:disabled { background: #555; color: #888; cursor: not-allowed; }
-        .btn-cancelar { background: #ff4444; color: white; border: none; padding: 12px; border-radius: 8px; font-weight: bold; width: 100%; margin-top: 10px; cursor: pointer; }
+        /* TARJETA FLOTANTE */
+        #areaPedido {
+            position: absolute; top: 20px; left: 5%; width: 90%;
+            z-index: 10; background: rgba(26, 26, 26, 0.95);
+            padding: 15px; border-radius: 15px; border: 1px solid #b39ddb;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+        }
+
+        .btn-pedido { background: #b39ddb; color: black; border: none; padding: 20px; font-weight: bold; border-radius: 10px; width: 100%; font-size: 18px; margin-top: 10px; }
+        .btn-cancelar { background: #ff4444; color: white; border: none; padding: 12px; border-radius: 8px; font-weight: bold; width: 100%; margin-top: 10px; }
         
         .card-chofer { background: #222; padding: 15px; border-radius: 12px; border: 2px solid #b39ddb; margin-bottom: 10px; display: none; }
         .alerta-llegada { background: #00ff00; color: black; padding: 15px; border-radius: 10px; font-weight: bold; margin-bottom: 10px; display: none; animation: pulse 1s infinite; }
-        #status-senal { display: none; font-size: 11px; color: #ffca28; margin-bottom: 8px; font-weight: bold; }
         @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.5; } 100% { opacity: 1; } }
-        #status-viaje { color: #b39ddb; font-weight: bold; margin: 10px 0; font-size: 18px; }
-        input { padding: 15px; width: 85%; border-radius: 10px; margin-bottom: 10px; font-size: 16px; border: 2px solid #b39ddb; background: #333; color: white; box-sizing: border-box; }
-        #nombre-usuario { color: #b39ddb; font-size: 20px; margin-bottom: 10px; display: block; font-weight: bold; }
-        #info-historial { font-size: 12px; color: #aaa; margin-bottom: 10px; display: block; }
-
-        /* --- ESTILOS DEL PULSO MORADO --- */
-        .contenedor-pulso {
-            display: flex; justify-content: center; align-items: center;
-            width: 50px; height: 50px;
-        }
-        .pulso-gps {
-            width: 20px; height: 20px;
-            background: rgba(179, 157, 219, 0.7);
-            border-radius: 50%; position: absolute;
-            animation: expandir-pulso 2s infinite;
-        }
-        @keyframes expandir-pulso {
-            0% { transform: scale(1); opacity: 0.8; }
-            100% { transform: scale(3.5); opacity: 0; }
-        }
+        
+        input { padding: 15px; width: 100%; border-radius: 10px; margin-bottom: 10px; font-size: 16px; border: 2px solid #b39ddb; background: #333; color: white; }
+        
+        /* PULSO MORADO RECUPERADO */
+        .contenedor-pulso { display: flex; justify-content: center; align-items: center; width: 50px; height: 50px; }
+        .pulso-gps { width: 20px; height: 20px; background: rgba(179, 157, 219, 0.7); border-radius: 50%; position: absolute; animation: expandir-pulso 2s infinite; }
+        @keyframes expandir-pulso { 0% { transform: scale(1); opacity: 0.8; } 100% { transform: scale(3.5); opacity: 0; } }
         .img-taxi-marker { width: 50px; height: 50px; position: relative; z-index: 5; }
     </style>
 </head>
 <body onload="iniciarAppCliente()">
 
-    <div id="modal-reglamento">
-        <div class="reglamento-contenido">
-            <h2>REGLAS DE SERVICIO</h2>
-            <p style="font-size: 13px; color: #bbb; text-align: center;">Para su seguridad y la del conductor:</p>
-            <ul class="reglamento-lista">
-                <li><b>Puntualidad:</b> Al llegar la unidad, el chofer solo podrá esperar un máximo de <b>3 minutos</b>.</li>
-                <li><b>Capacidad:</b> Máximo 4 pasajeros por unidad.</li>
-                <li><b>Carga:</b> Prohibido traslado de leña, escombro u objetos pesados/sucios.</li>
-                <li><b>Higiene:</b> Prohibido fumar o ingerir bebidas alcohólicas en la unidad.</li>
-            </ul>
-            <button class="btn-entendido" onclick="aceptarReglamento()">ACEPTO LOS TÉRMINOS</button>
-        </div>
-    </div>
-
     <div id="pantalla-bloqueo">
         <h1 style="font-size: 80px;">🚫</h1>
-        <h2 style="color: #ff4444;">ACCESO DENEGADO</h2>
-        <p>Tu ID ha sido suspendido por la administración.</p>
-        <p style="font-size: 12px; color: #666;">Contacta a soporte para más información Whatsapp 6122135428.</p>
+        <h2>ACCESO DENEGADO</h2>
     </div>
 
     <div id="splash-screen">
-        <div class="logo-animado">🚖</div>
-        <div style="color: #1a1a1a; font-size: 28px; font-weight: 900; margin-top: 10px;">OTIMAC</div>
-        <div class="texto-carga">SOLICITANDO ACCESO...</div>
-    </div>
-
-    <h2>TAXI PLUS 🚖</h2>
-    
-    <div id="registro" style="display:none; padding: 20px;">
-        <p>¿Cuál es tu nombre?</p>
-        <input type="text" id="inputNombre" placeholder="Tu nombre">
-        <button class="btn-pedido" onclick="guardarNombre()">EMPEZAR</button>
+        <div style="font-size: 80px;">🚖</div>
+        <div style="color: #1a1a1a; font-size: 28px; font-weight: 900;">OTIMAC</div>
     </div>
 
     <div id="areaPedido" style="display:none;">
-        <span id="nombre-usuario"></span>
-        <span id="info-historial">Cargando historial...</span>
-        <div id="alertaLlegada" class="alerta-llegada">🚨 ¡TU TAXI HA LLEGADO! POR FAVOR SAL A SU ENCUENTRO.</div>
-        <div id="cardChofer" class="card-chofer">
-            <div id="status-senal">📶 ESTIMANDO POSICIÓN POR SEÑAL DÉBIL...</div>
-            <div id="infoChofer" style="font-size: 18px;"></div>
+        <div id="registro" style="display:none;">
+            <input type="text" id="inputNombre" placeholder="Tu nombre">
+            <button class="btn-pedido" onclick="guardarNombre()">EMPEZAR</button>
         </div>
-        <div id="status-viaje">Listo para pedir</div>
-        <button class="btn-pedido" id="btnPedir" onclick="validarYPedir()">🚖 PEDIR TAXI AHORA</button>
-        <button class="btn-cancelar" id="btnCancelar" onclick="cancelarPedido()" style="display:none;">❌ CANCELAR PEDIDO</button>
+        <div id="interfazReal" style="display:none;">
+            <span id="nombre-usuario" style="color:#b39ddb; font-size: 20px; font-weight: bold;"></span><br>
+            <span id="info-historial" style="font-size: 12px; color: #aaa;"></span>
+            <div id="alertaLlegada" class="alerta-llegada">🚨 ¡TU TAXI HA LLEGADO!</div>
+            <div id="cardChofer" class="card-chofer">
+                <div id="infoChofer" style="font-size: 18px;"></div>
+            </div>
+            <div id="status-viaje">Listo para pedir</div>
+            <button class="btn-pedido" id="btnPedir" onclick="validarYPedir()">🚖 PEDIR TAXI AHORA</button>
+            <button class="btn-cancelar" id="btnCancelar" onclick="cancelarPedido()" style="display:none;">❌ CANCELAR PEDIDO</button>
+        </div>
     </div>
 
     <div id="map"></div>
+
+    <div id="sec-actividad" class="seccion-full">
+        <h2 style="color: #b39ddb;">Actividad</h2>
+        <p id="txt-historial-v"></p>
+    </div>
+
+    <div id="sec-perfil" class="seccion-full">
+        <h2 style="color: #b39ddb;">Perfil</h2>
+        <div style="background:#222; padding:20px; border-radius:15px; text-align:left;">
+            <p><b>ID:</b> <span id="perf-id"></span></p>
+            <p><b>Nombre:</b> <span id="perf-nom"></span></p>
+        </div>
+    </div>
+
+    <nav class="nav-didi">
+        <a href="javascript:void(0)" class="nav-item active" onclick="navegar('explorar', this)">
+            <span class="nav-icon">🗺️</span> Explorar
+        </a>
+        <a href="javascript:void(0)" class="nav-item" onclick="navegar('actividad', this)">
+            <span class="nav-icon">📋</span> Actividad
+        </a>
+        <a href="javascript:void(0)" class="nav-item" onclick="navegar('perfil', this)">
+            <span class="nav-icon">👤</span> Perfil
+        </a>
+    </nav>
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
@@ -141,276 +147,112 @@
         firebase.initializeApp(firebaseConfig);
         var database = firebase.database();
 
-        let enviandoPedido = false;
-        var totalViajesRealizados = 0; 
-        var estrellasActuales = "5.0"; 
-        var temporizadorAutolimpieza;
+        var miUUID = localStorage.getItem("otimac_uuid") || ("ID-" + Math.floor(100000 + Math.random() * 900000));
+        localStorage.setItem("otimac_uuid", miUUID);
 
-        var ultimaActChofer = Date.now();
-        var intervaloSimulacion;
-        var ultimaPosChoferReal = null;
-
-        if (!localStorage.getItem("otimac_uuid")) {
-            localStorage.setItem("otimac_uuid", "ID-" + Math.floor(100000 + Math.random() * 900000));
-        }
-        var miUUID = localStorage.getItem("otimac_uuid");
-
-        // --- ICONOS PERSONALIZADOS CON PULSO ---
-        var iconoPasajero = L.icon({ 
-            iconUrl: 'pasajero.png', 
-            iconSize: [45, 45], 
-            iconAnchor: [22, 45] 
-        });
+        var map = L.map('map', {zoomControl: false}).setView([23.6345, -102.5528], 5);
+        L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}').addTo(map);
 
         var iconoTaxiVio = L.divIcon({
-            html: `
-                <div class="contenedor-pulso">
-                    <div class="pulso-gps"></div>
-                    <img src="taxi-chofer.png" class="img-taxi-marker">
-                </div>`,
-            className: '',
-            iconSize: [50, 50],
-            iconAnchor: [25, 25]
+            html: `<div class="contenedor-pulso"><div class="pulso-gps"></div><img src="taxi-chofer.png" class="img-taxi-marker"></div>`,
+            className: '', iconSize: [50, 50], iconAnchor: [25, 25]
         });
 
-        function verificarEstadoCuenta() {
-            database.ref('baneados/' + miUUID).on('value', (snap) => {
-                if (snap.exists()) document.getElementById('pantalla-bloqueo').style.display = 'flex';
-                else document.getElementById('pantalla-bloqueo').style.display = 'none';
-            });
+        var markerCliente, markerChofer, idViaje;
+        var totalViajesRealizados = 0;
+
+        function navegar(destino, el) {
+            document.querySelectorAll('.seccion-full').forEach(s => s.style.display = 'none');
+            document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
+            el.classList.add('active');
+            if(destino === 'actividad') document.getElementById('sec-actividad').style.display = 'block';
+            if(destino === 'perfil') {
+                document.getElementById('sec-perfil').style.display = 'block';
+                document.getElementById('perf-id').innerText = miUUID;
+                document.getElementById('perf-nom').innerText = localStorage.getItem("nombreCliente");
+            }
         }
 
         function iniciarAppCliente() {
-            verificarEstadoCuenta();
-            if (!localStorage.getItem("reglamentoAceptado")) {
-                document.getElementById('modal-reglamento').style.display = 'flex';
-            } else {
-                verificarNombreYViaje();
-            }
-            cargarPerfilReal();
-            setTimeout(() => {
-                const splash = document.getElementById('splash-screen');
-                splash.style.opacity = '0';
-                setTimeout(() => { splash.style.visibility = 'hidden'; }, 600);
-            }, 2500);
-        }
-
-        function aceptarReglamento() {
-            localStorage.setItem("reglamentoAceptado", "true");
-            document.getElementById('modal-reglamento').style.display = 'none';
-            verificarNombreYViaje();
-        }
-
-        function cargarPerfilReal() {
-            database.ref('usuarios/' + miUUID + '/perfil').on('value', (snap) => {
-                let perfil = snap.val() || {};
-                totalViajesRealizados = perfil.total_viajes || 0;
-                estrellasActuales = perfil.estrellas || "5.0";
-                document.getElementById('info-historial').innerText = "⭐ " + estrellasActuales + " | " + totalViajesRealizados + " viajes";
+            database.ref('baneados/' + miUUID).on('value', snap => {
+                if (snap.exists()) document.getElementById('pantalla-bloqueo').style.display = 'flex';
             });
-        }
 
-        var map = L.map('map').setView([23.6345, -102.5528], 5);
-        L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}').addTo(map);
-
-        var markerCliente, markerChofer, idViaje;
-        var vozLlegadaActivada = false;
-
-        function avisarConVoz(mensaje) {
-            if ('speechSynthesis' in window) {
-                var msg = new SpeechSynthesisUtterance(mensaje);
-                msg.lang = 'es-MX';
-                window.speechSynthesis.speak(msg);
-            }
-        }
-
-        function verificarNombreYViaje() {
             var n = localStorage.getItem("nombreCliente");
-            if(!n) {
-                document.getElementById('registro').style.display = 'block';
-                document.getElementById('areaPedido').style.display = 'none';
-            } else {
-                document.getElementById('registro').style.display = 'none';
-                document.getElementById('areaPedido').style.display = 'block';
+            document.getElementById('areaPedido').style.display = 'block';
+            if(!n) document.getElementById('registro').style.display = 'block';
+            else {
+                document.getElementById('interfazReal').style.display = 'block';
                 document.getElementById('nombre-usuario').innerText = "Hola, " + n + " 👋";
                 var vActivo = localStorage.getItem("idViajeActivo");
                 if(vActivo) reconectarViaje(vActivo);
             }
+
+            database.ref('usuarios/' + miUUID + '/perfil').on('value', (snap) => {
+                let p = snap.val() || {};
+                totalViajesRealizados = p.total_viajes || 0;
+                document.getElementById('info-historial').innerText = "⭐ " + (p.estrellas || "5.0") + " | " + totalViajesRealizados + " viajes";
+                document.getElementById('txt-historial-v').innerText = "Has realizado " + totalViajesRealizados + " viajes.";
+            });
+
+            setTimeout(() => { document.getElementById('splash-screen').style.opacity = '0'; 
+            setTimeout(() => { document.getElementById('splash-screen').style.visibility = 'hidden'; }, 600); }, 2500);
         }
 
         function guardarNombre() {
             var n = document.getElementById('inputNombre').value;
-            if(n) { 
-                localStorage.setItem("nombreCliente", n); 
-                verificarNombreYViaje(); 
-            }
+            if(n) { localStorage.setItem("nombreCliente", n); location.reload(); }
         }
 
-        function simularMovimientoChofer(latDestino, lonDestino) {
-            if (intervaloSimulacion) clearInterval(intervaloSimulacion);
-            intervaloSimulacion = setInterval(() => {
-                let tiempoTranscurrido = Date.now() - ultimaActChofer;
-                if (tiempoTranscurrido > 6000 && ultimaPosChoferReal && idViaje) {
-                    document.getElementById('status-senal').style.display = 'block';
-                    let pasoLat = (latDestino - ultimaPosChoferReal.lat) * 0.005;
-                    let pasoLon = (lonDestino - ultimaPosChoferReal.lon) * 0.005;
-                    ultimaPosChoferReal.lat += pasoLat;
-                    ultimaPosChoferReal.lon += pasoLon;
-                    if (markerChofer) markerChofer.setLatLng([ultimaPosChoferReal.lat, ultimaPosChoferReal.lon]);
-                } else {
-                    document.getElementById('status-senal').style.display = 'none';
-                }
-            }, 3000);
+        function validarYPedir() {
+            navigator.geolocation.getCurrentPosition((pos) => {
+                let lat = pos.coords.latitude; let lon = pos.coords.longitude;
+                idViaje = miUUID.replace("ID-", "V-");
+                database.ref('viajes/' + idViaje).set({
+                    cliente: {lat, lon},
+                    nombre_cliente: localStorage.getItem("nombreCliente"),
+                    cliente_uid: miUUID,
+                    cliente_historial: totalViajesRealizados,
+                    estado: "esperando",
+                    timestamp: firebase.database.ServerValue.TIMESTAMP
+                }).then(() => {
+                    localStorage.setItem("idViajeActivo", idViaje);
+                    reconectarViaje(idViaje);
+                });
+            }, () => alert("Activa el GPS"));
         }
 
         function reconectarViaje(id) {
             idViaje = id;
             document.getElementById('btnPedir').style.display = 'none';
             document.getElementById('btnCancelar').style.display = 'block';
-
             database.ref('viajes/' + id).on('value', (snap) => {
-                var viaje = snap.val();
-                if(!viaje) { 
-                    if(localStorage.getItem("idViajeActivo")){
-                        avisarConVoz("El viaje ha sido cancelado o ha finalizado.");
-                        localStorage.removeItem("idViajeActivo");
-                        alert("El viaje ya no está disponible.");
-                    }
-                    location.reload(); 
-                    return; 
+                var v = snap.val();
+                if(!v) { localStorage.removeItem("idViajeActivo"); location.reload(); return; }
+                if(v.estado === 'chofer_llego') document.getElementById('alertaLlegada').style.display = 'block';
+                if(v.cliente) {
+                    var pC = [v.cliente.lat, v.cliente.lon];
+                    if (markerCliente) markerCliente.setLatLng(pC);
+                    else markerCliente = L.marker(pC).addTo(map);
+                    map.setView(pC, 16);
                 }
-
-                if (viaje.estado === 'en_curso' || viaje.estado === 'chofer_llego') {
-                    if (temporizadorAutolimpieza) clearTimeout(temporizadorAutolimpieza);
-                }
-
-                if (viaje.estado === 'chofer_llego') {
-                    document.getElementById('alertaLlegada').style.display = 'block';
-                    document.getElementById('status-viaje').innerText = "🚩 EL CHOFER ESTÁ AFUERA";
-                    if (!vozLlegadaActivada) { avisarConVoz("Tu taxi ha llegado."); vozLlegadaActivada = true; }
-                } else if (viaje.estado === 'en_curso') {
-                    document.getElementById('status-viaje').innerText = "🚕 TU TAXI VA EN CAMINO";
-                    document.getElementById('btnCancelar').style.display = 'none';
-                }
-
-                if (viaje.cliente) {
-                    var posC = [viaje.cliente.lat, viaje.cliente.lon];
-                    if (markerCliente) markerCliente.setLatLng(posC);
-                    else { markerCliente = L.marker(posC, {icon: iconoPasajero}).addTo(map); map.setView(posC, 16); }
-                }
-
-                if (viaje.chofer) {
-                    ultimaActChofer = Date.now();
-                    ultimaPosChoferReal = { lat: viaje.chofer.lat, lon: viaje.chofer.lon };
+                if(v.chofer) {
                     document.getElementById('cardChofer').style.display = 'block';
-                    document.getElementById('infoChofer').innerHTML = `<b>Chofer:</b> ${viaje.chofer.nombre} <br> <b>Unidad:</b> ${viaje.chofer.economico}`;
-                    
-                    if (markerChofer) markerChofer.setLatLng([ultimaPosChoferReal.lat, ultimaPosChoferReal.lon]);
-                    else markerChofer = L.marker([ultimaPosChoferReal.lat, ultimaPosChoferReal.lon], {icon: iconoTaxiVio}).addTo(map);
-                    
-                    simularMovimientoChofer(viaje.cliente.lat, viaje.cliente.lon);
-                    
-                    if (!map.getBounds().contains(markerChofer.getLatLng())) {
-                        var group = new L.featureGroup([markerCliente, markerChofer]);
-                        map.fitBounds(group.getBounds().pad(0.3));
-                    }
+                    document.getElementById('infoChofer').innerHTML = `<b>Chofer:</b> ${v.chofer.nombre} <br> <b>Unidad:</b> ${v.chofer.economico}`;
+                    if (markerChofer) markerChofer.setLatLng([v.chofer.lat, v.chofer.lon]);
+                    else markerChofer = L.marker([v.chofer.lat, v.chofer.lon], {icon: iconoTaxiVio}).addTo(map);
                 }
             });
-        }
-
-        function validarYPedir() {
-            if (!navigator.onLine) {
-                alert("⚠️ No tienes conexión a internet.");
-                return;
-            }
-            if (enviandoPedido) return;
-
-            database.ref('baneados/' + miUUID).once('value', (snapshot) => {
-                if (snapshot.exists()) { 
-                    alert("⚠️ Cuenta suspendida."); 
-                    location.reload(); 
-                } else {
-                    database.ref('.info/connected').once('value', (connectedSnap) => {
-                        if (connectedSnap.val() === true) pedirTaxi();
-                        else alert("📶 Señal inestable. Conectando...");
-                    });
-                }
-            });
-        }
-
-        function pedirTaxi() {
-            enviandoPedido = true;
-            let btn = document.getElementById('btnPedir');
-            btn.innerText = "BUSCANDO CHOFER...";
-            btn.disabled = true;
-
-            navigator.geolocation.getCurrentPosition((pos) => {
-                if (!navigator.onLine) { resetearBoton(); return; }
-
-                var miPos = { lat: pos.coords.latitude, lon: pos.coords.longitude };
-                idViaje = miUUID.replace("ID-", "V-");
-                
-                database.ref('viajes/' + idViaje).set({
-                    cliente: miPos,
-                    nombre_cliente: localStorage.getItem("nombreCliente"),
-                    cliente_uid: miUUID,
-                    cliente_historial: totalViajesRealizados,
-                    cliente_estrellas: estrellasActuales,
-                    estado: "esperando",
-                    timestamp: firebase.database.ServerValue.TIMESTAMP
-                }).then(() => { 
-                    localStorage.setItem("idViajeActivo", idViaje);
-                    enviandoPedido = false; 
-                    reconectarViaje(idViaje); 
-
-                    if (temporizadorAutolimpieza) clearTimeout(temporizadorAutolimpieza);
-                    temporizadorAutolimpieza = setTimeout(() => {
-                        database.ref('viajes/' + idViaje).once('value', (snap) => {
-                            let v = snap.val();
-                            if (v && v.estado === 'esperando') {
-                                database.ref('viajes/' + idViaje).remove();
-                                localStorage.removeItem("idViajeActivo");
-                                alert("⏱️ TIEMPO AGOTADO: No se encontraron choferes disponibles. Intente de nuevo.");
-                                location.reload();
-                            }
-                        });
-                    }, 300000); 
-
-                }).catch(() => { resetearBoton(); alert("Error de servidor."); });
-
-            }, () => { 
-                alert("Activa tu GPS."); 
-                resetearBoton();
-            }, { timeout: 8000 });
-        }
-
-        function resetearBoton() {
-            enviandoPedido = false;
-            let btn = document.getElementById('btnPedir');
-            btn.innerText = "🚖 PEDIR TAXI AHORA";
-            btn.disabled = false;
         }
 
         function cancelarPedido() {
-            var id = localStorage.getItem("idViajeActivo");
-            if(confirm("¿Seguro que deseas cancelar el taxi?")) {
-                if (temporizadorAutolimpieza) clearTimeout(temporizadorAutolimpieza);
-                database.ref('viajes/' + id).remove().then(() => {
+            if(confirm("¿Cancelar?")) {
+                database.ref('viajes/' + idViaje).remove().then(() => {
                     localStorage.removeItem("idViajeActivo");
                     location.reload();
                 });
             }
-        } // --- COPIAR Y PEGAR AQUÍ ---
-// Este código activa la instalación de la App para el Cliente
-if ('serviceWorker' in navigator) {
-    window.addEventListener('load', () => {
-        navigator.serviceWorker.register('sw.js')
-            .then(reg => console.log('Otimac Cliente: Listo para instalar'))
-            .catch(err => console.log('Error de instalación', err));
-    });
-}
-// --- FINAL DEL BLOQUE ---
+        }
     </script>
 </body>
 </html>
-
