@@ -151,6 +151,19 @@
         var markerCliente, markerChofer, idViaje;
         var totalViajesRealizados = 0;
         var estrellasActuales = "5.0";
+        var wakeLock = null;
+
+        // --- SISTEMA ANTI-REPOSO (WAKE LOCK) ---
+        async function activarMantenerEncendido() {
+            try {
+                if ('wakeLock' in navigator) {
+                    wakeLock = await navigator.wakeLock.request('screen');
+                    console.log("Pantalla bloqueada para no apagarse.");
+                }
+            } catch (err) {
+                console.log("Error activando WakeLock: " + err);
+            }
+        }
 
         function navegar(destino, el) {
             document.querySelectorAll('.seccion-full').forEach(s => s.style.display = 'none');
@@ -165,6 +178,11 @@
         }
 
         function iniciarAppCliente() {
+            activarMantenerEncendido();
+            document.addEventListener('visibilitychange', () => {
+                if (wakeLock !== null && document.visibilityState === 'visible') activarMantenerEncendido();
+            });
+
             database.ref('baneados/' + miUUID).on('value', snap => {
                 if (snap.exists()) document.getElementById('pantalla-bloqueo').style.display = 'flex';
             });
@@ -199,12 +217,7 @@
             btn.innerText = "⏳ LOCALIZANDO...";
             btn.disabled = true;
 
-            // CONFIGURACIÓN DE GPS MÁS TOLERANTE
-            var opcionesGps = {
-                enableHighAccuracy: true, 
-                timeout: 15000, // Espera hasta 15 segundos antes de dar error
-                maximumAge: 0 
-            };
+            var opcionesGps = { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 };
 
             navigator.geolocation.getCurrentPosition((pos) => {
                 let lat = pos.coords.latitude; 
@@ -224,11 +237,7 @@
                     reconectarViaje(idViaje);
                 });
             }, (error) => {
-                // Manejo de errores más inteligente
-                if (error.code === 1) alert("Por favor, permite el acceso a la ubicación en tu navegador.");
-                else if (error.code === 3) alert("La señal GPS es débil. Intenta moverte a un lugar despejado.");
-                else alert("Asegúrate de tener el GPS encendido.");
-                
+                alert("Asegúrate de tener el GPS encendido.");
                 btn.innerText = "🚖 PEDIR TAXI AHORA";
                 btn.disabled = false;
             }, opcionesGps);
