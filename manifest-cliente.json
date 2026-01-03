@@ -1,22 +1,25 @@
 {
   "short_name": "Otimac",
-  "name": "Otimac: Solicita tu Taxi",
+  "name": "Otimac: Pasajero",
   "description": "Servicio de taxis en línea Otimac",
   "icons": [
     {
       "src": "cliente.png",
       "type": "image/png",
-      "sizes": "192x192"
+      "sizes": "192x192",
+      "purpose": "any maskable"
     },
     {
       "src": "cliente.png",
       "type": "image/png",
-      "sizes": "512x512"
+      "sizes": "512x512",
+      "purpose": "any maskable"
     }
   ],
   "start_url": "cliente.html",
   "background_color": "#1a1a1a",
   "display": "standalone",
-  "scope": "/",
-  "theme_color": "#ffc107"
+  "scope": "./",
+  "theme_color": "#1a1a1a",
+  "orientation": "portrait"
 }
