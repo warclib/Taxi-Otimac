@@ -22,35 +22,18 @@
             display: flex; flex-direction: column;
         }
 
-        /* FONDO NEGRO SUPERIOR */
-        .fondo-superior {
-            position: fixed; top: 0; left: 0; width: 100%; height: 200px;
-            background: #1a1a1a; z-index: 1;
-        }
-
-        /* CONTENEDOR DEL MAPA PARA FORZAR LA CURVATURA */
-        .map-container {
-            position: absolute; 
-            top: 130px; /* Aquí empieza la curva */
-            bottom: 70px; 
-            width: 100%;
-            z-index: 5;
-            background: #1a1a1a;
-            border-radius: 40px 40px 0 0; /* CURVATURA AQUÍ */
-            overflow: hidden; /* Esto corta el mapa para que se vea la curva */
-            box-shadow: 0 -10px 20px rgba(0,0,0,0.5);
-        }
-
-        #map { height: 100%; width: 100%; border: none; }
+        /* MAPA A PANTALLA COMPLETA (BAJO LA TARJETA) */
+        #map { position: absolute; top: 0; bottom: 70px; width: 100%; z-index: 1; border: none; }
 
         /* TARJETA DE PEDIDO FLOTANTE */
         #areaPedido {
-            position: absolute; top: 15px; left: 5%; width: 90%;
-            z-index: 100; background: rgba(30, 30, 30, 0.98);
-            padding: 15px; border-radius: 20px; border: 1px solid #b39ddb;
+            position: absolute; top: 20px; left: 5%; width: 90%;
+            z-index: 10; background: rgba(26, 26, 26, 0.95);
+            padding: 15px; border-radius: 15px; border: 1px solid #b39ddb;
             box-shadow: 0 10px 25px rgba(0,0,0,0.5);
         }
 
+        /* MENU INFERIOR */
         .nav-didi {
             position: fixed; bottom: 0; left: 0; width: 100%; height: 70px;
             background: #1e1e1e; border-top: 1px solid #333;
@@ -63,10 +46,10 @@
 
         .seccion-full {
             position: fixed; top: 0; left: 0; width: 100%; height: calc(100% - 70px);
-            background: #1a1a1a; z-index: 200; display: none; padding: 30px 20px; overflow-y: auto;
+            background: #1a1a1a; z-index: 100; display: none; padding: 30px 20px; overflow-y: auto;
         }
 
-        /* RESTO DE ESTILOS RESPETADOS */
+        /* PANTALLAS Y BOTONES */
         #splash-screen {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background: #b39ddb; display: flex; flex-direction: column;
@@ -78,9 +61,10 @@
             background: #000; display: none; flex-direction: column;
             justify-content: center; align-items: center; z-index: 20000; text-align: center; padding: 20px;
         }
-        .btn-pedido { background: #b39ddb; color: black; border: none; padding: 18px; font-weight: bold; border-radius: 12px; width: 100%; font-size: 18px; margin-top: 10px; }
+        .btn-pedido { background: #b39ddb; color: black; border: none; padding: 20px; font-weight: bold; border-radius: 10px; width: 100%; font-size: 18px; margin-top: 10px; }
         .btn-cancelar { background: #ff4444; color: white; border: none; padding: 12px; border-radius: 8px; font-weight: bold; width: 100%; margin-top: 10px; }
         input { padding: 15px; width: 100%; border-radius: 10px; margin-bottom: 10px; font-size: 16px; border: 2px solid #b39ddb; background: #333; color: white; }
+        
         .contenedor-pulso { display: flex; justify-content: center; align-items: center; width: 50px; height: 50px; }
         .pulso-gps { width: 20px; height: 20px; background: rgba(179, 157, 219, 0.7); border-radius: 50%; position: absolute; animation: expandir-pulso 2s infinite; }
         @keyframes expandir-pulso { 0% { transform: scale(1); opacity: 0.8; } 100% { transform: scale(3.5); opacity: 0; } }
@@ -102,8 +86,6 @@
         <div style="color: #1a1a1a; font-size: 28px; font-weight: 900;">OTIMAC</div>
     </div>
 
-    <div class="fondo-superior"></div>
-
     <div id="areaPedido" style="display:none;">
         <div id="registro" style="display:none;">
             <input type="text" id="inputNombre" placeholder="Tu nombre">
@@ -122,9 +104,7 @@
         </div>
     </div>
 
-    <div class="map-container">
-        <div id="map"></div>
-    </div>
+    <div id="map"></div>
 
     <div id="sec-actividad" class="seccion-full">
         <h2 style="color: #b39ddb;">Actividad</h2>
