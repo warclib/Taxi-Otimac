@@ -255,8 +255,11 @@ document.addEventListener('touchstart', function() {
 }, { once: true });
 
         var map = L.map('map', { zoomControl: false, rotate: true, touchRotate: true }).setView([23.63, -102.55], 5);
-        function estiloMapa() { var h = new Date().getHours(); return (h >= 18 || h < 7) ? 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png' : 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}'; }
-        L.tileLayer(estiloMapa()).addTo(map);
+       L.tileLayer('https://{s}.google.com/vt/lyrs=m&x={x}&y={y}&z={z}', {
+    maxZoom: 20,
+    subdomains: ['mt0', 'mt1', 'mt2', 'mt3'],
+    attribution: '© Google Maps'
+     }).addTo(map);
 
         function verificarEstadoChofer() {
             var n = localStorage.getItem("choferNombre"), e = localStorage.getItem("choferEco");
@@ -441,6 +444,7 @@ function confFin(id) {
     </script>
 </body>
 </html>
+
 
 
 
