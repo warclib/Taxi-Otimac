@@ -14,7 +14,6 @@
     <link rel="stylesheet" href="https://unpkg.com/leaflet-routing-machine/dist/leaflet-routing-machine.css" />
     
     <style>
-        /* PREVENCIÓN DE PARPADEO BLANCO */
         html, body { 
             background-color: #1a1a1a !important; 
             margin: 0; padding: 0; overflow: hidden; height: 100%; width: 100%;
@@ -37,104 +36,57 @@
             background: rgba(179, 157, 219, 0.2);
             color: white; border: 1px solid rgba(255, 255, 255, 0.2);
             width: 45px; height: 45px; border-radius: 50%;
-            font-size: 24px; cursor: pointer;
-            backdrop-filter: blur(5px);
+            font-size: 24px; cursor: pointer; backdrop-filter: blur(5px);
             display: flex; align-items: center; justify-content: center;
-            transition: 0.3s;
         }
 
         #sidebar {
             position: fixed; top: 0; right: -320px;
-            width: 260px; height: 100%;
-            background: rgba(0, 0, 0, 0.85);
-            z-index: 4500; transition: 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-            padding: 70px 15px 20px 15px; text-align: left;
-            backdrop-filter: blur(12px);
-            border-left: 1px solid rgba(255, 255, 255, 0.1);
+            width: 260px; height: 100%; background: rgba(0, 0, 0, 0.9);
+            z-index: 4500; transition: 0.4s; padding: 70px 15px 20px 15px; text-align: left;
+            backdrop-filter: blur(12px); border-left: 1px solid rgba(255, 255, 255, 0.1);
         }
-        #sidebar.active { right: 0; box-shadow: -10px 0 30px rgba(0,0,0,0.5); border-left: 2px solid #b39ddb; }
+        #sidebar.active { right: 0; border-left: 2px solid #b39ddb; }
 
         #overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); display: none; z-index: 4000; }
         #interfaz { position: fixed; bottom: 0; left: 0; right: 0; z-index: 2000; padding: 10px; }
 
         .panel-pedidos { 
-            background: rgba(20, 20, 20, 0.85); 
-            backdrop-filter: blur(15px); 
-            padding: 10px 15px; 
-            border-radius: 20px 20px 0 0; 
-            border-top: 2px solid #b39ddb;
-            box-shadow: 0 -10px 40px rgba(0,0,0,0.7); 
-            max-height: 35vh;
-            overflow-y: auto;
+            background: rgba(20, 20, 20, 0.85); backdrop-filter: blur(15px); padding: 10px 15px; 
+            border-radius: 20px 20px 0 0; border-top: 2px solid #b39ddb; box-shadow: 0 -10px 40px rgba(0,0,0,0.7); max-height: 35vh; overflow-y: auto;
         }
 
         .pedido-card { 
-            padding: 12px; 
-            background: rgba(255, 255, 255, 0.05); 
-            margin: 10px 0; 
-            border-radius: 15px; 
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            text-align: left;
-            user-select: none;
-            -webkit-user-select: none;
+            padding: 12px; background: rgba(255, 255, 255, 0.05); margin: 10px 0; 
+            border-radius: 15px; border: 1px solid rgba(255, 255, 255, 0.1); text-align: left;
         }
 
         .slider-aceptar-container {
-            position: relative; width: 100%; height: 48px; 
-            background: #4a148c; border-radius: 25px;
-            margin-top: 12px; overflow: hidden;
-            display: flex; align-items: center;
-            border: 1px solid #b39ddb; touch-action: none;
-            box-shadow: inset 0 2px 5px rgba(0,0,0,0.3);
+            position: relative; width: 100%; height: 48px; background: #4a148c; border-radius: 25px;
+            margin-top: 12px; overflow: hidden; display: flex; align-items: center; border: 1px solid #b39ddb; touch-action: none;
         }
-        .slider-rastro-verde {
-            position: absolute; left: 0; top: 0; height: 100%;
-            background: linear-gradient(90deg, #00c853, #69f0ae); 
-            width: 0%; z-index: 1;
-        }
-        .slider-text {
-            position: absolute; width: 100%; text-align: center;
-            color: white; font-weight: 700; font-size: 11px; 
-            z-index: 2; pointer-events: none; text-transform: uppercase;
-            letter-spacing: 1px;
-        }
-        .slider-input {
-            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-            appearance: none; -webkit-appearance: none; background: transparent;
-            z-index: 3; margin: 0; outline: none; cursor: grab;
-        }
-        .slider-input::-webkit-slider-thumb {
-            appearance: none; -webkit-appearance: none;
-            width: 48px; height: 48px; 
-            background: white; border-radius: 50%;
-            border: 3px solid #00e676;
-            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='black' width='24px' height='24px'%3E%3Cpath d='M12 4l-1.41 1.41L16.17 11H4v2h12.17l-5.58 5.59L12 20l8-8z'/%3E%3C/svg%3E");
-            background-repeat: no-repeat; background-position: center;
-        }
+        .slider-rastro-verde { position: absolute; left: 0; top: 0; height: 100%; background: linear-gradient(90deg, #00c853, #69f0ae); width: 0%; z-index: 1; }
+        .slider-text { position: absolute; width: 100%; text-align: center; color: white; font-weight: 700; font-size: 11px; z-index: 2; pointer-events: none; text-transform: uppercase; }
+        .slider-input { position: absolute; top: 0; left: 0; width: 100%; height: 100%; appearance: none; -webkit-appearance: none; background: transparent; z-index: 3; outline: none; }
+        .slider-input::-webkit-slider-thumb { appearance: none; width: 48px; height: 48px; background: white; border-radius: 50%; border: 3px solid #00e676; }
 
         .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 20000; display: none; align-items: center; justify-content: center; backdrop-filter: blur(5px); }
-        .modal-card { background: #1a1a1a; width: 85%; max-width: 340px; border-radius: 25px; padding: 25px; border: 1px solid #333; text-align: center; box-shadow: 0 20px 50px rgba(0,0,0,0.6); }
-        .modal-title { font-size: 20px; font-weight: bold; margin-bottom: 15px; color: #b39ddb; }
-        .modal-input { width: 100%; padding: 12px; border-radius: 10px; border: 1px solid #444; background: #2a2a2a; color: white; margin-bottom: 10px; box-sizing: border-box; outline: none; }
-        .modal-btn { width: 100%; padding: 14px; border-radius: 12px; border: none; font-weight: bold; cursor: pointer; text-transform: uppercase; margin-top: 10px; }
-        .btn-primario { background: #b39ddb; color: black; }
-        
-        /* NOTIFICACIONES */
+        .modal-card { background: #1a1a1a; width: 85%; max-width: 340px; border-radius: 25px; padding: 25px; border: 1px solid #333; text-align: center; }
+        .modal-btn { width: 100%; padding: 14px; border-radius: 12px; border: none; font-weight: bold; background: #b39ddb; color: black; margin-top: 10px; }
+
         #notificacion { position: fixed; top: -100px; left: 5%; width: 90%; padding: 15px; border-radius: 12px; z-index: 30000; font-weight: bold; transition: 0.5s; display: flex; align-items: center; justify-content: center; }
         .notif-error { background: #ff4444; color: white; }
         .notif-ok { background: #b39ddb; color: black; }
-
-        .reloj-tag { color: #ffca28; font-weight: bold; margin-right: 15px; font-size: 13px; font-family: monospace; }
-        .distancia-tag { color: #b39ddb; font-weight: bold; float: right; font-size: 13px; }
-        .btn-rechazar { background:transparent; border:none; color: #ff4444; padding:5px; width:100%; margin-top:5px; cursor: pointer; font-size: 11px; text-decoration: underline; }
-        .btn-cancelar { background: #ff4444; color: white; border: none; padding: 15px; border-radius: 12px; font-weight: bold; width: 100%; margin-top: 10px; font-size: 16px; }
 
         .contenedor-pulso { display: flex; justify-content: center; align-items: center; width: 50px; height: 50px; }
         .pulso-gps { width: 22px; height: 22px; background: rgba(179, 157, 219, 0.7); border-radius: 50%; position: absolute; z-index: 1; animation: expandir-pulso 2s infinite; }
         @keyframes expandir-pulso { 0% { transform: scale(1); opacity: 0.8; } 100% { transform: scale(3.5); opacity: 0; } }
         .img-taxi-marker { width: 50px; height: 50px; position: relative; z-index: 5; }
-        .leaflet-routing-container { display: none !important; }
-        .modo-enfocado #btn-menu { display: none; }
+        
+        .reloj-tag { color: #ffca28; font-weight: bold; margin-right: 15px; font-size: 13px; font-family: monospace; }
+        .distancia-tag { color: #b39ddb; font-weight: bold; float: right; font-size: 13px; }
+        .btn-rechazar { background:transparent; border:none; color: #ff4444; width:100%; margin-top:5px; font-size: 11px; text-decoration: underline; cursor: pointer; }
+        .btn-cancelar { background: #ff4444; color: white; border: none; padding: 15px; border-radius: 12px; font-weight: bold; width: 100%; margin-top: 10px; }
     </style>
 </head>
 <body onload="iniciarAppCentral()" id="app-body">
@@ -146,31 +98,26 @@
     </div>
 
     <div id="splash-screen">
-        <div style="color: #1a1a1a; font-size: 32px; font-weight: 900; letter-spacing: 2px;">TAXI PLUS</div>
-        <div class="texto-carga">REINICIANDO SISTEMA</div>
+        <div style="color: #1a1a1a; font-size: 32px; font-weight: 900;">OTIMAC</div>
+        <div class="texto-carga">SISTEMA LISTO</div>
     </div>
 
     <button id="btn-menu" onclick="toggleSidebar()">☰</button>
     <div id="overlay" onclick="toggleSidebar()"></div>
     
     <div id="sidebar">
-        <div class="sidebar-item" style="background: rgba(255,255,255,0.05); padding: 15px; border-radius: 15px; margin-bottom: 15px; border-left: 4px solid #b39ddb;">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px;">
-                <span style="font-size: 11px; color: #aaa; text-transform: uppercase;">Estado</span>
+        <div style="background: rgba(255,255,255,0.05); padding: 15px; border-radius: 15px; border-left: 4px solid #b39ddb;">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
                 <span id="status-gps" style="font-size: 10px; color: #ff4444; font-weight: bold;">🔴 GPS OFF</span>
             </div>
-            <div style="display: flex; justify-content: space-between; align-items: center;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 5px;">
                 <span id="txtModo" style="font-weight: bold; color: #ff4444; font-size: 13px;">DESCONECTADO</span>
-                <label style="position: relative; display: inline-block; width: 50px; height: 28px;">
-                    <input type="checkbox" id="checkTrabajo" onchange="toggleTrabajo()" style="opacity:0; width:0; height:0;">
-                    <span id="sliderRef" style="position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #555; transition: .4s; border-radius: 34px; box-shadow: inset 0 2px 5px rgba(0,0,0,0.5);"></span>
-                </label>
+                <input type="checkbox" id="checkTrabajo" onchange="toggleTrabajo()">
             </div>
         </div>
-        <div class="sidebar-item" onclick="cambiarDatosChofer()" style="cursor:pointer; background: rgba(255,255,255,0.05); padding: 15px; border-radius: 15px; border-left: 4px solid #b39ddb;">
-            <div style="font-size: 15px; font-weight: bold;">👤 <span id="displayNombre">...</span></div>
-            <div style="font-size: 15px; font-weight: bold;">🚕 Numero Economico: <span id="displayEco">...</span></div>
-            <small style="color: #b39ddb; font-size: 10px;">(Editar Datos)</small>
+        <div onclick="cambiarDatosChofer()" style="margin-top:10px; cursor:pointer; background: rgba(255,255,255,0.05); padding: 15px; border-radius: 15px; border-left: 4px solid #b39ddb;">
+            <div style="font-size: 14px; font-weight: bold;">👤 <span id="displayNombre">...</span></div>
+            <div style="font-size: 14px; font-weight: bold;">🚕 ECO: <span id="displayEco">...</span></div>
         </div>
     </div>
 
@@ -187,15 +134,14 @@
     <script src="https://unpkg.com/leaflet-routing-machine/dist/leaflet-routing-machine.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
-    <script src="https://cdn.jsdelivr.net/gh/Raruto/leaflet-rotate@master/dist/leaflet-rotate-js.js"></script>
     <script>
         var firebaseConfig = { apiKey: "AIzaSyATLT5_woN8KO8-_E4_Nl7bEMlJGFI4uUQ", authDomain: "taxiotimac.firebaseapp.com", databaseURL: "https://taxiotimac-default-rtdb.firebaseio.com", projectId: "taxiotimac", storageBucket: "taxiotimac.firebasestorage.app", messagingSenderId: "533983007458", appId: "1:533983007458:web:254cef6b46c01a1718c4bb" };
         firebase.initializeApp(firebaseConfig);
         var database = firebase.database();
 
         var audioNotificacion = new Audio('https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3');
-        var markerChofer, markerCliente, controlRuta, idViajeActivo, watchID, wakeLock = null;
-        var viajesRechazados = [], avisoLlegadaEnviado = false, pedidosVistos = new Set(), serverTimeOffset = 0, temporizadorVista, circuloReferenciaCliente;
+        var markerChofer, markerCliente, idViajeActivo, watchID;
+        var viajesRechazados = [], serverTimeOffset = 0, ultimoSnapshot = null;
 
         database.ref(".info/serverTimeOffset").on("value", snap => { serverTimeOffset = snap.val() || 0; });
 
@@ -204,81 +150,53 @@
 
         function abrirModal(html) { document.getElementById('modal-content').innerHTML = html; document.getElementById('modal-global').style.display = 'flex'; }
         function cerrarModal() { document.getElementById('modal-global').style.display = 'none'; }
-        
-        function mostrarAviso(msg, t='ok') { 
-            let el=document.getElementById('notificacion'); 
-            el.innerText=msg; el.className=t==='ok'?'notif-ok':'notif-error'; 
-            el.style.top='20px'; setTimeout(()=>el.style.top='-100px', 3000); 
-        }
+        function mostrarAviso(msg, t='ok') { let el=document.getElementById('notificacion'); el.innerText=msg; el.className=t==='ok'?'notif-ok':'notif-error'; el.style.top='20px'; setTimeout(()=>el.style.top='-100px', 3000); }
 
-        function avisarConVoz(mensaje) {
-            if ('speechSynthesis' in window) {
-                window.speechSynthesis.cancel();
-                var msg = new SpeechSynthesisUtterance((localStorage.getItem("choferNombre") || "Chofer") + ", " + mensaje);
-                msg.lang = 'es-MX'; window.speechSynthesis.speak(msg);
-            }
-        }
+        function avisarConVoz(mensaje) { if ('speechSynthesis' in window) { var msg = new SpeechSynthesisUtterance(mensaje); msg.lang = 'es-MX'; window.speechSynthesis.speak(msg); } }
+        function toggleSidebar() { var side = document.getElementById('sidebar'); side.classList.toggle('active'); document.getElementById('overlay').style.display = side.classList.contains('active') ? 'block' : 'none'; }
 
-        function toggleSidebar() { var side = document.getElementById('sidebar'); var over = document.getElementById('overlay'); side.classList.toggle('active'); over.style.display = side.classList.contains('active') ? 'block' : 'none'; }
-
-        function activarPantallaCompleta() {
-            var doc = window.document;
-            var docEl = doc.documentElement;
-            var requestFullScreen = docEl.requestFullscreen || docEl.mozRequestFullScreen || docEl.webkitRequestFullScreen || docEl.msRequestFullscreen;
-            if (!doc.fullscreenElement && !doc.mozFullScreenElement && !doc.webkitFullscreenElement && !doc.msFullscreenElement) {
-                requestFullScreen.call(docEl);
-            }
-        }
-
-        // --- LÓGICA DE MEJORA INTEGRADA ---
         function iniciarAppCentral() {
             verificarEstadoChofer();
-            
-            window.addEventListener('online', () => mostrarAviso("Conexión restablecida", "ok"));
-            window.addEventListener('offline', () => mostrarAviso("Sin conexión a internet", "error"));
-
             setTimeout(() => {
                 const splash = document.getElementById('splash-screen');
-                if (splash) {
-                    splash.style.opacity = '0';
-                    setTimeout(() => {
-                        splash.style.visibility = 'hidden';
-                        if (map) map.invalidateSize(); 
-                    }, 800);
-                }
+                if (splash) { splash.style.opacity = '0'; setTimeout(() => { splash.style.visibility = 'hidden'; if (map) map.invalidateSize(); }, 800); }
             }, 2000);
-
-            setInterval(() => { if (window.ultimoSnapshotPedidos && !idViajeActivo && document.getElementById('checkTrabajo').checked && !window.tocandoSlider) renderizarListaPedidos(window.ultimoSnapshotPedidos); }, 1000);       
-            
-            document.addEventListener('click', activarPantallaCompleta, { once: true });
-            document.addEventListener('touchstart', function() { if (map) map.invalidateSize(); }, { once: true });
-
             var vA = localStorage.getItem("idViajeChoferActivo");
             if(vA) reconectarViajeChofer(vA);
         }
 
-        var map = L.map('map', { zoomControl: false, rotate: true, touchRotate: true }).setView([23.63, -102.55], 5);
-        function estiloMapa() { var h = new Date().getHours(); return (h >= 18 || h < 7) ? 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png' : 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}'; }
-        L.tileLayer(estiloMapa()).addTo(map);
+        document.addEventListener('touchstart', function() { if (map) map.invalidateSize(); }, { once: true });
+
+        var map = L.map('map', { zoomControl: false }).setView([23.63, -102.55], 5);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
 
         function verificarEstadoChofer() {
             var n = localStorage.getItem("choferNombre"), e = localStorage.getItem("choferEco");
-            if(!n) { abrirModal(`<div class="modal-title">REGISTRO OTIMAC</div><input type="text" id="regN" class="modal-input" placeholder="Tu Nombre"><input type="number" id="regE" class="modal-input" placeholder="Número Económico"><button class="modal-btn btn-primario" onclick="saveReg()">Entrar</button>`); }
-            else { document.getElementById('displayNombre').innerText = n; document.getElementById('displayEco').innerText = e; if(localStorage.getItem("modoTrabajoActivo") === "true") { document.getElementById('checkTrabajo').checked = true; toggleTrabajo(); } }
+            if(!n) { abrirModal(`<h3>REGISTRO</h3><input type="text" id="regN" class="modal-input" placeholder="Nombre"><input type="number" id="regE" class="modal-input" placeholder="Eco"><button class="modal-btn" onclick="saveReg()">ENTRAR</button>`); }
+            else { 
+                document.getElementById('displayNombre').innerText = n; 
+                document.getElementById('displayEco').innerText = e; 
+                if(localStorage.getItem("modoTrabajoActivo") === "true") { document.getElementById('checkTrabajo').checked = true; toggleTrabajo(); }
+            }
         }
 
         function saveReg() { let n = document.getElementById('regN').value, e = document.getElementById('regE').value; if(n && e) { localStorage.setItem("choferNombre", n); localStorage.setItem("choferEco", e); location.reload(); } }
-        function cambiarDatosChofer() { if(idViajeActivo) return; abrirModal(`<div class="modal-title">PERFIL</div><input type="text" id="edN" class="modal-input" value="${localStorage.getItem("choferNombre")}"><input type="number" id="edE" class="modal-input" value="${localStorage.getItem("choferEco")}"><button class="modal-btn btn-primario" onclick="saveEd()">Guardar</button>`); }
-        function saveEd() { let n = document.getElementById('edN').value, e = document.getElementById('edE').value; if(n && e) { localStorage.setItem("choferNombre", n); localStorage.setItem("choferEco", e); location.reload(); } }
-
-        async function mantenerPantallaEncendida() { if ('wakeLock' in navigator) { try { wakeLock = await navigator.wakeLock.request('screen'); } catch (err) {} } }
 
         function toggleTrabajo() {
             var activo = document.getElementById('checkTrabajo').checked, eco = localStorage.getItem("choferEco");
-            var slider = document.getElementById('sliderRef');
-            if (slider) slider.style.backgroundColor = activo ? "#2ecc71" : "#555";
-            if(activo) { database.ref('autorizados/' + eco).once('value', snap => { if (snap.exists()) { localStorage.setItem("modoTrabajoActivo", true); document.getElementById('txtModo').innerText = "TRABAJANDO"; document.getElementById('txtModo').style.color = "#00ff00"; mantenerPantallaEncendida(); iniciarGPS(); escucharPedidos(); if(document.getElementById('sidebar').classList.contains('active')) toggleSidebar(); } else { document.getElementById('checkTrabajo').checked = false; mostrarAviso("Unidad no autorizada", "error"); } }); }
-            else { localStorage.setItem("modoTrabajoActivo", false); location.reload(); }
+            if(activo) {
+                database.ref('autorizados/' + eco).once('value', snap => {
+                    if (snap.exists()) {
+                        localStorage.setItem("modoTrabajoActivo", true);
+                        document.getElementById('txtModo').innerText = "TRABAJANDO";
+                        document.getElementById('txtModo').style.color = "#00ff00";
+                        iniciarGPS(); escucharPedidos();
+                    } else {
+                        mostrarAviso("No autorizado", "error");
+                        document.getElementById('checkTrabajo').checked = false;
+                    }
+                });
+            } else { localStorage.setItem("modoTrabajoActivo", false); location.reload(); }
         }
 
         function iniciarGPS() {
@@ -286,110 +204,109 @@
                 var miPos = L.latLng(pos.coords.latitude, pos.coords.longitude);
                 document.getElementById('status-gps').innerText = "✅ GPS ON"; document.getElementById('status-gps').style.color = "#00ff00";
                 if(markerChofer) markerChofer.setLatLng(miPos); else { markerChofer = L.marker(miPos, {icon: iconoTaxi}).addTo(map); map.setView(miPos, 18); }
-                if(!temporizadorVista) { map.panTo(miPos); if (pos.coords.heading !== null) map.setBearing(pos.coords.heading); }
-                if (idViajeActivo) { database.ref('viajes/' + idViajeActivo + '/chofer').update({ lat: pos.coords.latitude, lon: pos.coords.longitude }); if (markerCliente && miPos.distanceTo(markerCliente.getLatLng()) < 150 && !avisoLlegadaEnviado) { avisoLlegadaEnviado = true; avisarConVoz("llegando."); database.ref('viajes/' + idViajeActivo).update({ estado: 'chofer_llego' }); } }
+                if (idViajeActivo) { database.ref('viajes/' + idViajeActivo + '/chofer').update({ lat: pos.coords.latitude, lon: pos.coords.longitude }); }
             }, null, {enableHighAccuracy: true});
         }
 
         function escucharPedidos() {
             database.ref('viajes').on('value', snap => {
-                var p = snap.val(); window.ultimoSnapshotPedidos = p;
-                pedidosVistos.forEach(id => { if (!p || !p[id] || p[id].estado !== 'esperando') pedidosVistos.delete(id); });
-                if (p && document.getElementById('checkTrabajo').checked && !idViajeActivo) {
-                    var ahora = Date.now() + serverTimeOffset;
-                    for (var id in p) { if (p[id].estado === 'esperando' && (ahora - p[id].timestamp) < 300000) { if (!pedidosVistos.has(id) && !viajesRechazados.includes(id)) { pedidosVistos.add(id); audioNotificacion.play().catch(e=>{}); avisarConVoz("viaje disponible."); } } }
+                var p = snap.val();
+                ultimoSnapshot = p;
+
+                if (!p) {
+                    viajesRechazados = [];
+                } else {
+                    let hayEsperando = false;
+                    for (let key in p) { if (p[key].estado === 'esperando') hayEsperando = true; }
+                    if (!hayEsperando) viajesRechazados = [];
+                }
+
+                if (idViajeActivo && p && p[idViajeActivo] && p[idViajeActivo].estado === 'cancelado_por_cliente') {
+                    avisarConVoz("Viaje cancelado.");
+                    mostrarAviso("El cliente canceló", "error");
+                    localStorage.removeItem("idViajeChoferActivo");
+                    setTimeout(() => location.reload(), 2000);
+                    return;
                 }
                 renderizarListaPedidos(p);
             });
         }
 
-        function verDondeEstaElCliente(lat, lon) {
-            clearTimeout(temporizadorVista);
-            temporizadorVista = setTimeout(() => {
-                if (window.navigator.vibrate) window.navigator.vibrate(50);
-                if (circuloReferenciaCliente) map.removeLayer(circuloReferenciaCliente);
-                circuloReferenciaCliente = L.circle([lat, lon], { color: '#b39ddb', fillColor: '#b39ddb', fillOpacity: 0.4, radius: 20 }).addTo(map);
-                map.flyTo([lat, lon], 17, { animate: true, duration: 0.8 });
-            }, 500); 
+        function renderizarListaPedidos(pedidos) {
+            var cont = document.getElementById('lista-pedidos');
+            if (idViajeActivo) return;
+            cont.innerHTML = "";
+            for(var id in pedidos) {
+                if(pedidos[id].estado === 'esperando' && !viajesRechazados.includes(id)) {
+                    var cli = pedidos[id].cliente;
+                    var km = markerChofer ? (L.latLng(markerChofer.getLatLng()).distanceTo(L.latLng(cli.lat, cli.lon)) / 1000).toFixed(1) : "...";
+                    
+                    cont.innerHTML += `<div class="pedido-card">
+                        <span class="distancia-tag">📍 ${km} km</span>
+                        <b style="font-size: 16px;">${pedidos[id].nombre_cliente}</b><br>
+                        ⭐ ${pedidos[id].cliente_estrellas || '5.0'} | Viajes: ${pedidos[id].cliente_historial || 0}<br>
+                        <div class="slider-aceptar-container">
+                            <div class="slider-rastro-verde" id="rastro-${id}"></div>
+                            <span class="slider-text">DESLIZA PARA ACEPTAR</span>
+                            <input type="range" class="slider-input" min="0" max="100" value="0" oninput="document.getElementById('rastro-${id}').style.width=this.value+'%'" onchange="if(this.value>=90){ aceptarViaje('${id}') }else{ this.value=0; document.getElementById('rastro-${id}').style.width='0%' }">
+                        </div>
+                        <button class="btn-rechazar" onclick="rechazarLocal('${id}')">OCULTAR</button>
+                    </div>`;
+                    audioNotificacion.play();
+                }
+            }
+            if(cont.innerHTML === "") cont.innerHTML = "Buscando pasajeros...";
         }
 
-        function soltarVistaCliente() { clearTimeout(temporizadorVista); temporizadorVista = null; if (circuloReferenciaCliente) { map.removeLayer(circuloReferenciaCliente); circuloReferenciaCliente = null; } if (markerChofer) map.flyTo(markerChofer.getLatLng(), 18, { animate: true, duration: 0.6 }); }
-
-        function renderizarListaPedidos(pedidos) {
-            var contenedor = document.getElementById('lista-pedidos');
-            if (!idViajeActivo && document.getElementById('checkTrabajo').checked) {
-                contenedor.innerHTML = ""; var ahora = Date.now() + serverTimeOffset;
-                for (var id in pedidos) {
-                    if (pedidos[id].estado === 'esperando' && !viajesRechazados.includes(id)) {
-                        var cli = pedidos[id].cliente, restMs = 300000 - (ahora - pedidos[id].timestamp);
-                        if (restMs <= 0) continue;
-                        var sTot = Math.floor(restMs / 1000), m = Math.floor(sTot / 60), s = sTot % 60;
-                        var km = markerChofer ? (L.latLng(markerChofer.getLatLng()).distanceTo(L.latLng(cli.lat, cli.lon)) / 1000).toFixed(1) : "...";
-                        contenedor.innerHTML += `
-                        <div class="pedido-card" onmousedown="verDondeEstaElCliente(${cli.lat}, ${cli.lon})" onmouseup="soltarVistaCliente()" ontouchstart="verDondeEstaElCliente(${cli.lat}, ${cli.lon})" ontouchend="soltarVistaCliente()">
-                            <div style="float: right;"><span class="reloj-tag">⏳ ${m}:${s < 10 ? '0' : ''}${s}</span><span class="distancia-tag">📍 ${km} km</span></div>
-                            <b style="font-size: 17px;">${pedidos[id].nombre_cliente}</b><br>
-                            <div style="font-size: 11px; color: #b39ddb; font-weight: bold; margin-top: 2px;">HISTORIAL: ${pedidos[id].cliente_historial || 0} VIAJES</div>
-                            <span style="color:#ffca28; font-size: 14px;">${'★'.repeat(Math.floor(pedidos[id].cliente_estrellas || 5))}${ '☆'.repeat(5 - Math.floor(pedidos[id].cliente_estrellas || 5))}</span>
-                            <small style="color:#aaa;"> (${pedidos[id].cliente_estrellas || '5.0'})</small>
-                            <div class="slider-aceptar-container">
-                                <div class="slider-rastro-verde" id="rastro-${id}"></div>
-                                <span class="slider-text">DESLIZA PARA ACEPTAR</span>
-                                <input type="range" class="slider-input" min="0" max="100" value="0" ontouchstart="window.tocandoSlider = true" ontouchend="window.tocandoSlider = false" oninput="document.getElementById('rastro-${id}').style.width=this.value+'%'" onchange="if(this.value>=95){ aceptarViaje('${id}') }else{ this.value=0; document.getElementById('rastro-${id}').style.width='0%' }">
-                            </div>
-                            <button class="btn-rechazar" onclick="viajesRechazados.push('${id}'); renderizarListaPedidos(window.ultimoSnapshotPedidos);">OCULTAR</button>
-                        </div>`;
-                    }
-                }
-                if (contenedor.innerHTML === "") contenedor.innerHTML = "Esperando solicitudes...";
-            }
+        function rechazarLocal(id) {
+            viajesRechazados.push(id);
+            renderizarListaPedidos(ultimoSnapshot);
         }
 
         function aceptarViaje(id) {
-            if (!navigator.onLine) { mostrarAviso("Sin conexión", "error"); return; }
-            idViajeActivo = id;
-            localStorage.setItem("idViajeChoferActivo", id);
-            document.getElementById('app-body').classList.add('modo-enfocado');
+            idViajeActivo = id; localStorage.setItem("idViajeChoferActivo", id);
             database.ref('viajes/' + id).update({
                 estado: 'en_curso',
                 chofer: { nombre: localStorage.getItem("choferNombre"), economico: localStorage.getItem("choferEco"), lat: markerChofer.getLatLng().lat, lon: markerChofer.getLatLng().lng }
             }).then(() => { reconectarViajeChofer(id); });
         }
 
-        function reconectarViajeChofer(id) { 
-            idViajeActivo = id; 
-            document.getElementById('app-body').classList.add('modo-enfocado'); 
-            database.ref('viajes/' + id + '/cliente').once('value', snap => { 
-                var p = snap.val(); if(p) dibujarInterfazYRuta(p.lat, p.lon, id); 
-            }); 
-        }
-
-        function dibujarInterfazYRuta(lat, lon, id) {
-            document.getElementById('interfaz').innerHTML = `<div class="panel-pedidos"><h3 style="color:#b39ddb;">VIAJE ACTIVO</h3><div style="display:flex;gap:10px;margin-bottom:10px;"><button style="background:#33ccff;color:white;border:none;padding:12px;border-radius:8px;font-weight:bold;width:50%;" onclick="window.open('https://www.waze.com/ul?ll=${lat},${lon}&navigate=yes')">🚙 WAZE</button><button style="background:#4285F4;color:white;border:none;padding:12px;border-radius:8px;font-weight:bold;width:50%;" onclick="window.open('https://www.google.com/maps/dir/?api=1&destination=${lat},${lon}&travelmode=driving')">📍 MAPS</button></div><button class="btn-cancelar" onclick="terminarViaje('${id}')">FINALIZAR SERVICIO</button></div>`;
-            if(markerCliente) map.removeLayer(markerCliente); markerCliente = L.marker([lat, lon], {icon: iconoPasajero}).addTo(map);
-            if(controlRuta) map.removeControl(controlRuta); controlRuta = L.Routing.control({ waypoints: [markerChofer.getLatLng(), L.latLng(lat, lon)], show: false, createMarker: () => null, lineOptions: { styles: [{ color: 'white', opacity: 0.9, weight: 10 }, { color: '#b39ddb', opacity: 1, weight: 6 }] } }).addTo(map);
+        function reconectarViajeChofer(id) {
+            idViajeActivo = id;
+            database.ref('viajes/' + id).once('value', snap => {
+                var v = snap.val();
+                if(v) {
+                    // AQUÍ CORREGIDO: Usamos v.nombre_cliente, NO el nombre del chofer.
+                    document.getElementById('interfaz').innerHTML = `
+                        <div class="panel-pedidos">
+                            <h3>VIAJE ACTIVO</h3>
+                            <p>Pasajero: <b>${v.nombre_cliente || 'Cliente'}</b></p>
+                            <button class="btn-cancelar" onclick="terminarViaje('${id}')">FINALIZAR SERVICIO</button>
+                        </div>`;
+                    if(v.cliente) {
+                        markerCliente = L.marker([v.cliente.lat, v.cliente.lon], {icon: iconoPasajero}).addTo(map);
+                    }
+                }
+            });
         }
 
         function terminarViaje(id) {
-            abrirModal(`<div class="modal-title">FINALIZAR</div><p>Califica al Pasajero</p><div style="font-size: 45px; margin: 20px 0;"><span id="s1" onclick="setSt(1)" style="color:#ffca28; cursor:pointer;">★</span><span id="s2" onclick="setSt(2)" style="color:#ffca28; cursor:pointer;">★</span><span id="s3" onclick="setSt(3)" style="color:#ffca28; cursor:pointer;">★</span><span id="s4" onclick="setSt(4)" style="color:#ffca28; cursor:pointer;">★</span><span id="s5" onclick="setSt(5)" style="color:#ffca28; cursor:pointer;">★</span></div><button class="modal-btn btn-primario" onclick="confFin('${id}')">GUARDAR Y FINALIZAR</button>`);
+            abrirModal(`<h3>FINALIZAR</h3><p>Califica al usuario</p><button class="modal-btn" onclick="confFin('${id}')">GUARDAR Y FINALIZAR</button>`);
         }
 
-        var calif = 5;
-        function setSt(n) { calif = n; for(let i=1; i<=5; i++) document.getElementById('s'+i).style.color = i<=n ? '#ffca28' : '#444'; }
-
-        function confFin(id) { 
-            database.ref('viajes/' + id).once('value', snap => { 
-                let d = snap.val(); 
-                if (d && d.cliente_uid) { 
-                    database.ref('usuarios/' + d.cliente_uid + '/perfil').transaction(p => { 
-                        if (!p) return { total_viajes: 1, puntos_acumulados: calif, estrellas: parseFloat(calif).toFixed(1) };
-                        p.total_viajes++; p.puntos_acumulados += calif; p.estrellas = (p.puntos_acumulados / p.total_viajes).toFixed(1); 
-                        return p; 
-                    }); 
-                } 
-                localStorage.removeItem("idViajeChoferActivo"); 
-                database.ref('viajes/' + id).remove().then(() => location.reload()); 
-            }); 
+        function confFin(id) {
+            database.ref('viajes/' + id).once('value', snap => {
+                let d = snap.val();
+                if (d && d.cliente_uid) {
+                    database.ref('usuarios/' + d.cliente_uid + '/perfil').transaction(p => {
+                        if (!p) return { total_viajes: 1, puntos_acumulados: 5, estrellas: "5.0" };
+                        p.total_viajes++; p.puntos_acumulados += 5; p.estrellas = (p.puntos_acumulados / p.total_viajes).toFixed(1);
+                        return p;
+                    });
+                }
+                localStorage.removeItem("idViajeChoferActivo");
+                database.ref('viajes/' + id).remove().then(() => location.reload());
+            });
         }
     </script>
 </body>
