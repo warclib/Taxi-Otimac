@@ -303,6 +303,7 @@ document.addEventListener('touchstart', function() {
                 }
                 renderizarListaPedidos(p);
             });
+            setInterval(() => { if (!idViajeActivo && window.ultimoSnapshotPedidos) renderizarListaPedidos(window.ultimoSnapshotPedidos); }, 1000);
         }
 
         function verDondeEstaElCliente(lat, lon) {
@@ -440,6 +441,7 @@ function confFin(id) {
     </script>
 </body>
 </html>
+
 
 
 
