@@ -160,8 +160,12 @@
         var miUUID = localStorage.getItem("otimac_uuid") || ("ID-" + Math.floor(100000 + Math.random() * 900000));
         localStorage.setItem("otimac_uuid", miUUID);
 
-        var map = L.map('map', {zoomControl: false}).setView([23.6345, -102.5528], 5);
-        L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}').addTo(map);
+        var map = L.map('map', {zoomControl: false}).setView([23.6345, -102.5528], 17);
+       L.tileLayer('https://{s}.google.com/vt/lyrs=m&x={x}&y={y}&z={z}', {
+         maxZoom: 20,
+        subdomains: ['mt0', 'mt1', 'mt2', 'mt3'],
+        attribution: '© Google Maps'
+        }).addTo(map);
 
         var iconoPasajero = L.icon({ iconUrl: 'pasajero.png', iconSize: [45, 45], iconAnchor: [22, 45] });
         var iconoTaxiVio = L.divIcon({ html: `<div class="contenedor-pulso"><div class="pulso-gps"></div><img src="taxi-chofer.png" class="img-taxi-marker"></div>`, className: '', iconSize: [50, 50], iconAnchor: [25, 25] });
@@ -286,3 +290,4 @@
     </script>
 </body>
 </html>
+
