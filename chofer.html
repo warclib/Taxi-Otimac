@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+CTYPE html>
 <html lang="es" style="background-color: #1a1a1a;">
 <head>
     <meta charset="UTF-8">
@@ -222,15 +222,37 @@
             }
         }
 
-        function iniciarAppCentral() {
-            verificarEstadoChofer();
-            setTimeout(() => { document.getElementById('splash-screen').style.opacity = '0'; setTimeout(() => { document.getElementById('splash-screen').style.visibility = 'hidden'; }, 800); }, 2500);
-            setInterval(() => { if (window.ultimoSnapshotPedidos && !idViajeActivo && document.getElementById('checkTrabajo').checked && !window.tocandoSlider) renderizarListaPedidos(window.ultimoSnapshotPedidos); }, 1000);      
-            
-            // Forzar pantalla completa al primer toque
-            document.addEventListener('click', activarPantallaCompleta, { once: true });
-            document.addEventListener('touchstart', activarPantallaCompleta, { once: true });
+       function iniciarAppCentral() {
+    // 1. Verificar datos locales de inmediato
+    verificarEstadoChofer();
+
+    // 2. Monitorear conexión para avisar al usuario
+    window.addEventListener('online', () => mostrarAviso("Conexión restablecida", "ok"));
+    window.addEventListener('offline', () => mostrarAviso("Sin conexión a internet", "error"));
+
+    // 3. SALIDA SEGURA DEL SPLASH (Cierre forzado)
+    // No esperamos a que el mapa cargue al 100%, salimos del splash sí o sí
+    setTimeout(() => {
+        const splash = document.getElementById('splash-screen');
+        if (splash) {
+            splash.style.opacity = '0';
+            setTimeout(() => {
+                splash.style.visibility = 'hidden';
+                // Forzamos al mapa a redibujarse por si quedó negro
+                if (map) map.invalidateSize(); 
+            }, 800);
         }
+    }, 2000); // 2 segundos máximo de espera
+
+    // 4. Intentar recuperar viaje activo si existe
+    var vA = localStorage.getItem("idViajeChoferActivo");
+    if(vA) reconectarViajeChofer(vA);
+}
+
+// Agregar esta pequeña función para refrescar el mapa si se queda negro
+document.addEventListener('touchstart', function() {
+    if (map) map.invalidateSize();
+}, { once: true });
 
         var map = L.map('map', { zoomControl: false, rotate: true, touchRotate: true }).setView([23.63, -102.55], 5);
         function estiloMapa() { var h = new Date().getHours(); return (h >= 18 || h < 7) ? 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png' : 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}'; }
@@ -418,7 +440,6 @@ function confFin(id) {
     </script>
 </body>
 </html>
-
 
 
 
