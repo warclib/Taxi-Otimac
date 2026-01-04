@@ -285,7 +285,7 @@ document.addEventListener('touchstart', function() {
             watchID = navigator.geolocation.watchPosition(pos => {
                 var miPos = L.latLng(pos.coords.latitude, pos.coords.longitude);
                 document.getElementById('status-gps').innerText = "✅ GPS ON"; document.getElementById('status-gps').style.color = "#00ff00";
-                if(markerChofer) markerChofer.setLatLng(miPos); else { markerChofer = L.marker(miPos, {icon: iconoTaxi}).addTo(map); map.setView(miPos, 18); }
+                if(markerChofer) markerChofer.setLatLng(miPos); else { markerChofer = L.marker(miPos, {icon: iconoTaxi}).addTo(map); map.setView(miPos, 17); }
                 if(!temporizadorVista) { map.panTo(miPos); if (pos.coords.heading !== null) map.setBearing(pos.coords.heading); }
                 if (idViajeActivo) { database.ref('viajes/' + idViajeActivo + '/chofer').update({ lat: pos.coords.latitude, lon: pos.coords.longitude }); if (markerCliente && miPos.distanceTo(markerCliente.getLatLng()) < 150 && !avisoLlegadaEnviado) { avisoLlegadaEnviado = true; avisarConVoz("llegando."); database.ref('viajes/' + idViajeActivo).update({ estado: 'chofer_llego' }); } }
             }, null, {enableHighAccuracy: true});
@@ -319,7 +319,7 @@ document.addEventListener('touchstart', function() {
             }, 500); 
         }
 
-        function soltarVistaCliente() { clearTimeout(temporizadorVista); temporizadorVista = null; if (circuloReferenciaCliente) { map.removeLayer(circuloReferenciaCliente); circuloReferenciaCliente = null; } if (markerChofer) map.flyTo(markerChofer.getLatLng(), 18, { animate: true, duration: 0.6 }); }
+        function soltarVistaCliente() { clearTimeout(temporizadorVista); temporizadorVista = null; if (circuloReferenciaCliente) { map.removeLayer(circuloReferenciaCliente); circuloReferenciaCliente = null; } if (markerChofer) map.flyTo(markerChofer.getLatLng(), 17, { animate: true, duration: 0.6 }); }
 
         function renderizarListaPedidos(pedidos) {
             var contenedor = document.getElementById('lista-pedidos');
@@ -444,6 +444,7 @@ function confFin(id) {
     </script>
 </body>
 </html>
+
 
 
 
