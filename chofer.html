@@ -328,10 +328,19 @@ document.addEventListener('touchstart', function() {
             database.ref('viajes').on('value', snap => {
                 var p = snap.val(); window.ultimoSnapshotPedidos = p;
                 pedidosVistos.forEach(id => { if (!p || !p[id] || p[id].estado !== 'esperando') pedidosVistos.delete(id); });
-                if (!p) { viajesRechazados = []; } else {
+               if (!p) { 
+                    viajesRechazados = []; 
+                    // LIMPIA LA RUTA SI EL CLIENTE CANCELA
+                    if (controlRuta) { map.removeControl(controlRuta); controlRuta = null; }
+                } else {
                     let hayEsperando = false;
                     for (var id in p) { if (p[id].estado === 'esperando') { hayEsperando = true; break; } }
-                    if (!hayEsperando) { viajesRechazados = []; }
+                    
+                    if (!hayEsperando) { 
+                        viajesRechazados = []; 
+                        // LIMPIA LA RUTA SI OTRO CHOFER ACEPTA EL VIAJE
+                        if (controlRuta) { map.removeControl(controlRuta); controlRuta = null; }
+                    }
                 }
                 if (p && document.getElementById('checkTrabajo').checked && !idViajeActivo) {
                     var ahora = Date.now() + serverTimeOffset;
@@ -352,21 +361,23 @@ document.addEventListener('touchstart', function() {
             }, 500); 
         }
 
-       function soltarVistaCliente() { 
+  function soltarVistaCliente() { 
     clearTimeout(temporizadorVista); 
     temporizadorVista = null; 
     
+    // Borra el círculo morado
     if (circuloReferenciaCliente) { 
         map.removeLayer(circuloReferenciaCliente); 
         circuloReferenciaCliente = null; 
     } 
 
-    // ESTO BORRA LA LÍNEA MORADA CUANDO DEJAS DE OPRIMIR LA TARJETA
+    // Borra la línea de ruta (Indispensable para que no se quede pegada)
     if (controlRuta) { 
         map.removeControl(controlRuta); 
         controlRuta = null; 
     }
 
+    // Regresa el mapa al taxi
     if (markerChofer) map.flyTo(markerChofer.getLatLng(), 17, { animate: true, duration: 0.6 }); 
 }
 
@@ -494,6 +505,7 @@ function confFin(id) {
     </script>
 </body>
 </html>
+
 
 
 
