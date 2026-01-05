@@ -352,7 +352,23 @@ document.addEventListener('touchstart', function() {
             }, 500); 
         }
 
-        function soltarVistaCliente() { clearTimeout(temporizadorVista); temporizadorVista = null; if (circuloReferenciaCliente) { map.removeLayer(circuloReferenciaCliente); circuloReferenciaCliente = null; } if (markerChofer) map.flyTo(markerChofer.getLatLng(), 17, { animate: true, duration: 0.6 }); }
+       function soltarVistaCliente() { 
+    clearTimeout(temporizadorVista); 
+    temporizadorVista = null; 
+    
+    if (circuloReferenciaCliente) { 
+        map.removeLayer(circuloReferenciaCliente); 
+        circuloReferenciaCliente = null; 
+    } 
+
+    // ESTO BORRA LA LÍNEA MORADA CUANDO DEJAS DE OPRIMIR LA TARJETA
+    if (controlRuta) { 
+        map.removeControl(controlRuta); 
+        controlRuta = null; 
+    }
+
+    if (markerChofer) map.flyTo(markerChofer.getLatLng(), 17, { animate: true, duration: 0.6 }); 
+}
 
         function renderizarListaPedidos(pedidos) {
             var contenedor = document.getElementById('lista-pedidos');
@@ -365,7 +381,7 @@ document.addEventListener('touchstart', function() {
                         var sTot = Math.floor(restMs / 1000), m = Math.floor(sTot / 60), s = sTot % 60;
                         var km = markerChofer ? (L.latLng(markerChofer.getLatLng()).distanceTo(L.latLng(cli.lat, cli.lon)) / 1000).toFixed(1) : "...";
                         contenedor.innerHTML += `
-                        <div class="pedido-card" onmousedown="verDondeEstaElCliente(${cli.lat}, ${cli.lon})" onmouseup="soltarVistaCliente()" ontouchstart="verDondeEstaElCliente(${cli.lat}, ${cli.lon})" ontouchend="soltarVistaCliente()">
+                        <div class="pedido-card" onmousedown="verDondeEstaElCliente(${cli.lat}, ${cli.lon}); dibujarRutaAlCliente(${cli.lat}, ${cli.lon});" onmouseup="soltarVistaCliente()" ontouchstart="verDondeEstaElCliente(${cli.lat}, ${cli.lon}); dibujarRutaAlCliente(${cli.lat}, ${cli.lon});" ontouchend="soltarVistaCliente()">
                             <div style="float: right;"><span class="reloj-tag">⏳ ${m}:${s < 10 ? '0' : ''}${s}</span><span class="distancia-tag">📍 ${km} km</span></div>
                             <div class="badge-confianza">Verificado</div><br>
                             <b style="font-size: 17px;">${pedidos[id].nombre_cliente}</b><br>
@@ -478,6 +494,7 @@ function confFin(id) {
     </script>
 </body>
 </html>
+
 
 
 
