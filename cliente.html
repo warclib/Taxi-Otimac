@@ -171,7 +171,23 @@
         var iconoTaxiVio = L.divIcon({ html: `<div class="contenedor-pulso"><div class="pulso-gps"></div><img src="taxi-chofer.png" class="img-taxi-marker"></div>`, className: '', iconSize: [50, 50], iconAnchor: [25, 25] });
 
         var markerCliente, markerChofer, idViaje, wakeLock = null, totalViajesRealizados = 0, estrellasActuales = "5.0", vozLlegadaActivada = false, temporizadorAutolimpieza;
-
+        // Localización automática al abrir la App
+navigator.geolocation.getCurrentPosition((pos) => {
+    let lat = pos.coords.latitude;
+    let lon = pos.coords.longitude;
+    
+    // Mueve el mapa a tu ubicación real
+    map.setView([lat, lon], 17);
+    
+    // Dibuja tu marcador en el mapa
+       if (markerCliente) {
+        markerCliente.setLatLng([lat, lon]);
+    } else {
+        markerCliente = L.marker([lat, lon], {icon: iconoPasajero}).addTo(map);
+    }
+}, (err) => { 
+    console.log("Esperando señal de GPS..."); 
+}, { enableHighAccuracy: true });
         function avisarConVoz(msg) { if ('speechSynthesis' in window) { var m = new SpeechSynthesisUtterance(msg); m.lang = 'es-MX'; window.speechSynthesis.speak(m); } }
         function mostrarAviso(msg, t='ok') { let el=document.getElementById('notificacion'); el.innerText=msg; el.className=t==='ok'?'notif-ok':'notif-error'; el.style.top='20px'; setTimeout(()=>el.style.top='-100px', 3000); }
 
@@ -290,4 +306,5 @@
     </script>
 </body>
 </html>
+
 
