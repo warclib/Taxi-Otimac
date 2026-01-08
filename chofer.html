@@ -518,6 +518,27 @@ function aceptarViaje(id) {
                     .catch(err => console.error("Error obteniendo ruta:", err));
             }
         }
+        function terminarViaje(id) {
+    // Borrador universal de ruta (Capa o Control)
+    if (controlRuta) { 
+        try { map.removeLayer(controlRuta); map.removeControl(controlRuta); } catch(e){} 
+        controlRuta = null; 
+    }
+    
+    // Abrimos el modal de calificación
+    abrirModal(`
+        <div class="modal-title" style="color:#b39ddb; font-weight: 800; letter-spacing: 1px;">FINALIZAR SERVICIO</div>
+        <p style="margin-top: 10px;">- Califica al Pasajero</p>
+        <div style="font-size: 45px; margin: 20px 0; user-select: none;">
+            <span id="s1" onclick="setSt(1)" style="color:#ffca28; cursor:pointer;">★</span>
+            <span id="s2" onclick="setSt(2)" style="color:#ffca28; cursor:pointer;">★</span>
+            <span id="s3" onclick="setSt(3)" style="color:#ffca28; cursor:pointer;">★</span>
+            <span id="s4" onclick="setSt(4)" style="color:#ffca28; cursor:pointer;">★</span>
+            <span id="s5" onclick="setSt(5)" style="color:#ffca28; cursor:pointer;">★</span>
+        </div>
+        <button class="modal-btn btn-primario" style="margin-top: 10px; width: 100%;" onclick="confFin('${id}')">GUARDAR Y FINALIZAR</button>
+    `);
+}
         var calif = 5;
         function setSt(n) { calif = n; for(let i=1; i<=5; i++) document.getElementById('s'+i).style.color = i<=n ? '#ffca28' : '#444'; }
        // Reemplaza desde la línea 393 hasta el final de la función:
@@ -548,6 +569,7 @@ function confFin(id) {
     </script>
 </body>
 </html>
+
 
 
 
