@@ -197,7 +197,7 @@
 
         var audioNotificacion = new Audio('https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3');
         var markerChofer, markerCliente, controlRuta, idViajeActivo, watchID, wakeLock = null;
-        var viajesRechazados = [], avisoLlegadaEnviado = false, pedidosVistos = new Set(), serverTimeOffset = 0, temporizadorVista, circuloReferenciaCliente;
+       var viajesRechazados = [], avisoLlegadaEnviado = false, pedidosVistos = new Set(), serverTimeOffset = 0, temporizadorVista, circuloReferenciaCliente, tocandoSlider = false;
 
         database.ref(".info/serverTimeOffset").on("value", snap => { serverTimeOffset = snap.val() || 0; });
 
@@ -472,27 +472,52 @@ function aceptarViaje(id) {
 }
         function reconectarViajeChofer(id) { idViajeActivo = id; document.getElementById('app-body').classList.add('modo-enfocado'); database.ref('viajes/' + id + '/cliente').once('value', snap => { var p = snap.val(); if(p) dibujarInterfazYRuta(p.lat, p.lon, id); }); }
 
-        function dibujarInterfazYRuta(lat, lon, id) {
-           document.getElementById('interfaz').innerHTML = `<div class="panel-pedidos"><h3 style="color:#b39ddb;">VIAJE ACTIVO</h3><div class="contenedor-navegacion" style="display:flex;gap:10px;margin-bottom:10px;"><button style="background:#33ccff;color:white;border:none;padding:12px;border-radius:8px;font-weight:bold;width:50%;" onclick="dibujarRutaAlCliente(${lat}, ${lon}); window.open('https://www.waze.com/ul?ll=${lat},${lon}&navigate=yes')">🚙 WAZE</button><button style="background:#4285F4;color:white;border:none;padding:12px;border-radius:8px;font-weight:bold;width:50%;" onclick="dibujarRutaAlCliente(${lat}, ${lon}); window.open('https://www.google.com/maps/dir/?api=1&destination=${lat},${lon}&travelmode=driving')">📍 MAPS</button></div><button class="btn-cancelar" onclick="terminarViaje('${id}')">FINALIZAR SERVICIO</button></div>`;
-            if(markerCliente) map.removeLayer(markerCliente); markerCliente = L.marker([lat, lon], {icon: iconoPasajero}).addTo(map);
-            if(markerChofer) { if(controlRuta) map.removeControl(controlRuta); controlRuta = L.Routing.control({ waypoints: [markerChofer.getLatLng(), L.latLng(lat, lon)], show: false, createMarker: () => null, lineOptions: { styles: [{ color: 'white', opacity: 0.9, weight: 10 }, { color: '#b39ddb', opacity: 1, weight: 6 }] } }).addTo(map); }
-        }
+      function dibujarInterfazYRuta(lat, lon, id) {
+            // 1. ACTUALIZAR INTERFAZ (Botones de Waze y Google Maps)
+            document.getElementById('interfaz').innerHTML = `
+                <div class="panel-pedidos">
+                    <h3 style="color:#b39ddb;">VIAJE ACTIVO</h3>
+                    <div class="contenedor-navegacion" style="display:flex;gap:10px;margin-bottom:10px;">
+                        <button style="background:#33ccff;color:white;border:none;padding:12px;border-radius:8px;font-weight:bold;width:50%;" onclick="window.open('https://www.waze.com/ul?ll=${lat},${lon}&navigate=yes')">🚙 WAZE</button>
+                        <button style="background:#4285F4;color:white;border:none;padding:12px;border-radius:8px;font-weight:bold;width:50%;" onclick="window.open('https://www.google.com/maps/dir/?api=1&destination=${lat},${lon}&travelmode=driving')">📍 MAPS</button>
+                    </div>
+                    <button class="btn-cancelar" onclick="terminarViaje('${id}')">FINALIZAR SERVICIO</button>
+                </div>`;
 
-function terminarViaje(id) {
-    if (controlRuta) { map.removeControl(controlRuta); controlRuta = null; }
-    abrirModal(`
-        <div class="modal-title" style="color:#b39ddb; font-weight: 800; letter-spacing: 1px;">FINALIZAR SERVICIO</div>
-        <p style="margin-top: 10px;">-Califica al Pasajero</p>
-        <div style="font-size: 45px; margin: 20px 0; user-select: none;">
-            <span id="s1" onclick="setSt(1)" style="color:#ffca28; cursor:pointer;">★</span>
-            <span id="s2" onclick="setSt(2)" style="color:#ffca28; cursor:pointer;">★</span>
-            <span id="s3" onclick="setSt(3)" style="color:#ffca28; cursor:pointer;">★</span>
-            <span id="s4" onclick="setSt(4)" style="color:#ffca28; cursor:pointer;">★</span>
-            <span id="s5" onclick="setSt(5)" style="color:#ffca28; cursor:pointer;">★</span>
-        </div>
-        <button class="modal-btn btn-primario" style="margin-top: 10px; width: 100%;" onclick="confFin('${id}')">GUARDAR Y FINALIZAR</button>
-    `);
-}
+            // 2. MARCADOR DEL PASAJERO
+            if(markerCliente) map.removeLayer(markerCliente);
+            markerCliente = L.marker([lat, lon], {icon: iconoPasajero}).addTo(map);
+
+            // 3. DIBUJO DE LA RUTA (OSRM DIRECTO)
+            if(markerChofer) {
+                // Limpiamos rutas anteriores para que no se encimen
+                if (controlRuta) { 
+                    try { map.removeLayer(controlRuta); map.removeControl(controlRuta); } catch(e){} 
+                }
+
+                // Pedimos la ruta por calles al servidor
+                fetch(`https://router.project-osrm.org/route/v1/driving/${markerChofer.getLatLng().lng},${markerChofer.getLatLng().lat};${lon},${lat}?overview=full&geometries=geojson`)
+                    .then(res => res.json())
+                    .then(data => {
+                        if (data.routes && data.routes.length > 0) {
+                            const coords = data.routes[0].geometry.coordinates.map(c => [c[1], c[0]]);
+                            
+                            // Dibujamos la línea (Borde blanco + centro morado)
+                            controlRuta = L.polyline(coords, {
+                                color: 'white', weight: 10, opacity: 0.5
+                            }).addTo(map);
+                            
+                            L.polyline(coords, {
+                                color: '#b39ddb', weight: 6, opacity: 1
+                            }).addTo(map);
+
+                            // Ajustamos el zoom para ver todo el trayecto
+                            map.fitBounds(controlRuta.getBounds(), { padding: [50, 50] });
+                        }
+                    })
+                    .catch(err => console.error("Error obteniendo ruta:", err));
+            }
+        }
         var calif = 5;
         function setSt(n) { calif = n; for(let i=1; i<=5; i++) document.getElementById('s'+i).style.color = i<=n ? '#ffca28' : '#444'; }
        // Reemplaza desde la línea 393 hasta el final de la función:
@@ -523,6 +548,7 @@ function confFin(id) {
     </script>
 </body>
 </html>
+
 
 
 
