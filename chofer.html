@@ -172,12 +172,35 @@ html, body {
 }
 .notif-error { background: #2a1416; color: var(--red); border: 1px solid rgba(255,92,92,0.35); }
 .notif-ok { background: #1c1826; color: var(--lav); border: 1px solid var(--border); }
+
+/* PROMPT DE INSTALACIÓN */
+#modal-instalar {
+  position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+  background: rgba(6,6,8,0.78); backdrop-filter: blur(6px);
+  z-index: 50000; display: none; justify-content: center; align-items: center;
+}
+.instalar-caja { background: rgba(22,20,26,0.85); backdrop-filter: blur(18px); -webkit-backdrop-filter: blur(18px); border: 1px solid rgba(255,255,255,0.1); border-radius: 22px; padding: 30px 26px; width: 85%; max-width: 320px; text-align: center; box-shadow: 0 24px 60px rgba(0,0,0,0.6); }
+.instalar-icono{ font-size: 46px; margin-bottom: 6px; }
+.instalar-caja h3{ font-family: var(--font-display); font-weight:800; font-size:19px; margin: 6px 0 4px; color: var(--text); letter-spacing:-0.01em; }
+.instalar-caja p{ font-family: var(--font-body); color: var(--text-dim); font-size:13px; margin: 0 0 18px; line-height:1.4; }
+.btn-instalar-ahora{ background: linear-gradient(135deg, var(--lav) 0%, #9c81c9 100%); color:#14121a; border:none; padding:15px; border-radius:14px; width:100%; font-family:var(--font-display); font-weight:800; font-size:14px; text-transform:uppercase; letter-spacing:0.02em; box-shadow: 0 8px 22px rgba(179,157,219,0.28); }
+.btn-instalar-luego{ background:transparent; border:none; color:var(--text-faint); padding:12px; width:100%; margin-top:8px; font-family:var(--font-body); font-size:13px; font-weight:600; }
 </style>
 </head>
 <body onload="iniciarAppCentral()" id="app-body">
 
 <div id="modal-global" class="modal-overlay">
   <div class="modal-card" id="modal-content"></div>
+</div>
+
+<div id="modal-instalar">
+  <div class="instalar-caja">
+    <div class="instalar-icono">🚖</div>
+    <h3>Instala Otimac Chofer</h3>
+    <p>Agrégala a tu pantalla de inicio para recibir avisos de viajes disponibles aunque no tengas la app abierta.</p>
+    <button class="btn-instalar-ahora" onclick="instalarPWA()">INSTALAR AHORA</button>
+    <button class="btn-instalar-luego" onclick="cerrarModalInstalar()">Ahora no</button>
+  </div>
 </div>
 
 <div id="splash-screen">
@@ -289,6 +312,33 @@ function avisarConVoz(mensaje) {
 }
 
 function toggleSidebar() { var side = document.getElementById('sidebar'); var over = document.getElementById('overlay'); side.classList.toggle('active'); over.style.display = side.classList.contains('active') ? 'block' : 'none'; }
+
+/* ===== INSTALACIÓN AUTOMÁTICA DE LA PWA ===== */
+var eventoInstalacionDiferido = null;
+window.addEventListener('beforeinstallprompt', (e) => {
+  e.preventDefault();
+  eventoInstalacionDiferido = e;
+  var yaEstaInstalada = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
+  var yaLoRechazo = localStorage.getItem('otimac_chofer_instalar_rechazado');
+  if (!yaEstaInstalada && !yaLoRechazo) {
+    setTimeout(() => { document.getElementById('modal-instalar').style.display = 'flex'; }, 2200);
+  }
+});
+function instalarPWA() {
+  document.getElementById('modal-instalar').style.display = 'none';
+  if (eventoInstalacionDiferido) {
+    eventoInstalacionDiferido.prompt();
+    eventoInstalacionDiferido.userChoice.then((resultado) => {
+      if (resultado.outcome !== 'accepted') { localStorage.setItem('otimac_chofer_instalar_rechazado', '1'); }
+      eventoInstalacionDiferido = null;
+    });
+  }
+}
+function cerrarModalInstalar() {
+  document.getElementById('modal-instalar').style.display = 'none';
+  localStorage.setItem('otimac_chofer_instalar_rechazado', '1');
+}
+window.addEventListener('appinstalled', () => { localStorage.removeItem('otimac_chofer_instalar_rechazado'); });
 
 function activarPantallaCompleta() {
   var doc = window.document;
