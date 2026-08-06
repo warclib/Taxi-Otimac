@@ -512,29 +512,53 @@ function aceptarViaje(id) {
     abrirModal(`<div class="modal-title" style="color:var(--red);">SIN CONEXIÓN</div><p>Verifica tu señal antes de aceptar el viaje.</p><button class="modal-btn btn-primario" onclick="location.reload()">REINTENTAR</button>`);
     return;
   }
-  idViajeActivo = id;
-  localStorage.setItem("idViajeChoferActivo", id);
-  document.getElementById('app-body').classList.add('modo-enfocado');
   if (window.navigator.vibrate) window.navigator.vibrate([50, 30, 50]);
 
   let timeoutInternet = setTimeout(() => {
     abrirModal(`<div class="modal-title" style="color:var(--gold);">SEÑAL DÉBIL</div><p>No se pudo confirmar el viaje. Revisa tu cobertura.</p><button class="modal-btn btn-primario" onclick="location.reload()">ENTENDIDO</button>`);
   }, 15000);
 
-  database.ref('viajes/' + id).update({
-    estado: 'en_curso',
-    chofer: {
+  // Transacción atómica: solo el primer chofer que llegue "gana" el viaje.
+  // Si el estado ya no es 'esperando' cuando Firebase procesa esto (otro chofer
+  // ya lo tomó), la transacción aborta sin tocar nada (return undefined).
+  database.ref('viajes/' + id).transaction((viajeActual) => {
+    if (viajeActual === null) {
+      // El viaje ya no existe (cliente canceló, u otro chofer ya lo finalizó)
+      return; // aborta, no crea nada
+    }
+    if (viajeActual.estado !== 'esperando') {
+      return; // ya lo tomó otro chofer, o cambió de estado — aborta
+    }
+    viajeActual.estado = 'en_curso';
+    viajeActual.chofer = {
       nombre: localStorage.getItem("choferNombre"),
       economico: localStorage.getItem("choferEco"),
       lat: markerChofer.getLatLng().lat,
       lon: markerChofer.getLatLng().lng
+    };
+    return viajeActual;
+  }, (error, committed, snapshot) => {
+    clearTimeout(timeoutInternet);
+
+    if (error) {
+      abrirModal(`<div class="modal-title" style="color:var(--red);">ERROR</div><p>${error.message}</p><button class="modal-btn btn-primario" onclick="cerrarModal()">CERRAR</button>`);
+      return;
     }
-  }).then(() => {
-    clearTimeout(timeoutInternet);
+
+    if (!committed || !snapshot.exists()) {
+      // Otro chofer ya se ganó este viaje, o el cliente canceló justo antes.
+      viajesRechazados.push(id);
+      renderizarListaPedidos(window.ultimoSnapshotPedidos);
+      mostrarAviso("Ese viaje ya lo tomó otro chofer", "error");
+      if (window.navigator.vibrate) window.navigator.vibrate(120);
+      return;
+    }
+
+    // Confirmado: este chofer sí se ganó el viaje.
+    idViajeActivo = id;
+    localStorage.setItem("idViajeChoferActivo", id);
+    document.getElementById('app-body').classList.add('modo-enfocado');
     reconectarViajeChofer(id);
-  }).catch(error => {
-    clearTimeout(timeoutInternet);
-    abrirModal(`<div class="modal-title" style="color:var(--red);">ERROR</div><p>${error.message}</p><button class="modal-btn btn-primario" onclick="cerrarModal()">CERRAR</button>`);
   });
 }
 
