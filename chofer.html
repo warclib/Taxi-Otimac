@@ -474,10 +474,11 @@ function toggleTrabajo() {
   var activo = document.getElementById('checkTrabajo').checked, eco = localStorage.getItem("choferEco");
   var dot = document.getElementById('dotEstado'), txt = document.getElementById('txtModo');
   if(activo) { database.ref('autorizados/' + eco).once('value', snap => { if (snap.exists()) { localStorage.setItem("modoTrabajoActivo", true); txt.innerText = "TRABAJANDO"; txt.classList.add('conectado'); dot.classList.add('on'); mantenerPantallaEncendida(); iniciarGPS(); escucharPedidos(); if(document.getElementById('sidebar').classList.contains('active')) toggleSidebar(); } else { document.getElementById('checkTrabajo').checked = false; } }); }
-  else { localStorage.setItem("modoTrabajoActivo", false); location.reload(); }
+  else { localStorage.setItem("modoTrabajoActivo", false); if (watchID) { navigator.geolocation.clearWatch(watchID); watchID = null; } location.reload(); }
 }
 
 function iniciarGPS() {
+  if (watchID) { navigator.geolocation.clearWatch(watchID); }
   watchID = navigator.geolocation.watchPosition(pos => {
     var miPos = L.latLng(pos.coords.latitude, pos.coords.longitude);
     document.getElementById('status-gps').innerText = "🟢 GPS activo"; document.getElementById('status-gps').classList.add('on');
